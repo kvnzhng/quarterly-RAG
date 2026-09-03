@@ -1,4 +1,4 @@
-# Notes -- rag_project
+# Notes -- quarterly-RAG
 
 > Claude's scratch pad for cross-session observations. Updated by `/project-update`.
 

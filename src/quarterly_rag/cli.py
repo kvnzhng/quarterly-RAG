@@ -6,8 +6,8 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from rag_project import __version__
-from rag_project.config import get_settings
+from quarterly_rag import __version__
+from quarterly_rag.config import get_settings
 
 app = typer.Typer(help="Local RAG over SEC 10-Q/10-K filings.", no_args_is_help=True)
 console = Console()
@@ -16,14 +16,14 @@ console = Console()
 @app.command()
 def version() -> None:
     """Print the package version."""
-    console.print(f"rag_project {__version__}")
+    console.print(f"quarterly-RAG {__version__}")
 
 
 @app.command()
 def config() -> None:
     """Show the effective configuration (secrets redacted)."""
     settings = get_settings()
-    table = Table(title="rag_project settings")
+    table = Table(title="quarterly-RAG settings")
     table.add_column("key")
     table.add_column("value")
     for key, value in settings.model_dump().items():

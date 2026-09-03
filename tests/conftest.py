@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from rag_project.config import Settings
+from quarterly_rag.config import Settings
 
 
 @pytest.fixture

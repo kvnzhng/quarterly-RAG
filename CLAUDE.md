@@ -1,4 +1,4 @@
-# rag_project
+# quarterly-RAG
 
 A local, open-source Retrieval-Augmented Generation system that answers questions about SEC quarterly and annual filings (10-Q, 10-K) of NASDAQ/NYSE companies (starting with Apple and Nvidia). Built to learn and demonstrate five production RAG competencies: grounding, chunking, retrieval quality, hallucination control, and when to refuse to answer.
 
@@ -8,28 +8,14 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 
 <!-- Auto-updated by /project-update. Do not edit manually. -->
 ```
+./.claude/active-ticket
 ./.claude/hooks/enforce-ticket.sh
 ./.claude/settings.json
 ./.env.example
 ./.github/workflows/ci.yml
 ./.gitignore
 ./.pre-commit-config.yaml
-./.pytest_cache/.gitignore
-./.pytest_cache/CACHEDIR.TAG
-./.pytest_cache/README.md
-./.pytest_cache/v/cache/nodeids
 ./.python-version
-./.ruff_cache/.gitignore
-./.ruff_cache/0.16.5/13289032586696463657
-./.ruff_cache/0.16.5/13746165939635316503
-./.ruff_cache/0.16.5/1474625928649818569
-./.ruff_cache/0.16.5/15538562419545072851
-./.ruff_cache/0.16.5/17846413621813012552
-./.ruff_cache/0.16.5/237377877999443637
-./.ruff_cache/0.16.5/2809551034199143135
-./.ruff_cache/0.16.5/4418208441682260447
-./.ruff_cache/0.16.5/8445398076917616454
-./.ruff_cache/CACHEDIR.TAG
 ./CLAUDE.md
 ./data/eval/.gitkeep
 ./data/indexes/.gitkeep
@@ -66,21 +52,16 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./project/tickets.md
 ./pyproject.toml
 ./README.md
-./src/rag_project/__init__.py
-./src/rag_project/__pycache__/__init__.cpython-312.pyc
-./src/rag_project/__pycache__/cli.cpython-312.pyc
-./src/rag_project/__pycache__/config.cpython-312.pyc
-./src/rag_project/chunking/__init__.py
-./src/rag_project/cli.py
-./src/rag_project/config.py
-./src/rag_project/evaluation/__init__.py
-./src/rag_project/generation/__init__.py
-./src/rag_project/indexing/__init__.py
-./src/rag_project/ingestion/__init__.py
-./src/rag_project/observability/__init__.py
-./src/rag_project/retrieval/__init__.py
-./tests/__pycache__/conftest.cpython-312-pytest-9.1.1.pyc
-./tests/__pycache__/test_config.cpython-312-pytest-9.1.1.pyc
+./src/quarterly_rag/__init__.py
+./src/quarterly_rag/chunking/__init__.py
+./src/quarterly_rag/cli.py
+./src/quarterly_rag/config.py
+./src/quarterly_rag/evaluation/__init__.py
+./src/quarterly_rag/generation/__init__.py
+./src/quarterly_rag/indexing/__init__.py
+./src/quarterly_rag/ingestion/__init__.py
+./src/quarterly_rag/observability/__init__.py
+./src/quarterly_rag/retrieval/__init__.py
 ./tests/conftest.py
 ./tests/test_config.py
 ./uv.lock

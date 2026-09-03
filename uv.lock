@@ -377,7 +377,7 @@ wheels = [
 ]
 
 [[package]]
-name = "rag-project"
+name = "quarterly-rag"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

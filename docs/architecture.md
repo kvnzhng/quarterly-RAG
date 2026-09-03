@@ -13,7 +13,7 @@
                  \___________________________ evaluation (offline) + observability (Langfuse traces) ___________/
 ```
 
-Each box is a package under `src/rag_project/`. A layer may import from layers to its left only.
+Each box is a package under `src/quarterly_rag/`. A layer may import from layers to its left only.
 
 ## Data model (crosses every boundary)
 

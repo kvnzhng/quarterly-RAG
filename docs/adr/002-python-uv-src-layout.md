@@ -12,7 +12,7 @@ The ML ecosystem (faiss-cpu, torch via sentence-transformers, chromadb) tends to
 
 - Pin **Python 3.12** in `.python-version`. Broadest wheel coverage for the planned dependencies at the time of writing; revisit when every dependency ships 3.13 wheels.
 - **uv** for environment, lockfile, and scripts. A committed `uv.lock` makes the GitHub repo reproducible.
-- **src layout** (`src/rag_project/`) so tests import the installed package, not the working directory.
+- **src layout** (`src/quarterly_rag/`) so tests import the installed package, not the working directory.
 
 ## Consequences
 

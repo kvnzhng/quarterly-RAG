@@ -1,12 +1,18 @@
-# Tickets -- rag_project (Prefix: RAG)
+# Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-016
+> Next ID: RAG-017
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
 so the repo tells the story on its own.
 
 ## In Progress
+
+### RAG-016: Rename project to quarterly-RAG
+- **Type:** chore
+- **Created:** 2026-09-03
+- **Description:** Public name is `quarterly-RAG` (GitHub: kvnzhng/quarterly-RAG). Rename the Python package to `quarterly_rag`, the distribution to `quarterly-rag`, and update docs, config defaults, and the README badge/links. CLI command stays `rag`.
+- **Commits:** `pending`
 
 ## Backlog
 

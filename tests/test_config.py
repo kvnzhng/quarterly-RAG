@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typer.testing import CliRunner
 
-from rag_project import __version__
-from rag_project.cli import app
-from rag_project.config import Settings
+from quarterly_rag import __version__
+from quarterly_rag.cli import app
+from quarterly_rag.config import Settings
 
 
 def test_settings_defaults(settings: Settings) -> None:

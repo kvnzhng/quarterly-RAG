@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
     # SEC EDGAR requires a descriptive User-Agent with a contact address.
     edgar_user_agent: str = Field(
-        default="rag_project unknown unknown@example.com",
+        default="quarterly-RAG unknown unknown@example.com",
         description="Format: '<app> <name> <email>'.",
     )
 

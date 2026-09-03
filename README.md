@@ -1,4 +1,6 @@
-# rag_project
+# quarterly-RAG
+
+[![ci](https://github.com/kvnzhng/quarterly-RAG/actions/workflows/ci.yml/badge.svg)](https://github.com/kvnzhng/quarterly-RAG/actions/workflows/ci.yml)
 
 > Local, open-source Retrieval-Augmented Generation over SEC quarterly and annual filings (10-Q, 10-K), built to learn and demonstrate what "shipping a production RAG system" actually requires: **grounding, chunking, retrieval quality, hallucination control, and knowing when to refuse to answer.**
 
@@ -34,6 +36,10 @@ See `docs/architecture.md` for the component table and the alternatives being co
 ## Quickstart
 
 ```bash
+git clone https://github.com/kvnzhng/quarterly-RAG.git && cd quarterly-RAG
+
+git clone https://github.com/kvnzhng/quarterly-RAG.git && cd quarterly-RAG
+
 # 1. Python env (uv installs Python 3.12 if needed)
 make setup
 
@@ -50,12 +56,12 @@ uv run rag config
 make test
 ```
 
-Later tickets add `rag ingest`, `rag index`, `rag ask`, and `rag eval`. The commands are listed in `src/rag_project/cli.py` as they are planned.
+Later tickets add `rag ingest`, `rag index`, `rag ask`, and `rag eval`. The commands are listed in `src/quarterly_rag/cli.py` as they are planned.
 
 ## Repository layout
 
 ```
-src/rag_project/     pipeline layers: ingestion, chunking, indexing, retrieval, generation, evaluation, observability
+src/quarterly_rag/     pipeline layers: ingestion, chunking, indexing, retrieval, generation, evaluation, observability
 tests/               unit tests (no network); integration tests are marked and skipped by default
 data/                raw/, processed/, indexes/ are gitignored; eval/ sets are committed
 docs/adr/            architecture decision records, one per real decision
