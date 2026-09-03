@@ -18,7 +18,7 @@ test:           ## Unit tests (no Ollama / network)
 test-all:       ## Unit + integration tests
 	uv run pytest -m ""
 
-models:         ## Pull local models (RAG-002)
+models:         ## Pull default Ollama models; OLLAMA_HOST=http://<server>:11434 targets a remote Ollama
 	ollama pull $${LLM_MODEL:-llama3.1:8b}
 	ollama pull $${EMBED_MODEL:-nomic-embed-text}
 

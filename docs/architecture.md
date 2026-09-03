@@ -34,11 +34,11 @@ Every row is a tradeoff page under `docs/tradeoffs/`. "Chosen" is provisional un
 | Data source | SEC EDGAR HTML filings | XBRL financial data API, IR PDFs, transcripts | ADR-004 | RAG-003 |
 | Parsing | custom HTML -> sections (BeautifulSoup/lxml) | `sec-parser`, `edgartools`, unstructured | `parsing.md` | RAG-004 |
 | Chunking | section-aware + parent-child | fixed tokens, recursive, semantic | `chunking.md` | RAG-005 |
-| Embeddings | `nomic-embed-text` via Ollama | `bge-m3`, `all-MiniLM-L6-v2`, `e5` via sentence-transformers | `embeddings.md` | RAG-006 |
+| Embeddings | `nomic-embed-text` via the configured embed endpoint (Ollama by default) | `bge-m3`, `all-MiniLM-L6-v2`, `e5` via sentence-transformers | `embeddings.md` | RAG-006 |
 | Vector store | ChromaDB | FAISS (flat, HNSW), LanceDB, Qdrant (docker), pgvector | `vector-stores.md` | RAG-007 |
 | Sparse retrieval | rank_bm25 | Elasticsearch/OpenSearch, SPLADE | `retrieval-strategies.md` | RAG-009 |
 | Reranker | `bge-reranker-base` (cross-encoder) | ColBERT, LLM rerank, none | `retrieval-strategies.md` | RAG-009 |
-| LLM | `llama3.1:8b` or `qwen2.5:7b` via Ollama | `mistral`, `phi`, hosted API for comparison | `llm-serving.md` | RAG-002 |
+| LLM | any OpenAI-compatible server, Ollama `llama3.1:8b` by default | other local 7B-8B models; hosted OpenAI-compatible or Anthropic API on the same eval set | `llm-serving.md` | RAG-002 |
 | Orchestration | plain Python + LangChain components | full LangChain/LCEL, LlamaIndex, Haystack, LangGraph | `orchestration.md` | RAG-010 |
 | Evaluation | custom metrics + local LLM judge | RAGAS, DeepEval, TruLens | `evaluation.md` | RAG-008, RAG-012 |
 | Observability | Langfuse (self-hosted) | Arize Phoenix, MLflow tracing, OpenTelemetry only | `observability.md` | RAG-013 |

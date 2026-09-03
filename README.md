@@ -4,7 +4,7 @@
 
 > Local, open-source Retrieval-Augmented Generation over SEC quarterly and annual filings (10-Q, 10-K), built to learn and demonstrate what "shipping a production RAG system" actually requires: **grounding, chunking, retrieval quality, hallucination control, and knowing when to refuse to answer.**
 
-Everything runs on a laptop with no paid API: Ollama for the LLM and embeddings, ChromaDB and FAISS for vectors, Langfuse self-hosted for traces.
+By default everything runs on a laptop with no paid API: Ollama for the LLM and embeddings, ChromaDB and FAISS for vectors, Langfuse self-hosted for traces. The model provider is your choice, though: point it at a model server on your network or at a hosted API by editing `.env`.
 
 ## Why filings?
 
@@ -43,12 +43,14 @@ git clone https://github.com/kvnzhng/quarterly-RAG.git && cd quarterly-RAG
 # 1. Python env (uv installs Python 3.12 if needed)
 make setup
 
-# 2. Local models (RAG-002)
+# 2. Model provider, pick one (see "Choosing a model provider" below)
+#    a) Ollama on this machine:
 brew install ollama && ollama serve &
 make models
+#    b) a model server on your network, or a hosted API: nothing to install, edit .env in step 3
 
 # 3. Config
-cp .env.example .env   # set EDGAR_USER_AGENT to your name and email (SEC requires it)
+cp .env.example .env   # set EDGAR_USER_AGENT (SEC requires a contact), and LLM_*/EMBED_* if not using local Ollama
 
 # 4. Sanity
 uv run rag version
@@ -57,6 +59,21 @@ make test
 ```
 
 Later tickets add `rag ingest`, `rag index`, `rag ask`, and `rag eval`. The commands are listed in `src/quarterly_rag/cli.py` as they are planned.
+
+## Choosing a model provider
+
+The pipeline reaches models through two small interfaces, `LLM` and `Embedder`, configured entirely from `.env` (ADR-005). The defaults keep everything on your machine and free; which provider you use is your call.
+
+| Setup | `LLM_PROVIDER` | `LLM_BASE_URL` | `LLM_API_KEY` | Notes |
+|---|---|---|---|---|
+| Ollama on this machine (default) | `openai_compatible` | `http://localhost:11434/v1` | `ollama` (ignored) | `make models` pulls the weights |
+| Ollama, vLLM, LM Studio, llama.cpp on another machine | `openai_compatible` | `http://<host>:<port>/v1` | whatever that server expects | nothing to install locally |
+| Hosted OpenAI-compatible API (OpenAI, OpenRouter, Groq, ...) | `openai_compatible` | the provider's URL | your token | costs money, so evals stop being free |
+| Anthropic API | `anthropic` | unused | your token | `LLM_MODEL=claude-opus-5`; no embeddings endpoint, keep `EMBED_*` local |
+
+Embeddings are configured separately (`EMBED_PROVIDER`, `EMBED_BASE_URL`, `EMBED_MODEL`) because a hosted chat model is usually best paired with local embeddings: the index gets rebuilt often and embedding cost adds up.
+
+Every eval number in `docs/` names the provider and model that produced it. Local 8B model vs hosted frontier model on the same eval set is one of the planned comparisons (`docs/tradeoffs/llm-serving.md`).
 
 ## Repository layout
 

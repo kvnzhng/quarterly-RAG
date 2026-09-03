@@ -2,7 +2,7 @@
 
 A local, open-source Retrieval-Augmented Generation system that answers questions about SEC quarterly and annual filings (10-Q, 10-K) of NASDAQ/NYSE companies (starting with Apple and Nvidia). Built to learn and demonstrate five production RAG competencies: grounding, chunking, retrieval quality, hallucination control, and when to refuse to answer.
 
-**Stack:** Python 3.12, uv, LangChain (selectively), Ollama (local LLM + embeddings), ChromaDB and FAISS (compared), rank_bm25, RAGAS, Langfuse (self-hosted), FastAPI, Streamlit, pytest, ruff.
+**Stack:** Python 3.12, uv, LangChain (selectively), any OpenAI-compatible model server (Ollama by default, local or on the network) or the Anthropic API, embeddings configured separately, ChromaDB and FAISS (compared), rank_bm25, RAGAS, Langfuse (self-hosted), FastAPI, Streamlit, pytest, ruff.
 
 ## File Structure
 
@@ -25,6 +25,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./docs/adr/002-python-uv-src-layout.md
 ./docs/adr/003-local-first-open-source-stack.md
 ./docs/adr/004-corpus-sec-filings.md
+./docs/adr/005-model-provider-configurable.md
 ./docs/architecture.md
 ./docs/learning/chunking.md
 ./docs/learning/grounding.md
@@ -86,7 +87,7 @@ See [docs/adr/](docs/adr/) for architecture decision records. Every tooling trad
 
 ## Project Principles
 
-- **Local and free first.** Everything must run on a laptop with no paid API. A hosted model may be added later only as an explicitly compared alternative, never as a requirement.
+- **Local and free by default; the provider is the user's choice.** Defaults run on a laptop with no paid API. Any OpenAI-compatible server (this machine or the network) or a hosted API with a token is configured in `.env` only (ADR-005). Every documented number names the provider and model that produced it. CI never calls a model. Server addresses and tokens never go in the repo.
 - **Measure, don't assume.** A tradeoff doc without numbers from this corpus is a draft, not a decision.
 - **Provenance everywhere.** Every chunk carries ticker, form, period, section, and offsets. Every answer sentence carries a citation or is flagged as unsupported.
 - **Refusal is a feature.** The system must be able to say "not in the filings" with a reason.

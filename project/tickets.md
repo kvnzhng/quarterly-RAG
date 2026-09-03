@@ -8,12 +8,6 @@ so the repo tells the story on its own.
 
 ## In Progress
 
-### RAG-017: Reading list and course material
-- **Type:** docs
-- **Created:** 2026-09-03
-- **Description:** Add a curated, link-checked reading and course list to the README, grouped by competency and mapped to tickets, plus a short Reading section on each `docs/learning/` page.
-- **Commits:** `pending`
-
 ### RAG-018: Provider-agnostic LLM and embedding configuration
 - **Type:** chore
 - **Created:** 2026-09-03
@@ -22,14 +16,13 @@ so the repo tells the story on its own.
 
 ## Backlog
 
-### RAG-002: Local model runtime (Ollama) and `doctor` command
+### RAG-002: Model clients, `rag doctor`, and local model setup
 - **Type:** chore
 - **Created:** 2026-09-03
 - **Competency:** foundation
-- **Description:** Install Ollama, pull a chat model (`llama3.1:8b` or `qwen2.5:7b`) and an embedding model (`nomic-embed-text`). Add `make models`. Add `rag doctor` that checks Ollama is reachable, the configured models exist, and `data/` is writable.
-- **Done when:** `rag doctor` passes on a clean machine following the README.
-- **Artifacts:** ADR-005 model selection (why these models, what was compared).
-
+- **Description:** Implement the `LLM` and `Embedder` protocols with the `openai_compatible` provider (Ollama and other local servers, plus hosted OpenAI-style APIs) and the `anthropic` provider (ADR-005). Add `rag doctor`: configured endpoint reachable, configured models listed by the server, one chat round-trip and one embedding call succeed, data dirs writable. `make models` pulls the default Ollama models for people running Ollama themselves (honours `OLLAMA_HOST` for a remote Ollama). Kevin's local AI server address is provided at ticket start and goes in `.env`, never in the repo.
+- **Done when:** `rag doctor` passes against a local Ollama and against a remote OpenAI-compatible server; unit tests mock the HTTP layer.
+- **Artifacts:** `docs/tradeoffs/llm-serving.md` first pass (which local models were tried and why), ADR-006 model selection.
 ### RAG-003: SEC EDGAR filing downloader
 - **Type:** feat
 - **Created:** 2026-09-03
@@ -64,7 +57,7 @@ so the repo tells the story on its own.
 - **Created:** 2026-09-03
 - **Competency:** retrieval quality
 - **Description:** Implement a FAISS adapter (flat and HNSW) behind the same protocol. Benchmark both on the same corpus: build time, query p50/p95 latency, memory, metadata filtering support, persistence story, operational complexity.
-- **Done when:** `docs/tradeoffs/vector-stores.md` is filled with measured numbers and ADR-006 records the default choice and when to pick the other.
+- **Done when:** `docs/tradeoffs/vector-stores.md` is filled with measured numbers and ADR-007 records the default choice and when to pick the other.
 
 ### RAG-008: Retrieval evaluation set and metrics
 - **Type:** feat
@@ -135,3 +128,9 @@ so the repo tells the story on its own.
 - **Created:** 2026-09-03 | **Completed:** 2026-09-03
 - **Description:** Public name is `quarterly-RAG` (GitHub: kvnzhng/quarterly-RAG). Rename the Python package to `quarterly_rag`, the distribution to `quarterly-rag`, and update docs, config defaults, and the README badge/links. CLI command stays `rag`.
 - **Commits:** `606872e`
+
+### RAG-017: Reading list and course material
+- **Type:** docs
+- **Created:** 2026-09-03 | **Completed:** 2026-09-03
+- **Description:** Add a curated, link-checked reading and course list to the README, grouped by competency and mapped to tickets, plus a short Reading section on each `docs/learning/` page.
+- **Commits:** `d395fb5`

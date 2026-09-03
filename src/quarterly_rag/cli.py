@@ -27,7 +27,7 @@ def config() -> None:
     table.add_column("key")
     table.add_column("value")
     for key, value in settings.model_dump().items():
-        shown = "***" if "secret" in key and value else str(value)
+        shown = "***" if key.endswith("_key") and value else str(value)
         table.add_row(key, shown)
     console.print(table)
 
