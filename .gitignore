@@ -1,0 +1,48 @@
+# Claude Code ephemeral files
+.claude/active-ticket
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Build output
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment / secrets
+.env
+.env.local
+
+# Data (raw filings, processed text, and vector indexes are reproducible from the manifest)
+data/raw/*
+data/processed/*
+data/indexes/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/indexes/.gitkeep
+
+# Reports and notebooks
+reports/
+notebooks/.ipynb_checkpoints/
+
+# Langfuse / docker volumes
+infra/volumes/

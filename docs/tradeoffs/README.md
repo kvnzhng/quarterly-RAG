@@ -1,0 +1,17 @@
+# Tradeoff pages
+
+One page per "X vs Y" question. A page is a **draft** until it has numbers measured on this corpus; then the decision is recorded in an ADR and the page is marked **decided**.
+
+Use `_template.md` for new pages.
+
+| Page | Question | Status | Ticket |
+|---|---|---|---|
+| `parsing.md` | custom parser vs sec-parser vs unstructured | draft | RAG-004 |
+| `chunking.md` | fixed vs recursive vs section-aware vs parent-child | draft | RAG-005 |
+| `embeddings.md` | nomic-embed-text vs bge-m3 vs MiniLM | draft | RAG-006 |
+| `vector-stores.md` | ChromaDB vs FAISS (vs LanceDB / Qdrant / pgvector) | draft | RAG-007 |
+| `retrieval-strategies.md` | dense vs BM25 vs hybrid vs hybrid+rerank | draft | RAG-009 |
+| `llm-serving.md` | Ollama models; local vs hosted | draft | RAG-002 |
+| `orchestration.md` | plain Python vs LangChain vs LlamaIndex vs LangGraph | draft | RAG-010 |
+| `evaluation.md` | custom judge vs RAGAS vs DeepEval | draft | RAG-012 |
+| `observability.md` | Langfuse vs Phoenix vs MLflow | draft | RAG-013 |
