@@ -8,12 +8,6 @@ so the repo tells the story on its own.
 
 ## In Progress
 
-### RAG-016: Rename project to quarterly-RAG
-- **Type:** chore
-- **Created:** 2026-09-03
-- **Description:** Public name is `quarterly-RAG` (GitHub: kvnzhng/quarterly-RAG). Rename the Python package to `quarterly_rag`, the distribution to `quarterly-rag`, and update docs, config defaults, and the README badge/links. CLI command stays `rag`.
-- **Commits:** `pending`
-
 ## Backlog
 
 ### RAG-002: Local model runtime (Ollama) and `doctor` command
@@ -123,3 +117,9 @@ so the repo tells the story on its own.
 - **Created:** 2026-09-03 | **Completed:** 2026-09-03
 - **Description:** Set up project scaffolding with ticket-based workflow, Python tooling (uv, ruff, pytest, CI), src layout, docs skeleton (ADRs, learning notes, tradeoff docs), and the roadmap below.
 - **Commits:** `5094a17`
+
+### RAG-016: Rename project to quarterly-RAG
+- **Type:** chore
+- **Created:** 2026-09-03 | **Completed:** 2026-09-03
+- **Description:** Public name is `quarterly-RAG` (GitHub: kvnzhng/quarterly-RAG). Rename the Python package to `quarterly_rag`, the distribution to `quarterly-rag`, and update docs, config defaults, and the README badge/links. CLI command stays `rag`.
+- **Commits:** `606872e`
