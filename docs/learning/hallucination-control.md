@@ -23,6 +23,14 @@ _Fill in: faithfulness score, agreement between the custom judge and RAGAS, exam
 - Why lower temperature and "answer only from context" prompts are necessary but not sufficient.
 - The interaction with refusal: a stricter verifier pushes more questions into refusal, which is measured in `refusal.md`.
 
+## Reading
+
+- Ji et al. 2023, [Survey of Hallucination in NLG](https://arxiv.org/abs/2202.03629)
+- Dhuliawala et al. 2023, [Chain-of-Verification](https://arxiv.org/abs/2309.11495)
+- Es et al. 2023, [RAGAS](https://arxiv.org/abs/2309.15217)
+- Zheng et al. 2023, [Judging LLM-as-a-Judge](https://arxiv.org/abs/2306.05685)
+- Full list: README, "Reading and courses".
+
 ## Related
 
 RAG-010, RAG-011, RAG-012.

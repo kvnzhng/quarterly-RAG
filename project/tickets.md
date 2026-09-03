@@ -1,12 +1,24 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-017
+> Next ID: RAG-019
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
 so the repo tells the story on its own.
 
 ## In Progress
+
+### RAG-017: Reading list and course material
+- **Type:** docs
+- **Created:** 2026-09-03
+- **Description:** Add a curated, link-checked reading and course list to the README, grouped by competency and mapped to tickets, plus a short Reading section on each `docs/learning/` page.
+- **Commits:** `pending`
+
+### RAG-018: Provider-agnostic LLM and embedding configuration
+- **Type:** chore
+- **Created:** 2026-09-03
+- **Description:** The model provider is the user's choice: a local server (Ollama or any OpenAI-compatible endpoint, on this machine or on the network), or a hosted API with a token (OpenAI-compatible or Anthropic). Replace the Ollama-only settings with `LLM_PROVIDER` / `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` and matching `EMBED_*` settings, keep local as the default, update `.env.example`, README, Makefile, RAG-002, and record the decision in ADR-005.
+- **Commits:** `pending`
 
 ## Backlog
 

@@ -30,6 +30,13 @@ _Fill in from `docs/tradeoffs/chunking.md`._
 - Why financial tables need different treatment than prose.
 - Small-to-big (parent-child) as the usual production answer, and its cost.
 
+## Reading
+
+- Jimeno Yepes et al. 2024, [Financial Report Chunking for Effective RAG](https://arxiv.org/abs/2402.05131)
+- Chroma Research, [Evaluating Chunking Strategies for Retrieval](https://research.trychroma.com/evaluating-chunking)
+- Sarthi et al. 2024, [RAPTOR](https://arxiv.org/abs/2401.18059)
+- Full list: README, "Reading and courses".
+
 ## Related
 
 RAG-004, RAG-005, RAG-008.

@@ -31,6 +31,14 @@ _Fill in: baseline table and the best configuration, from `docs/tradeoffs/retrie
 - Filtering before vs after vector search, and what Chroma vs FAISS let you do.
 - Reranking cost vs gain; when top-k is already good enough.
 
+## Reading
+
+- Karpukhin et al. 2020, [Dense Passage Retrieval](https://arxiv.org/abs/2004.04906)
+- Cormack et al. 2009, [Reciprocal Rank Fusion](https://doi.org/10.1145/1571941.1572114)
+- Nogueira and Cho 2019, [Passage Re-ranking with BERT](https://arxiv.org/abs/1901.04085)
+- Thakur et al. 2021, [BEIR](https://arxiv.org/abs/2104.08663)
+- Full list: README, "Reading and courses".
+
 ## Related
 
 RAG-006, RAG-007, RAG-008, RAG-009.

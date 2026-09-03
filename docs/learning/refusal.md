@@ -35,6 +35,13 @@ _Fill in: the threshold sweep table and the chosen operating point._
 - Why "insufficient evidence" from the model is a signal, not a decision; the verifier has the last word.
 - How the operating point would differ for an internal analyst tool vs a public-facing product.
 
+## Reading
+
+- Rajpurkar et al. 2018, [Know What You Don't Know (SQuAD 2.0)](https://arxiv.org/abs/1806.03822)
+- Kamath et al. 2020, [Selective Question Answering under Domain Shift](https://arxiv.org/abs/2006.09462)
+- Kadavath et al. 2022, [Language Models (Mostly) Know What They Know](https://arxiv.org/abs/2207.05221)
+- Full list: README, "Reading and courses".
+
 ## Related
 
 RAG-011, RAG-012. See also `hallucination-control.md`.

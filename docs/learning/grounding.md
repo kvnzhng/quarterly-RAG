@@ -22,6 +22,13 @@ _Fill in: citation resolution rate, number-match rate, share of answers with at 
 - What happens to grounding when chunks are too small (context lost) or too large (citation too coarse to verify).
 - Fiscal vs calendar periods as a grounding trap in financial documents.
 
+## Reading
+
+- Anthropic, [Contextual Retrieval](https://www.anthropic.com/news/contextual-retrieval)
+- Min et al. 2023, [FActScore](https://arxiv.org/abs/2305.14251)
+- Liu et al. 2023, [Lost in the Middle](https://arxiv.org/abs/2307.03172)
+- Full list: README, "Reading and courses".
+
 ## Related
 
 RAG-004, RAG-010, RAG-014. See also `hallucination-control.md`.
