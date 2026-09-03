@@ -8,12 +8,6 @@ so the repo tells the story on its own.
 
 ## In Progress
 
-### RAG-001: Project initialization
-- **Type:** chore
-- **Created:** 2026-09-03
-- **Description:** Set up project scaffolding with ticket-based workflow, Python tooling (uv, ruff, pytest, CI), src layout, docs skeleton (ADRs, learning notes, tradeoff docs), and the roadmap below.
-- **Commits:** `pending`
-
 ## Backlog
 
 ### RAG-002: Local model runtime (Ollama) and `doctor` command
@@ -117,3 +111,9 @@ so the repo tells the story on its own.
 - **Done when:** a reader can understand the tradeoffs from the README alone.
 
 ## Done
+
+### RAG-001: Project initialization
+- **Type:** chore
+- **Created:** 2026-09-03 | **Completed:** 2026-09-03
+- **Description:** Set up project scaffolding with ticket-based workflow, Python tooling (uv, ruff, pytest, CI), src layout, docs skeleton (ADRs, learning notes, tradeoff docs), and the roadmap below.
+- **Commits:** `5094a17`
