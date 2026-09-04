@@ -72,6 +72,7 @@ def table_span(ticker, accession, row_pattern, occurrence=0, lead_lines=2):
 A_10K25 = "0000320193-25-000079"  # Apple FY2025 10-K
 A_10K24 = "0000320193-24-000123"  # Apple FY2024 10-K
 A_Q326 = "0000320193-26-000020"  # Apple FY2026 Q3 10-Q
+A_Q125 = "0000320193-25-000008"  # Apple FY2025 Q1 10-Q
 N_10K26 = "0001045810-26-000021"  # Nvidia FY2026 10-K
 N_Q227 = "0001045810-26-000075"  # Nvidia FY2027 Q2 10-Q
 
@@ -221,6 +222,574 @@ questions = [
         refusal_reason="out_of_scope",
         note="Company outside the corpus. The system must refuse rather than answer from "
         "pretraining, and the reason must say which company is missing.",
+    ),
+    EvalQuestion(
+        id="q011",
+        ticker="AAPL",
+        type="lookup",
+        question="What are Apple's reportable segments?",
+        gold_answer="the Americas, Europe, Greater China, Japan and Rest of Asia Pacific",
+        evidence=[
+            span(
+                "AAPL",
+                A_10K25,
+                "The Company manages its business primarily on a geographic basis\\. "
+                "The Company\u2019s reportable segments consist of the Americas, Europe, "
+                "Greater China, Japan and Rest of Asia Pacific\\.",
+            )
+        ],
+        note=(
+            "Prose in Item 1, and the answer is a list rather than a number. Apple reports by "
+            "geography while Nvidia reports by product line, so a single segment filter cannot "
+            "serve both."
+        ),
+    ),
+    EvalQuestion(
+        id="q012",
+        ticker="AAPL",
+        type="lookup",
+        question="How does Apple define its fiscal year?",
+        gold_answer="the 52- or 53-week period that ends on the last Saturday of September",
+        evidence=[
+            span(
+                "AAPL",
+                A_10K25,
+                "The Company\u2019s fiscal year is the 52- or 53-week period that ends on "
+                "the last Saturday of September\\.",
+            )
+        ],
+        note=(
+            "The fact that explains why Apple's FY2025 ended on 27 September and FY2024 on 28 "
+            "September. A system that answers period questions should be able to state the rule."
+        ),
+    ),
+    EvalQuestion(
+        id="q013",
+        ticker="AAPL",
+        type="lookup",
+        question="What was Apple's effective tax rate in fiscal 2025?",
+        gold_answer="15.6%",
+        evidence=[
+            table_span(
+                "AAPL", A_10K25, r"Effective tax rate \| 15\.6% \| 24\.1% \| 14\.7%", lead_lines=2
+            )
+        ],
+        note=(
+            "The row below it holds the statutory rate of 21%, a plausible wrong answer that is "
+            "also present in the source."
+        ),
+    ),
+    EvalQuestion(
+        id="q014",
+        ticker="AAPL",
+        type="lookup",
+        question="How many shares did Apple repurchase in fiscal 2025, and for how much?",
+        gold_answer="402 million shares for $89.3 billion",
+        evidence=[
+            span(
+                "AAPL",
+                A_10K25,
+                r"During 2025, the Company repurchased 402 million shares of its common stock for "
+                r"\$89\.3 billion\.",
+            )
+        ],
+        note=(
+            "Two numbers in one sentence, in the notes to the financial statements rather than "
+            "MD&A. An answer that reports one without the other is incomplete."
+        ),
+    ),
+    EvalQuestion(
+        id="q015",
+        ticker="AAPL",
+        type="lookup",
+        question="What were Apple's total assets at the end of fiscal 2025?",
+        gold_answer="$359,241 million",
+        evidence=[table_span("AAPL", A_10K25, r"Total assets \| \$359,241 \| \$364,980")],
+        note=(
+            "A balance sheet figure, so the period is a date rather than a range. The prior year "
+            "is larger, which makes a column mix-up look like growth."
+        ),
+    ),
+    EvalQuestion(
+        id="q016",
+        ticker="AAPL",
+        type="lookup",
+        question="How much did Apple spend on research and development in fiscal 2025?",
+        gold_answer="$34,550 million",
+        evidence=[
+            table_span(
+                "AAPL",
+                A_10K25,
+                r"Research and development \| \$34,550 \| 10% \| \$31,370 \| 5% \| \$29,915",
+                lead_lines=2,
+            )
+        ],
+        note=(
+            "The same figure appears in MD&A with growth percentages and again in the income "
+            "statement without them; the label points at the MD&A table."
+        ),
+    ),
+    EvalQuestion(
+        id="q017",
+        ticker="AAPL",
+        type="lookup",
+        question=(
+            "How much did Apple owe Ireland under the State Aid Decision as of September 28, 2024?"
+        ),
+        gold_answer="€14.2 billion, or $15.8 billion",
+        evidence=[
+            span(
+                "AAPL",
+                A_10K24,
+                r"As of September 28, 2024, the Company had an obligation to pay €14\.2 billion "
+                r"or \$15\.8 billion to Ireland in connection with the State Aid Decision",
+            )
+        ],
+        note=(
+            "Two currencies for one obligation. A verifier that matches numbers must accept either "
+            "and must not treat the euro figure as unsupported."
+        ),
+    ),
+    EvalQuestion(
+        id="q018",
+        ticker="NVDA",
+        type="lookup",
+        question="What are Nvidia's two reportable segments?",
+        gold_answer="Compute & Networking and Graphics",
+        evidence=[
+            span(
+                "NVDA",
+                N_10K26,
+                r"We report our business results in two segments\.\n"
+                r"The Compute & Networking segment includes[^\n]*\n[^\n]*",
+            )
+        ],
+        note=(
+            "The counterpart to q011. Apple splits by geography, Nvidia by product line, so a "
+            "question about 'segments' means different things per company."
+        ),
+    ),
+    EvalQuestion(
+        id="q019",
+        ticker="NVDA",
+        type="lookup",
+        question="How much did Nvidia spend on research and development in fiscal 2026?",
+        gold_answer="$18,497 million",
+        evidence=[
+            table_span(
+                "NVDA",
+                N_10K26,
+                r"Research and development \| \$18,497 \| \$12,914 \| \$5,583 \| 43%",
+                lead_lines=2,
+            )
+        ],
+        note=(
+            "Directly comparable to q016 for Apple, which is what makes cross-company questions "
+            "possible later."
+        ),
+    ),
+    EvalQuestion(
+        id="q020",
+        ticker="NVDA",
+        type="lookup",
+        question="What were Nvidia's total assets at the end of fiscal 2026?",
+        gold_answer="$206,803 million",
+        evidence=[table_span("NVDA", N_10K26, r"Total assets \| \$206,803 \| \$111,601")],
+        note=(
+            "In Part IV Item 15 like the rest of Nvidia's statements, unlike Apple's, which sit "
+            "under Item 8. Section filtering has to be learned per filer."
+        ),
+    ),
+    EvalQuestion(
+        id="q021",
+        ticker="NVDA",
+        type="lookup",
+        question="How many employees did Nvidia have at the end of fiscal 2026?",
+        gold_answer="approximately 42,000 employees in 38 countries",
+        evidence=[
+            span(
+                "NVDA",
+                N_10K26,
+                r"As of the end of fiscal year 2026, we had approximately 42,000 employees in 38 "
+                r"countries",
+            )
+        ],
+        note="The counterpart to q002 for Apple, and prose rather than a table in both cases.",
+    ),
+    EvalQuestion(
+        id="q022",
+        ticker="NVDA",
+        type="lookup",
+        question="What was the revenue of Nvidia's Compute & Networking segment in fiscal 2026?",
+        gold_answer="$193,479 million",
+        evidence=[
+            table_span(
+                "NVDA",
+                N_10K26,
+                r"Compute & Networking \| \$193,479 \| \$116,193 \| \$77,286 \| 67%",
+                lead_lines=2,
+            )
+        ],
+        note=(
+            "Close to the Data Center end-market figure in q006 ($193,737 million) but not equal: "
+            "segments and end markets are different cuts. Retrieval that confuses them produces a "
+            "number that exists in the filing and still answers the wrong question."
+        ),
+    ),
+    EvalQuestion(
+        id="q023",
+        ticker="NVDA",
+        type="lookup",
+        question="What was Nvidia's gross margin percentage in fiscal 2026?",
+        gold_answer="71.1%",
+        evidence=[
+            table_span(
+                "NVDA", N_10K26, r"Gross margin \| 71\.1% \| 75\.0% \| -3\.9 pts", lead_lines=1
+            )
+        ],
+        note=(
+            "Stated outright in the 10-K, unlike the quarterly figure in q008 which has to be "
+            "computed. The same question is a lookup in one filing and a calculation in another."
+        ),
+    ),
+    EvalQuestion(
+        id="q024",
+        ticker="AAPL",
+        type="lookup",
+        question="What were Apple's total net sales in the first quarter of fiscal 2025?",
+        gold_answer="$124,300 million",
+        evidence=[
+            table_span("AAPL", A_Q125, r"Total net sales \| \$124,300 \| \$119,575", lead_lines=2)
+        ],
+        note=(
+            "Apple's first fiscal quarter ends in late December, so this covers the 2024 holiday "
+            "season. A calendar-year filter would look in the wrong filing."
+        ),
+    ),
+    EvalQuestion(
+        id="q025",
+        ticker="AAPL",
+        type="lookup",
+        question="Why did Apple's Greater China net sales decrease in fiscal 2025?",
+        gold_answer="lower net sales of iPhone",
+        evidence=[
+            span(
+                "AAPL",
+                A_10K25,
+                r"Greater China net sales decreased during 2025 compared to 2024 primarily due to "
+                r"lower net sales of iPhone[^.]*\.",
+            )
+        ],
+        note=(
+            "An explanation rather than a figure. The answer cannot be assembled from a table, so "
+            "a table-biased retriever fails it."
+        ),
+    ),
+    EvalQuestion(
+        id="q026",
+        ticker="NVDA",
+        type="lookup",
+        question="How does Nvidia describe its own business in its fiscal 2026 annual report?",
+        gold_answer="a data center scale AI infrastructure company reshaping all industries",
+        evidence=[
+            span(
+                "NVDA",
+                N_10K26,
+                r"NVIDIA pioneered accelerated computing to help solve the most challenging "
+                r"computational problems\. NVIDIA is now a data center scale AI infrastructure "
+                r"company reshaping all industries\.",
+            )
+        ],
+        note=(
+            "No numbers at all. It checks that retrieval reaches the narrative opening of Item 1, "
+            "and that the verifier does not treat a numberless answer as unsupported."
+        ),
+    ),
+    EvalQuestion(
+        id="q027",
+        ticker="AAPL",
+        type="lookup",
+        question="What was Apple's total gross margin in fiscal 2025?",
+        gold_answer="$195,201 million",
+        evidence=[
+            table_span(
+                "AAPL",
+                A_10K25,
+                r"Total gross margin \| \$195,201 \| \$180,683 \| \$169,148",
+                lead_lines=3,
+            )
+        ],
+        note=(
+            "The dollar amount, where q003 asks for the percentage from the table immediately "
+            "below it. Adjacent tables, different answers."
+        ),
+    ),
+    EvalQuestion(
+        id="q028",
+        ticker="NVDA",
+        type="derived",
+        question=(
+            "How much of Nvidia's fiscal 2026 revenue came from the Graphics segment, "
+            "as a share of the total?"
+        ),
+        gold_answer="about 10.4% ($22,459 million of $215,938 million)",
+        evidence=[
+            table_span(
+                "NVDA",
+                N_10K26,
+                r"Compute & Networking \| \$193,479 \| \$116,193 \| \$77,286 \| 67%\n"
+                r"Graphics \| 22,459 \| 14,304 \| 8,155 \| 57%\n"
+                r"Total \| \$215,938 \| \$130,497 \| \$85,441 \| 65%",
+                lead_lines=2,
+            )
+        ],
+        note=(
+            "Both operands are in the same table and the ratio is in none of it. The share is "
+            "small, so a plausible-looking wrong answer is easy to produce."
+        ),
+    ),
+    EvalQuestion(
+        id="q029",
+        ticker="AAPL",
+        type="derived",
+        question="What share of Apple's fiscal 2025 total net sales came from Services?",
+        gold_answer="about 26.2% ($109,158 million of $416,161 million)",
+        evidence=[
+            table_span(
+                "AAPL",
+                A_10K25,
+                r"Services \(1\) \| 109,158 \| 14% \| 96,169 \| 13% \| 85,200\nTotal net sales \| "
+                r"\$416,161 \| 6% \| \$391,035 \| 2% \| \$383,285",
+                lead_lines=2,
+            )
+        ],
+        note=(
+            "Apple states the growth rate but never this share. Both operands sit in one table, "
+            "one row apart."
+        ),
+    ),
+    EvalQuestion(
+        id="q030",
+        ticker="AAPL",
+        type="derived",
+        question="What was Apple's operating income in the third quarter of fiscal 2026?",
+        gold_answer=(
+            "$35,695 million (gross margin of $54,770 million less $19,075 million "
+            "of operating expenses)"
+        ),
+        evidence=[
+            table_span(
+                "AAPL",
+                A_Q326,
+                r"Total operating expenses \| 19,075 \| 15,516 \| 56,350 \| 46,237\n"
+                r"Operating income \| 35,695 \| 28,202 \| 122,432 \| 100,623",
+                lead_lines=2,
+            )
+        ],
+        note=(
+            "The figure is stated outright, so the arithmetic in the gold answer is a check on the "
+            "answer rather than the only route to it. A model that computes instead of reading "
+            "should still land on the same number."
+        ),
+    ),
+    EvalQuestion(
+        id="q031",
+        ticker="NVDA",
+        type="cross_period",
+        question=(
+            "How much did Nvidia's research and development spending grow from "
+            "fiscal 2025 to fiscal 2026?"
+        ),
+        gold_answer="up $5,583 million, from $12,914 million to $18,497 million (43%)",
+        evidence=[
+            table_span(
+                "NVDA",
+                N_10K26,
+                r"Research and development \| \$18,497 \| \$12,914 \| \$5,583 \| 43%",
+                lead_lines=2,
+            )
+        ],
+        note=(
+            "Nvidia's MD&A states the change and the percentage, so this is a cross-period "
+            "question whose answer needs no arithmetic. Compare with q009, where Apple does the "
+            "same, and q007, where neither is given."
+        ),
+    ),
+    EvalQuestion(
+        id="q032",
+        ticker="AAPL",
+        type="cross_period",
+        question="How did Apple's effective tax rate change from fiscal 2024 to fiscal 2025?",
+        gold_answer="down from 24.1% to 15.6%",
+        evidence=[
+            table_span(
+                "AAPL", A_10K25, r"Effective tax rate \| 15\.6% \| 24\.1% \| 14\.7%", lead_lines=2
+            )
+        ],
+        note=(
+            "One row, two periods, and the answer is a direction as well as two numbers. Reading "
+            "the columns in the wrong order reverses the meaning while quoting real figures."
+        ),
+    ),
+    EvalQuestion(
+        id="q033",
+        ticker="NVDA",
+        type="cross_period",
+        question="How did Nvidia's total assets change from fiscal 2025 to fiscal 2026?",
+        gold_answer="up from $111,601 million to $206,803 million",
+        evidence=[table_span("NVDA", N_10K26, r"Total assets \| \$206,803 \| \$111,601")],
+        note=(
+            "A balance sheet comparison inside one filing, with no change column to lean on. The "
+            "column order has to be read from the header."
+        ),
+    ),
+    EvalQuestion(
+        id="q034",
+        ticker="AAPL",
+        type="cross_period",
+        question=(
+            "How did Apple's research and development spending change from fiscal 2023 "
+            "to fiscal 2025?"
+        ),
+        gold_answer="up from $29,915 million to $34,550 million",
+        evidence=[
+            table_span(
+                "AAPL",
+                A_10K25,
+                r"Research and development \| \$34,550 \| 10% \| \$31,370 \| 5% \| \$29,915",
+                lead_lines=2,
+            )
+        ],
+        note=(
+            "Three fiscal years on one row and the question skips the middle one, so the answer "
+            "must use the first and last columns rather than the adjacent pair."
+        ),
+    ),
+    EvalQuestion(
+        id="q035",
+        ticker="MSFT",
+        type="unanswerable",
+        question="What was Microsoft's cloud revenue in fiscal 2025?",
+        gold_answer="Not in the filings: the corpus holds only Apple and Nvidia.",
+        refusal_reason="out_of_scope",
+        note=(
+            "A second out-of-scope company, and one a model is very likely to have memorised. The "
+            "refusal has to hold even when the answer is easy to guess."
+        ),
+    ),
+    EvalQuestion(
+        id="q036",
+        ticker="AAPL",
+        type="unanswerable",
+        question="What were Apple's total net sales in fiscal 2019?",
+        gold_answer="Not in the filings: the corpus starts with Apple's fiscal 2024 annual report.",
+        refusal_reason="out_of_scope",
+        note=(
+            "The right company, the wrong period. Harder than an out-of-scope company because "
+            "retrieval will return plausible Apple revenue passages from other years."
+        ),
+    ),
+    EvalQuestion(
+        id="q037",
+        ticker="AAPL",
+        type="unanswerable",
+        question="How many iPhone units did Apple sell in fiscal 2025?",
+        gold_answer=(
+            "Not in the filings: Apple reports iPhone net sales in dollars, not unit volumes."
+        ),
+        refusal_reason="insufficient_evidence",
+        note=(
+            "Right company, right period, and the filings simply do not contain it. Apple stopped "
+            "disclosing unit sales in 2018. iPhone revenue is in the corpus, so a system that "
+            "conflates units with dollars will answer confidently and wrongly."
+        ),
+    ),
+    EvalQuestion(
+        id="q038",
+        ticker="NVDA",
+        type="unanswerable",
+        question="What is Nvidia's revenue guidance for the fourth quarter of fiscal 2027?",
+        gold_answer="Not in the filings: forward-looking guidance is not part of a 10-Q or 10-K.",
+        refusal_reason="insufficient_evidence",
+        note=(
+            "Forward-looking. The filings discuss future risks at length, so retrieval will find "
+            "confident-sounding passages that do not answer the question."
+        ),
+    ),
+    EvalQuestion(
+        id="q039",
+        ticker="AAPL",
+        type="unanswerable",
+        question="What was Tim Cook's total compensation in fiscal 2025?",
+        gold_answer=(
+            "Not in the filings: executive compensation is disclosed in the proxy statement, which "
+            "the 10-K incorporates by reference."
+        ),
+        refusal_reason="insufficient_evidence",
+        note=(
+            "The 10-K's Item 11 names executive compensation and then points elsewhere for it. A "
+            "system that scores section-title matches highly will retrieve that pointer and may "
+            "treat it as evidence."
+        ),
+    ),
+    EvalQuestion(
+        id="q041",
+        ticker="AAPL",
+        type="unanswerable",
+        question="How many employees does Apple have in each country?",
+        gold_answer=(
+            "Not in the filings: Apple reports one worldwide headcount, with no country breakdown."
+        ),
+        refusal_reason="insufficient_evidence",
+        note=(
+            "A near miss for q002, which the corpus does answer. The refusal has to survive "
+            "retrieval landing on the right paragraph with the wrong granularity."
+        ),
+    ),
+    EvalQuestion(
+        id="q042",
+        ticker="NVDA",
+        type="unanswerable",
+        question="Is Nvidia stock a good investment right now?",
+        gold_answer=(
+            "Not a question the filings answer: they report results and risks, not investment "
+            "advice."
+        ),
+        refusal_reason="out_of_scope",
+        note=(
+            "Asks for an opinion rather than a fact. Risk Factors is full of language that a "
+            "retriever will score as relevant, which makes this a realistic failure mode."
+        ),
+    ),
+    EvalQuestion(
+        id="q043",
+        ticker="AAPL",
+        type="unanswerable",
+        question="What was Apple's revenue from the Vision Pro in fiscal 2025?",
+        gold_answer=(
+            "Not in the filings: Vision Pro sits inside Wearables, Home and Accessories and is "
+            "not reported separately."
+        ),
+        refusal_reason="insufficient_evidence",
+        note=(
+            "The product is named in Item 1 and the category is in the revenue tables, so both "
+            "halves of the question are present and the answer still is not."
+        ),
+    ),
+    EvalQuestion(
+        id="q040",
+        ticker="NVDA",
+        type="unanswerable",
+        question="What is Nvidia's current share price?",
+        gold_answer=(
+            "Not in the filings: a filing is a point-in-time document and carries no "
+            "live market data."
+        ),
+        refusal_reason="out_of_scope",
+        note=(
+            "Not a filing question at all. It checks that the refusal reason distinguishes 'not in "
+            "these documents' from 'not in this kind of document'."
+        ),
     ),
 ]
 

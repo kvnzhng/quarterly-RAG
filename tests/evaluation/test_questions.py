@@ -99,6 +99,41 @@ def test_gold_answer_numbers_must_be_in_the_evidence(settings: Settings) -> None
     assert problems and "999,999" in problems[0][1]
 
 
+def test_numberless_answers_are_grounded_word_by_word(settings: Settings) -> None:
+    text = (
+        "We report our business results in two segments.\n"
+        "The Compute & Networking segment includes accelerated computing.\n"
+        "The Graphics segment includes GeForce GPUs for gaming.\n"
+    )
+    start, end = 0, len(text)
+    path = settings.processed_dir / "NVDA" / f"{ACCESSION}.txt"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+
+    def question(answer: str) -> EvalQuestion:
+        return EvalQuestion(
+            id="q018",
+            question="What are Nvidia's two reportable segments?",
+            ticker="NVDA",
+            type="lookup",
+            gold_answer=answer,
+            evidence=[
+                EvidenceSpan(
+                    accession=ACCESSION,
+                    section="Part I.Item 1",
+                    char_start=start,
+                    char_end=end,
+                    quote=text,
+                )
+            ],
+        )
+
+    # A list assembled from the passage is grounded even though the phrase is not verbatim.
+    assert check_gold_answers([question("Compute & Networking and Graphics")]) == []
+    problems = check_gold_answers([question("Compute & Networking and Automotive")])
+    assert problems and "Automotive" in problems[0][1]
+
+
 def test_derived_answers_are_not_required_to_appear(settings: Settings) -> None:
     start, end = seed_text(settings)
     derived = make_question(start, end, TEXT[start:end], type="derived", gold_answer="about 16.4%")

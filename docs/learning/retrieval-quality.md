@@ -8,6 +8,11 @@ If the right passage is not retrieved, nothing downstream can fix it. Retrieval 
 
 Gold evidence is a span into the parsed filing (accession, section, char offsets), human-verified, with a question type (`lookup`, `derived`, `cross_period`, `unanswerable`). A chunk is relevant when it overlaps a span. Labeling spans instead of chunk ids means one eval set scores every chunker, store, and retriever.
 
+The v0 set (RAG-019) holds 43 questions: 23 lookup, 5 derived, 5 cross-period, 10 unanswerable, split evenly between refusal reasons. Every one was verified against the filing. Two known limitations to revisit at RAG-008:
+
+- **6 of the 16 filings carry all the evidence.** The other 10 are only distractors, so the set exercises retrieval precision more than period filtering.
+- **30% of spans are prose, the rest tables.** Financial filings are table-heavy so some skew is honest, but a chunking comparison run on this set will weigh table handling more than narrative handling.
+
 ## Metrics used (RAG-008)
 
 - **recall@k**: is a gold chunk in the top k? The metric that bounds answer quality.

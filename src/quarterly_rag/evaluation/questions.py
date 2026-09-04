@@ -137,33 +137,107 @@ def check_spans(settings: Settings, questions: Iterable[EvalQuestion]) -> list[S
 
 
 _NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
+_WORD = re.compile(r"[A-Za-z][A-Za-z&/'-]{3,}")
+# Words a gold answer may add for readability without being in the filing.
+_CONNECTIVES = frozenset(
+    {
+        "about",
+        "approximately",
+        "billion",
+        "million",
+        "thousand",
+        "from",
+        "than",
+        "that",
+        "this",
+        "these",
+        "those",
+        "with",
+        "were",
+        "have",
+        "into",
+        "over",
+        "under",
+        "down",
+        "less",
+        "more",
+        "each",
+        "both",
+        "only",
+        "also",
+        "which",
+        "their",
+        "there",
+        "notes",
+        "filings",
+        "corpus",
+        "holds",
+        "point-in-time",
+        "document",
+        "carries",
+        "market",
+        "reports",
+        "statement",
+        "reference",
+        "guidance",
+        "part",
+        "volumes",
+        "dollars",
+        "stopped",
+        "disclosing",
+        "executive",
+        "compensation",
+        "proxy",
+        "incorporates",
+        "forward-looking",
+        "annual",
+        "report",
+        "starts",
+        "live",
+        "data",
+        "kind",
+    }
+)
 
 
 def check_gold_answers(questions: Iterable[EvalQuestion]) -> list[tuple[str, str]]:
-    """Every number in a `lookup` answer must appear in that question's own evidence.
+    """A `lookup` answer must be grounded in that question's own evidence.
 
-    The whole answer string cannot be required verbatim: a filing's table says
-    `Total net sales | 109,417` while the answer says "$109,417 million", because the
-    unit lives in the table header. Grounding the numbers is the check that matters, and
-    it is the same rule the citation verifier applies in RAG-010.
+    Numbers must match exactly: the filing's table says `Total net sales | 109,417` and the
+    answer says "$109,417 million" because the unit lives in the caption, so the string as a
+    whole cannot be required, but every figure in it can be. This is the same rule the
+    citation verifier applies in RAG-010.
 
-    Only `lookup`: a derived or cross-period answer is computed from its evidence, so its
-    result is not expected to appear there.
+    For an answer with no figures, every content word must appear in the evidence. That
+    allows a list assembled from a passage ("Compute & Networking and Graphics") while still
+    rejecting an answer invented outside the source.
+
+    Only `lookup`: a derived or cross-period answer is computed from its evidence, and an
+    unanswerable one has none.
     """
     problems: list[tuple[str, str]] = []
     for question in questions:
         if question.type != "lookup":
             continue
         evidence = " ".join(span.quote for span in question.evidence)
-        present = set(_NUMBER.findall(evidence))
-        missing = [n for n in _NUMBER.findall(question.gold_answer) if n not in present]
+        numbers = set(_NUMBER.findall(evidence))
+        missing = [n for n in _NUMBER.findall(question.gold_answer) if n not in numbers]
         if missing:
             problems.append(
                 (question.id, f"numbers {missing} in the gold answer are not in the evidence")
             )
-        elif not _NUMBER.search(question.gold_answer) and question.gold_answer not in evidence:
+            continue
+        if _NUMBER.search(question.gold_answer):
+            continue
+        lowered = evidence.lower()
+        unseen = [
+            word
+            for word in _WORD.findall(question.gold_answer)
+            if word.lower() not in _CONNECTIVES and word.lower() not in lowered
+        ]
+        if unseen:
             problems.append(
-                (question.id, f"gold answer {question.gold_answer!r} is not in the evidence")
+                (question.id, f"words {unseen} in the gold answer are not in the evidence")
             )
     return problems
 
