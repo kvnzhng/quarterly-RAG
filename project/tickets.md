@@ -13,13 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-009: Hybrid retrieval, metadata filtering, and reranking
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** retrieval quality
-- **Description:** Add BM25 (rank_bm25) alongside dense retrieval with reciprocal rank fusion. Add metadata filters inferred from the question (ticker, fiscal period, section). Add a cross-encoder reranker (`bge-reranker-base`). Compare dense / BM25 / hybrid / hybrid+rerank on the RAG-008 eval.
-- **Done when:** the comparison table is in `docs/tradeoffs/retrieval-strategies.md` and the best configuration becomes the default.
-
 ## Backlog
 
 ### Phase 1: one thin end-to-end path, measured
@@ -234,3 +227,16 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Deviation from the ticket:** the unanswerable questions live in `data/eval/questions.jsonl` rather than a separate `unanswerable.jsonl`. The schema already carries the type, so a second file would need a second loader, hash and check command for no gain.
 - **Finding:** 13 of the 14 over-refusals had no evidence in the top 5, so coverage is bounded by retrieval rather than by the gate. Refusal calibration is also not answer quality: the 8B model has the best abstention F1 and invents citations in half its answers.
 - **Commits:** `6a10b9a`
+
+### RAG-009: Hybrid retrieval, metadata filtering, and reranking
+- **Type:** feat
+- **Created:** 2026-09-03 | **Completed:** 2026-09-04
+- **Competency:** retrieval quality
+- **Description:** Add BM25 (rank_bm25) alongside dense retrieval with reciprocal rank fusion. Add metadata filters inferred from the question (ticker, fiscal period, section). Add a cross-encoder reranker (`bge-reranker-base`). Compare dense / BM25 / hybrid / hybrid+rerank on the RAG-008 eval.
+- **Done when:** the comparison table is in `docs/tradeoffs/retrieval-strategies.md` and the best configuration becomes the default.
+- **Verified:** `docs/tradeoffs/retrieval-strategies.md` holds the six-row comparison and ADR-008 records the decision. `hybrid` is the default in `Settings` and every command takes `--retrieval`. `make test-all`: 267 passed.
+- **Baseline:** hybrid recall@5 45.5% against dense 36.4%, MRR 0.300 against 0.266.
+- **Did not work, and worth knowing:** the inferred ticker filter changes recall not at all (the near-miss ladder had already said so); reranking raises recall@1 and lowers recall@5 with either judge, so it makes the system worse while making the ranking look better, and the case for a 2 GB cross-encoder is now weaker rather than stronger.
+- **Finding for RAG-020:** every strategy plateaus at 45.5% by k=10, and hybrid at depth 100 reaches only 69.7%. Ten of 33 questions have their gold chunk nowhere in the top 100 of 1,391, mostly financial-statement tables. The ceiling is chunking, not ranking.
+- **Dependencies added:** `rank_bm25` (small, pure Python; the index is built in memory at start-up, which is the scaling boundary to watch).
+- **Commits:** `984bdb9`
