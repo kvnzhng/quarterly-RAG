@@ -13,10 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-## Backlog
-
-### Phase 1: one thin end-to-end path, measured
-
 ### RAG-002: Model clients, `rag doctor`, and local model setup
 - **Type:** chore
 - **Created:** 2026-09-03
@@ -24,6 +20,11 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Description:** Implement the `LLM` and `Embedder` protocols with the `openai_compatible` provider (Ollama and other local servers, plus hosted OpenAI-style APIs) and the `anthropic` provider (ADR-005). Add `rag doctor`: configured endpoint reachable, configured models listed by the server, one chat round-trip and one embedding call succeed, data dirs writable. `make models` pulls the default Ollama models for people running Ollama themselves (honours `OLLAMA_HOST` for a remote Ollama). Kevin's local AI server address is provided at ticket start and goes in `.env`, never in the repo.
 - **Done when:** `rag doctor` passes against a local Ollama and against a remote OpenAI-compatible server; unit tests mock the HTTP layer.
 - **Artifacts:** `docs/tradeoffs/llm-serving.md` first pass (which local models were tried and why), ADR-006 model selection.
+- **Dependencies added:** `anthropic` (official SDK for the `anthropic` provider: retries, typed errors, and it tracks API changes such as adaptive thinking and removed sampling parameters; a hand-rolled client would need re-verifying on every change). The OpenAI-compatible provider uses the existing `httpx`.
+
+## Backlog
+
+### Phase 1: one thin end-to-end path, measured
 
 ### RAG-003: SEC EDGAR filing downloader
 - **Type:** feat

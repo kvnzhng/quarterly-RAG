@@ -11,7 +11,7 @@ Use `_template.md` for new pages.
 | `embeddings.md` | nomic-embed-text vs bge-m3 vs MiniLM | draft | RAG-006 |
 | `vector-stores.md` | ChromaDB vs FAISS (vs LanceDB / Qdrant / pgvector) | draft | RAG-007 |
 | `retrieval-strategies.md` | dense vs BM25 vs hybrid vs hybrid+rerank | draft | RAG-009 |
-| `llm-serving.md` | Ollama models; local vs hosted | draft | RAG-002 |
+| `llm-serving.md` | which local model; local vs hosted | draft (candidates + criteria set) | RAG-002, RAG-012 |
 | `orchestration.md` | plain Python vs LangChain vs LlamaIndex vs LangGraph | draft | RAG-010 |
 | `evaluation.md` | custom judge vs RAGAS vs DeepEval | draft | RAG-012 |
 | `observability.md` | Langfuse vs Phoenix vs MLflow | draft | RAG-013 |

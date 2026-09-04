@@ -1,4 +1,4 @@
-.PHONY: setup lint fmt test test-all models langfuse-up langfuse-down eval
+.PHONY: setup lint fmt test test-all doctor models langfuse-up langfuse-down eval
 
 setup:          ## Create venv, install deps, install git hooks (pre-commit + commit-msg)
 	uv sync
@@ -17,6 +17,9 @@ test:           ## Unit tests (no Ollama / network)
 
 test-all:       ## Unit + integration tests
 	uv run pytest -m ""
+
+doctor:         ## Check the configured model endpoints and data dirs
+	uv run rag doctor
 
 models:         ## Pull default Ollama models; OLLAMA_HOST=http://<server>:11434 targets a remote Ollama
 	ollama pull $${LLM_MODEL:-llama3.1:8b}

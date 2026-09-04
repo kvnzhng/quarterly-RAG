@@ -27,6 +27,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./docs/adr/003-local-first-open-source-stack.md
 ./docs/adr/004-corpus-sec-filings.md
 ./docs/adr/005-model-provider-configurable.md
+./docs/adr/006-model-selection.md
 ./docs/architecture.md
 ./docs/learning/chunking.md
 ./docs/learning/grounding.md
@@ -59,14 +60,31 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./src/quarterly_rag/chunking/__init__.py
 ./src/quarterly_rag/cli.py
 ./src/quarterly_rag/config.py
+./src/quarterly_rag/doctor.py
+./src/quarterly_rag/errors.py
 ./src/quarterly_rag/evaluation/__init__.py
 ./src/quarterly_rag/generation/__init__.py
+./src/quarterly_rag/generation/anthropic_api.py
+./src/quarterly_rag/generation/base.py
+./src/quarterly_rag/generation/llm.py
+./src/quarterly_rag/generation/openai_compatible.py
 ./src/quarterly_rag/indexing/__init__.py
+./src/quarterly_rag/indexing/base.py
+./src/quarterly_rag/indexing/embedder.py
+./src/quarterly_rag/indexing/openai_compatible.py
 ./src/quarterly_rag/ingestion/__init__.py
 ./src/quarterly_rag/observability/__init__.py
+./src/quarterly_rag/openai_compatible.py
 ./src/quarterly_rag/retrieval/__init__.py
 ./tests/conftest.py
+./tests/generation/test_anthropic_api.py
+./tests/generation/test_llm_factory.py
+./tests/generation/test_openai_compatible_llm.py
+./tests/indexing/test_embedder_factory.py
+./tests/indexing/test_openai_compatible_embedder.py
+./tests/integration/test_live_doctor.py
 ./tests/test_config.py
+./tests/test_doctor.py
 ./uv.lock
 ```
 
@@ -76,6 +94,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 - **Lint / format:** `make lint` / `make fmt`
 - **Test:** `make test`
 - **Run CLI:** `uv run rag --help`
+- **Doctor:** `make doctor` or `uv run rag doctor` (configured endpoints, models, data dirs)
 - **Models:** `make models` (pulls Ollama models, RAG-002)
 - **Eval:** `make eval` (RAG-008+)
 

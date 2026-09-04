@@ -58,6 +58,7 @@ cp .env.example .env   # set EDGAR_USER_AGENT (SEC requires a contact), and LLM_
 uv run rag version
 uv run rag config
 make test
+uv run rag doctor    # endpoint reachable, models listed, one chat + one embedding call, data dirs writable
 ```
 
 Later tickets add `rag ingest`, `rag index`, `rag ask`, and `rag eval`. The commands are listed in `src/quarterly_rag/cli.py` as they are planned.

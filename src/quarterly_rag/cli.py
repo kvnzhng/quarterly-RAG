@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 from quarterly_rag import __version__
 from quarterly_rag.config import get_settings
+from quarterly_rag.doctor import failed, run_doctor
 
 app = typer.Typer(help="Local RAG over SEC 10-Q/10-K filings.", no_args_is_help=True)
 console = Console()
@@ -32,8 +34,43 @@ def config() -> None:
     console.print(table)
 
 
+@app.command()
+def doctor() -> None:
+    """Check the configured model endpoints, models, and data directories."""
+    settings = get_settings()
+    llm_where = (
+        "api.anthropic.com" if settings.llm_provider == "anthropic" else settings.llm_base_url
+    )
+    console.print(f"chat model:  {settings.llm_provider} / {settings.llm_model} at {llm_where}")
+    console.print(
+        f"embeddings:  {settings.embed_provider} / {settings.embed_model} "
+        f"at {settings.embed_base_url}"
+    )
+    results = run_doctor(settings)
+
+    table = Table(title="rag doctor")
+    table.add_column("check")
+    table.add_column("status")
+    table.add_column("latency", justify="right")
+    table.add_column("detail", overflow="fold")
+    styles = {"ok": "green", "warn": "yellow", "fail": "red"}
+    for result in results:
+        latency = f"{result.latency_ms:.0f} ms" if result.latency_ms is not None else ""
+        table.add_row(
+            result.name,
+            f"[{styles[result.status]}]{result.status}[/]",
+            latency,
+            escape(result.detail),
+        )
+    console.print(table)
+
+    if failures := failed(results):
+        console.print(f"[red]{len(failures)} check(s) failed[/red]")
+        raise typer.Exit(code=1)
+    console.print("[green]all checks passed[/green]")
+
+
 # Planned subcommands (see project/tickets.md):
-#   rag doctor            RAG-002  check the configured model endpoint, models, data dirs
 #   rag ingest download   RAG-003  fetch filings from EDGAR
 #   rag ingest parse      RAG-004  filings -> sectioned text
 #   rag eval check        RAG-019  every gold evidence span resolves into the parsed filings

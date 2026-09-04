@@ -39,6 +39,12 @@ class Settings(BaseSettings):
     embed_api_key: str = "ollama"
     embed_model: str = "nomic-embed-text"
 
+    # --- Requests -----------------------------------------------------------------
+    request_timeout_s: float = Field(
+        default=120.0,
+        description="Per-request timeout. A cold local model can take a minute to load.",
+    )
+
     # --- Vector store -----------------------------------------------------------
     vector_store: Literal["chroma", "faiss"] = "chroma"
 
