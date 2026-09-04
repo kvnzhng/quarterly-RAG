@@ -13,13 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-008: Retrieval metrics, run record, and baseline numbers
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** retrieval quality
-- **Description:** Implement recall@k, MRR, and nDCG@k over the RAG-019 set, with a chunk counted relevant when it overlaps a gold evidence span (overlap rule configurable, default any overlap). Break results down by company, form, section, and question type. Every report embeds a **run record**: git commit, corpus manifest hash, parser version, chunker name and config, embedding provider and model, vector store, retrieval parameters (k, filters), prompt version where relevant, and timestamp. `rag eval retrieval --k 5` prints the table and writes `reports/retrieval-<timestamp>.json`.
-- **Done when:** the eval runs end to end on the RAG-005 + RAG-006 baseline and the numbers, with their run record, are in `docs/learning/retrieval-quality.md`.
-
 ## Backlog
 
 ### Phase 1: one thin end-to-end path, measured
@@ -210,3 +203,14 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Baseline:** dense-only recall@5 is 18.2% raw and 36.4% with context headers, over 33 answerable questions. That is the floor RAG-009's BM25, fusion and reranking are measured against.
 - **Dependencies added:** `chromadb` (embedded vector store with metadata filtering and directory persistence; FAISS goes behind the same protocol in RAG-007).
 - **Commits:** `3435fc9`
+
+### RAG-008: Retrieval metrics, run record, and baseline numbers
+- **Type:** feat
+- **Created:** 2026-09-03 | **Completed:** 2026-09-04
+- **Competency:** retrieval quality
+- **Description:** Implement recall@k, MRR, and nDCG@k over the RAG-019 set, with a chunk counted relevant when it overlaps a gold evidence span (overlap rule configurable, default any overlap). Break results down by company, form, section, and question type. Every report embeds a **run record**: git commit, corpus manifest hash, parser version, chunker name and config, embedding provider and model, vector store, retrieval parameters (k, filters), prompt version where relevant, and timestamp. `rag eval retrieval --k 5` prints the table and writes `reports/retrieval-<timestamp>.json`.
+- **Done when:** the eval runs end to end on the RAG-005 + RAG-006 baseline and the numbers, with their run record, are in `docs/learning/retrieval-quality.md`.
+- **Verified:** `rag eval retrieval -k 5 [--context]` runs end to end on the RAG-005 + RAG-006 baseline, prints overall / near-miss / by-type / by-company / by-form tables and writes `reports/retrieval-<variant>-<timestamp>.json` with a full run record. Numbers are in `docs/learning/retrieval-quality.md`. `make test-all`: 180 passed.
+- **Baseline:** context variant recall@5 36.4%, MRR 0.267, nDCG@5 0.232; raw variant 18.2%, 0.131, 0.096.
+- **Findings for RAG-009:** the near-miss ladder shows retrieval reaching the right filing 90.9% of the time, the right section 63.6%, and the right chunk 36.4%, so the loss is inside the document and metadata filtering would buy little. All seven 10-Q questions score 0.0% against 46.2% for 10-K, because retrieval returns the management discussion of a filing instead of its condensed financial statements. Both point at exact-term matching (BM25) and reranking.
+- **Commits:** `81a7c67`
