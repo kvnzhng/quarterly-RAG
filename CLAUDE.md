@@ -16,6 +16,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./.gitignore
 ./.pre-commit-config.yaml
 ./.python-version
+./AGENTS.md
 ./CLAUDE.md
 ./data/eval/.gitkeep
 ./data/indexes/.gitkeep
@@ -53,6 +54,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./project/tickets.md
 ./pyproject.toml
 ./README.md
+./scripts/check-commit-msg.sh
 ./src/quarterly_rag/__init__.py
 ./src/quarterly_rag/chunking/__init__.py
 ./src/quarterly_rag/cli.py
@@ -153,6 +155,8 @@ feat(ingestion): download 10-Q filings from EDGAR (RAG-003)
 fix(retrieval): handle empty BM25 index (RAG-009)
 docs: fill vector store tradeoff table (RAG-007)
 ```
+
+Enforced by `scripts/check-commit-msg.sh`: `make setup` installs it as a pre-commit `commit-msg` hook, and CI runs it over every push and pull request. `AGENTS.md` is a symlink to this file so Codex follows the same rules.
 
 ### Branch naming
 

@@ -4,7 +4,7 @@
 
 Chunking decides the unit of retrieval and the unit of evidence. Too small and a chunk loses the context needed to answer (a number without its label, a table row without its header). Too large and retrieval gets noisy and citations get vague. The right strategy depends on the document structure and the question types.
 
-## Strategies implemented (RAG-005)
+## Strategies (v1 in RAG-005, the rest compared in RAG-020)
 
 | Strategy | Idea | Expected strength | Expected weakness |
 |---|---|---|---|
@@ -17,7 +17,7 @@ Tables get special handling: a table is never split, and its header row is repea
 
 ## What this repo does
 
-Chunkers implement one `Chunker` protocol. A harness reports chunk count, size distribution, and how often a chunk crosses a section boundary. The strategies are then scored on the retrieval eval set (RAG-008), so the chunking decision is made on recall@k and answer faithfulness, not on intuition.
+Chunkers implement one `Chunker` protocol. The first chunker (RAG-005) is deliberately simple: a fixed token window inside each parsed section, so the end-to-end path and its baseline numbers exist before any chunking is optimised. RAG-020 adds the other strategies and a harness that reports chunk count, size distribution, and how often a chunk crosses a section boundary. Every strategy is scored on the same eval set (RAG-019 labels, RAG-008 metrics); because the labels are evidence spans rather than chunk ids, re-chunking never invalidates them. The chunking decision is made on recall@k and answer faithfulness, not on intuition.
 
 ## Measured
 
@@ -39,4 +39,4 @@ _Fill in from `docs/tradeoffs/chunking.md`._
 
 ## Related
 
-RAG-004, RAG-005, RAG-008.
+RAG-004, RAG-005, RAG-019, RAG-008, RAG-020.

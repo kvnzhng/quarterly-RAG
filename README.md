@@ -4,7 +4,9 @@
 
 > Local, open-source Retrieval-Augmented Generation over SEC quarterly and annual filings (10-Q, 10-K), built to learn and demonstrate what "shipping a production RAG system" actually requires: **grounding, chunking, retrieval quality, hallucination control, and knowing when to refuse to answer.**
 
-By default everything runs on a laptop with no paid API: Ollama for the LLM and embeddings, ChromaDB and FAISS for vectors, Langfuse self-hosted for traces. The model provider is your choice, though: point it at a model server on your network or at a hosted API by editing `.env`.
+The plan keeps everything on a laptop with no paid API: Ollama for the LLM and embeddings, ChromaDB and FAISS for vectors, Langfuse self-hosted for traces. The model provider is your choice: point it at a model server on your network or at a hosted API by editing `.env`.
+
+**Current state:** scaffolding, tooling, and the roadmap. The pipeline itself starts with RAG-002; see [Status](#status).
 
 ## Why filings?
 
@@ -14,12 +16,14 @@ Starting companies: **Apple (AAPL)** and **Nvidia (NVDA)**. Adding a ticker is a
 
 ## The five competencies and where they live
 
-| Competency | What the project does | Where to look |
+This table is the plan, not a feature list. Each row becomes true when its tickets close.
+
+| Competency | What the project will do | Where to look |
 |---|---|---|
 | Grounding | Every chunk carries ticker, form, period, section, and offsets. Every answer sentence cites a chunk id that is verified to exist and to contain the quoted numbers. | `docs/learning/grounding.md`, RAG-004, RAG-010 |
-| Chunking | Fixed, recursive, section-aware, and parent-child chunkers compared on retrieval metrics, not on intuition. | `docs/learning/chunking.md`, `docs/tradeoffs/chunking.md`, RAG-005 |
-| Retrieval quality | Gold eval set with recall@k, MRR, nDCG. Dense vs BM25 vs hybrid vs hybrid + reranker. Chroma vs FAISS benchmark. | `docs/learning/retrieval-quality.md`, `docs/tradeoffs/vector-stores.md`, RAG-006 to RAG-009 |
-| Hallucination control | Citation verification, number matching, LLM-as-judge faithfulness compared with RAGAS, regression gate in CI. | `docs/learning/hallucination-control.md`, RAG-010, RAG-012 |
+| Chunking | One simple chunker first, then fixed, recursive, section-aware, and parent-child compared on retrieval metrics, not on intuition. | `docs/learning/chunking.md`, `docs/tradeoffs/chunking.md`, RAG-005, RAG-020 |
+| Retrieval quality | Human-verified eval set labeled with evidence spans, so the labels survive a change of chunker. recall@k, MRR, nDCG with a run record on every number. Dense vs BM25 vs hybrid vs hybrid + reranker. Chroma vs FAISS benchmark. | `docs/learning/retrieval-quality.md`, `docs/tradeoffs/vector-stores.md`, RAG-019, RAG-006 to RAG-009 |
+| Hallucination control | Citation verification, number matching after unit normalisation with derived numbers flagged, calculation provenance for arithmetic, LLM-as-judge faithfulness compared with RAGAS, regression gate in CI. | `docs/learning/hallucination-control.md`, RAG-010, RAG-012, RAG-021 |
 | Refusal | Explicit refusal gate with reasons (low retrieval confidence, out of scope, insufficient evidence, failed verification) and an unanswerable eval set measuring abstention precision/recall. | `docs/learning/refusal.md`, RAG-011 |
 
 ## Architecture
@@ -36,8 +40,6 @@ See `docs/architecture.md` for the component table and the alternatives being co
 ## Quickstart
 
 ```bash
-git clone https://github.com/kvnzhng/quarterly-RAG.git && cd quarterly-RAG
-
 git clone https://github.com/kvnzhng/quarterly-RAG.git && cd quarterly-RAG
 
 # 1. Python env (uv installs Python 3.12 if needed)
@@ -73,7 +75,7 @@ The pipeline reaches models through two small interfaces, `LLM` and `Embedder`, 
 
 Embeddings are configured separately (`EMBED_PROVIDER`, `EMBED_BASE_URL`, `EMBED_MODEL`) because a hosted chat model is usually best paired with local embeddings: the index gets rebuilt often and embedding cost adds up.
 
-Every eval number in `docs/` names the provider and model that produced it. Local 8B model vs hosted frontier model on the same eval set is one of the planned comparisons (`docs/tradeoffs/llm-serving.md`).
+Every eval number in `docs/` carries a run record: git commit, corpus manifest hash, chunker config, embedding model, retrieval parameters, prompt version, and the provider and model that produced it. Local 8B model vs hosted frontier model on the same eval set is one of the planned comparisons (`docs/tradeoffs/llm-serving.md`).
 
 ## Repository layout
 
@@ -84,26 +86,33 @@ data/                raw/, processed/, indexes/ are gitignored; eval/ sets are c
 docs/adr/            architecture decision records, one per real decision
 docs/tradeoffs/      X vs Y comparisons; a page counts once it has measured numbers
 docs/learning/       one page per competency: concepts, what this repo does, talking points
-project/tickets.md   the roadmap, as tickets RAG-001 ... RAG-015
+project/tickets.md   the roadmap as ordered tickets: one thin end-to-end path first, then comparisons
+scripts/             repo tooling (commit message check used by the git hook and CI)
 infra/               docker compose for Langfuse
 notebooks/           exploration only
 ```
 
 ## Workflow
 
-Work is ticket-driven. Each change references a ticket (`feat(retrieval): add BM25 (RAG-009)`), enforced by a git `commit-msg` hook and a Claude Code edit hook. See `CLAUDE.md`.
+Work is ticket-driven. Each change references a ticket (`feat(retrieval): add BM25 (RAG-009)`). `make setup` installs a `commit-msg` hook that rejects messages without one, CI runs the same check over every push and pull request, and a Claude Code edit hook blocks edits with no active ticket. `AGENTS.md` is a symlink to `CLAUDE.md` so Codex follows the same rules. See `CLAUDE.md`.
 
 ## Status
 
+Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, then the comparisons.
+
 - [x] RAG-001 scaffolding, tooling, roadmap
-- [ ] RAG-002 local models
-- [ ] RAG-003 / 004 ingestion
-- [ ] RAG-005 chunking
-- [ ] RAG-006 / 007 vector stores
-- [ ] RAG-008 / 009 retrieval quality
-- [ ] RAG-010 grounded generation
-- [ ] RAG-011 refusal
-- [ ] RAG-012 faithfulness eval
+- [x] RAG-016 rename to quarterly-RAG
+- [x] RAG-017 reading list
+- [x] RAG-018 provider-agnostic model configuration
+- [x] RAG-022 / 023 portable ticket enforcement, docs match the plan
+- [ ] RAG-002 model clients and `rag doctor`
+- [ ] RAG-003 / 004 EDGAR download and section parser
+- [ ] RAG-019 evaluation set v0 (evidence spans, question types)
+- [ ] RAG-005 / 006 v1 chunker, embeddings, Chroma, dense retrieval
+- [ ] RAG-008 retrieval metrics, run record, baseline
+- [ ] RAG-010 / 011 grounded generation and refusal
+- [ ] RAG-020 / 007 / 009 chunking, vector store, and retrieval comparisons
+- [ ] RAG-012 / 021 faithfulness eval, calculation provenance
 - [ ] RAG-013 Langfuse
 - [ ] RAG-014 API + UI
 - [ ] RAG-015 writeup
@@ -124,7 +133,7 @@ Grouped by the competency they support, in roughly the order the tickets need th
 - Min et al. 2023, [FActScore](https://arxiv.org/abs/2305.14251). Split an answer into atomic claims and verify each one. The model for our citation verifier.
 - Liu et al. 2023, [Lost in the Middle](https://arxiv.org/abs/2307.03172). Models under-use context placed mid-prompt, which affects how many chunks to pass and in what order.
 
-**Chunking** (RAG-005)
+**Chunking** (RAG-005, RAG-020)
 - Jimeno Yepes et al. 2024, [Financial Report Chunking for Effective RAG](https://arxiv.org/abs/2402.05131). Element-based chunking of 10-Ks. Directly relevant.
 - Chroma Research, [Evaluating Chunking Strategies for Retrieval](https://research.trychroma.com/evaluating-chunking). Token-level recall metrics for chunkers.
 - Pinecone, [Chunking Strategies for LLM Applications](https://www.pinecone.io/learn/chunking-strategies/). Survey of the common strategies.
@@ -154,13 +163,13 @@ Grouped by the competency they support, in roughly the order the tickets need th
 - Kamath et al. 2020, [Selective Question Answering under Domain Shift](https://arxiv.org/abs/2006.09462). Abstention as a calibrated decision, with coverage vs accuracy curves.
 - Kadavath et al. 2022, [Language Models (Mostly) Know What They Know](https://arxiv.org/abs/2207.05221). Whether a model's own confidence is usable as a refusal signal.
 
-**Evaluation** (RAG-008, RAG-012)
+**Evaluation** (RAG-019, RAG-008, RAG-012)
 - Es et al. 2023, [RAGAS](https://arxiv.org/abs/2309.15217). Reference-free faithfulness, answer relevance, and context precision.
 - Saad-Falcon et al. 2023, [ARES](https://arxiv.org/abs/2311.09476). Training lightweight judges with synthetic data.
 - Zheng et al. 2023, [Judging LLM-as-a-Judge](https://arxiv.org/abs/2306.05685). Biases of LLM judges and how to check for them.
 - Hamel Husain, [Your AI Product Needs Evals](https://hamel.dev/blog/posts/evals/). The practitioner's version: look at your data and build the harness first.
 
-**Financial documents** (RAG-003, RAG-004, eval sets)
+**Financial documents** (RAG-003, RAG-004, RAG-019)
 - Islam et al. 2023, [FinanceBench](https://arxiv.org/abs/2311.11944). QA over 10-Ks with measured RAG failure rates. A source of question styles.
 - Chen et al. 2021, [FinQA](https://arxiv.org/abs/2109.00122). Numerical reasoning over financial tables.
 - Loukas et al. 2021, [EDGAR-CORPUS](https://arxiv.org/abs/2109.14394). A sectioned 10-K corpus, useful for the Item detection in RAG-004.

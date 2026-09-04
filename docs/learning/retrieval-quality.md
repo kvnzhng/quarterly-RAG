@@ -4,6 +4,10 @@
 
 If the right passage is not retrieved, nothing downstream can fix it. Retrieval quality is measured, not felt: a labeled set of questions with the chunks that answer them, and metrics over the ranked results.
 
+## Labels (RAG-019)
+
+Gold evidence is a span into the parsed filing (accession, section, char offsets), human-verified, with a question type (`lookup`, `derived`, `cross_period`, `unanswerable`). A chunk is relevant when it overlaps a span. Labeling spans instead of chunk ids means one eval set scores every chunker, store, and retriever.
+
 ## Metrics used (RAG-008)
 
 - **recall@k**: is a gold chunk in the top k? The metric that bounds answer quality.
@@ -22,11 +26,11 @@ If the right passage is not retrieved, nothing downstream can fix it. Retrieval 
 
 ## Measured
 
-_Fill in: baseline table and the best configuration, from `docs/tradeoffs/retrieval-strategies.md` and `vector-stores.md`._
+_Fill in: baseline table with its run record (commit, corpus hash, chunker, embedding model, k) from RAG-008, then the best configuration from `docs/tradeoffs/retrieval-strategies.md` and `vector-stores.md`._
 
 ## Talking points
 
-- How the eval set was built (LLM-assisted drafting, human verification) and why gold *chunks* matter more than gold *answers* for retrieval.
+- How the eval set was built (LLM-assisted drafting, human verification), why retrieval is scored on gold *evidence* rather than gold *answers*, and why that evidence is a span rather than a chunk id (labels survive re-chunking).
 - Why BM25 still matters for financial text (exact tokens: ticker symbols, line items, "Q3 FY24").
 - Filtering before vs after vector search, and what Chroma vs FAISS let you do.
 - Reranking cost vs gain; when top-k is already good enough.
@@ -41,4 +45,4 @@ _Fill in: baseline table and the best configuration, from `docs/tradeoffs/retrie
 
 ## Related
 
-RAG-006, RAG-007, RAG-008, RAG-009.
+RAG-019, RAG-006, RAG-007, RAG-008, RAG-009.

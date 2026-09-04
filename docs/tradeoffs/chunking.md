@@ -1,7 +1,7 @@
 # Chunking: fixed vs recursive vs section-aware vs parent-child
 
 **Status:** draft
-**Ticket:** RAG-005
+**Ticket:** RAG-020
 
 ## Question
 

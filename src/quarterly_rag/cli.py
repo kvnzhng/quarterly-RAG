@@ -33,9 +33,10 @@ def config() -> None:
 
 
 # Planned subcommands (see project/tickets.md):
-#   rag doctor            RAG-002  check Ollama, models, data dirs
+#   rag doctor            RAG-002  check the configured model endpoint, models, data dirs
 #   rag ingest download   RAG-003  fetch filings from EDGAR
 #   rag ingest parse      RAG-004  filings -> sectioned text
+#   rag eval check        RAG-019  every gold evidence span resolves into the parsed filings
 #   rag index build       RAG-006  chunk + embed + store
 #   rag ask "..."         RAG-010  grounded answer or refusal
 #   rag eval retrieval    RAG-008  recall@k / MRR / nDCG

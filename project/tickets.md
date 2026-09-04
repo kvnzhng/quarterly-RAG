@@ -1,14 +1,35 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-019
+> Next ID: RAG-024
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
 so the repo tells the story on its own.
 
+The backlog is ordered. Phase 1 ships one thin end-to-end path with the eval
+set in place before anything is optimised. Phase 2 compares alternatives
+against that baseline. Phase 3 is production readiness and the writeup.
+Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
+
 ## In Progress
 
+### RAG-022: Ticket enforcement portable across clones and CI
+- **Type:** chore
+- **Created:** 2026-09-04
+- **Competency:** foundation
+- **Description:** The commit-msg hook lives only in this checkout's `.git/hooks`, `make setup` installs only the pre-commit stage, CI does not check messages, and the Claude edit hook needs `jq`. Track the check as `scripts/check-commit-msg.sh`, wire it as a pre-commit `commit-msg` stage hook, install both stages from `make setup`, run the same script over the commit range in CI, and let `enforce-ticket.sh` fall back to `python3` when `jq` is missing. Commit `AGENTS.md` as a symlink to `CLAUDE.md` so Codex reads the same instructions.
+- **Done when:** a fresh clone gets the commit-msg hook from `make setup`, a commit without a ticket id is rejected locally and in CI, and the existing history passes the CI check.
+
+### RAG-023: README, docs, and conventions match the reviewed plan
+- **Type:** docs
+- **Created:** 2026-09-04
+- **Competency:** all
+- **Description:** The review found the README describing planned work in the present tense, a duplicated clone command, a layout line naming "RAG-001 ... RAG-015", and a status list missing RAG-016 to RAG-018; `project/conventions.md` still says the provider is "Ollama today". Fix these, add the run-record requirement to conventions, and update ticket references in `docs/`, `README.md`, and package docstrings for the RAG-005/RAG-020 split and the new RAG-019 and RAG-021.
+- **Done when:** every ticket reference in `docs/` and `README.md` resolves to the right ticket and the README status list matches this file.
+
 ## Backlog
+
+### Phase 1: one thin end-to-end path, measured
 
 ### RAG-002: Model clients, `rag doctor`, and local model setup
 - **Type:** chore
@@ -17,6 +38,7 @@ so the repo tells the story on its own.
 - **Description:** Implement the `LLM` and `Embedder` protocols with the `openai_compatible` provider (Ollama and other local servers, plus hosted OpenAI-style APIs) and the `anthropic` provider (ADR-005). Add `rag doctor`: configured endpoint reachable, configured models listed by the server, one chat round-trip and one embedding call succeed, data dirs writable. `make models` pulls the default Ollama models for people running Ollama themselves (honours `OLLAMA_HOST` for a remote Ollama). Kevin's local AI server address is provided at ticket start and goes in `.env`, never in the repo.
 - **Done when:** `rag doctor` passes against a local Ollama and against a remote OpenAI-compatible server; unit tests mock the HTTP layer.
 - **Artifacts:** `docs/tradeoffs/llm-serving.md` first pass (which local models were tried and why), ADR-006 model selection.
+
 ### RAG-003: SEC EDGAR filing downloader
 - **Type:** feat
 - **Created:** 2026-09-03
@@ -31,20 +53,57 @@ so the repo tells the story on its own.
 - **Description:** Convert filing HTML to clean text. Detect SEC items (Item 1, 1A Risk Factors, 2/7 MD&A, 3 Quantitative disclosures, 8 Financial Statements). Preserve tables as pipe-delimited text with a table marker. Emit `data/processed/<ticker>/<accession>.jsonl`, one record per section, with provenance fields (ticker, form, period, section, char offsets, source URL).
 - **Done when:** parser tests pass on one 10-Q and one 10-K per company, and a section coverage report shows every expected item was found.
 
-### RAG-005: Chunking strategies and chunking experiment harness
+### RAG-019: Evaluation set v0 with evidence spans and question types
+- **Type:** feat
+- **Created:** 2026-09-04
+- **Competency:** retrieval quality, hallucination control, refusal
+- **Description:** Build `data/eval/questions.jsonl` before any chunker or index exists, so every later choice is measured against the same labels. Each record: `id`, `question`, `ticker`, `type` (`lookup` | `derived` | `cross_period` | `unanswerable`), `gold_answer`, and `evidence`: a list of spans `{accession, section, char_start, char_end}` into the RAG-004 output. Labels are spans, not chunk ids, so they survive a change of chunking strategy; a chunk counts as relevant when it overlaps a span. Start with 30 answerable questions (mostly `lookup`, a few `derived` and `cross_period`) and 10 `unanswerable` seeds across both companies. LLM-assisted drafting is fine; every record is human-verified against the filing. A loader and `rag eval check` verify that every span resolves to text in the processed filings and that the gold answer appears inside the evidence for `lookup` questions (test marked `integration` until sample filings are committed, see the open question in `docs/notes.md`).
+- **Done when:** `rag eval check` reports every span resolves, and the set is committed under `data/eval/`.
+
+### RAG-005: Chunker protocol and v1 chunker
 - **Type:** feat
 - **Created:** 2026-09-03
 - **Competency:** chunking
-- **Description:** Implement pluggable chunkers: fixed-size token window, recursive character, section-aware (never cross an Item boundary), and parent-child (small chunks for retrieval, parent section returned for generation). Every chunk keeps full provenance. Add a harness that reports chunk count, size distribution, and boundary violations per strategy.
-- **Done when:** `docs/tradeoffs/chunking.md` contains a filled comparison table and a recommendation, backed by retrieval metrics from RAG-008.
+- **Description:** Define the `Chunker` protocol and the `Chunk` model with mandatory provenance (ticker, form, period, section, char offsets, source URL). Implement one chunker: a fixed token window with overlap applied within each RAG-004 section record, so no chunk crosses an Item boundary and a table is never split. Report chunk count and size distribution. The other strategies and the comparison are RAG-020.
+- **Done when:** chunks from one 10-Q round-trip to JSONL with provenance intact, offsets map back into the section text, and unit tests cover the boundary and table rules.
 
-### RAG-006: Embeddings, VectorStore interface, ChromaDB adapter
+### RAG-006: Embeddings, VectorStore interface, ChromaDB adapter, dense retrieval
 - **Type:** feat
 - **Created:** 2026-09-03
 - **Competency:** retrieval quality
-- **Description:** Define a `VectorStore` protocol (add, query with metadata filter, persist, load, stats). Implement the ChromaDB adapter with persistence under `data/indexes/`. Embeddings via Ollama (`nomic-embed-text`) behind an `Embedder` protocol so sentence-transformers models can be swapped in.
+- **Description:** Define a `VectorStore` protocol (add, query with metadata filter, persist, load, stats). Implement the ChromaDB adapter with persistence under `data/indexes/`. Embeddings come from the configured embed endpoint (ADR-005; `nomic-embed-text` on Ollama by default) behind the `Embedder` protocol so sentence-transformers models can be swapped in. Add `retrieve(question, k)` returning `RetrievedChunk`s from dense search only; BM25, filters, and reranking are RAG-009.
 - **Done when:** `rag index build --ticker AAPL --store chroma` builds and reloads an index, and a query returns chunks with provenance.
 - **Artifacts:** `docs/tradeoffs/embeddings.md` first pass.
+
+### RAG-008: Retrieval metrics, run record, and baseline numbers
+- **Type:** feat
+- **Created:** 2026-09-03
+- **Competency:** retrieval quality
+- **Description:** Implement recall@k, MRR, and nDCG@k over the RAG-019 set, with a chunk counted relevant when it overlaps a gold evidence span (overlap rule configurable, default any overlap). Break results down by company, form, section, and question type. Every report embeds a **run record**: git commit, corpus manifest hash, parser version, chunker name and config, embedding provider and model, vector store, retrieval parameters (k, filters), prompt version where relevant, and timestamp. `rag eval retrieval --k 5` prints the table and writes `reports/retrieval-<timestamp>.json`.
+- **Done when:** the eval runs end to end on the RAG-005 + RAG-006 baseline and the numbers, with their run record, are in `docs/learning/retrieval-quality.md`.
+
+### RAG-010: Grounded answer generation with verified citations
+- **Type:** feat
+- **Created:** 2026-09-03
+- **Competency:** grounding, hallucination control
+- **Description:** Prompt the LLM with retrieved chunks tagged by id and require inline citations `[c12]`. Post-process: every claim sentence must carry a citation that maps to a retrieved chunk. Numbers are checked against the cited chunk after parsing and unit scaling (thousands / millions / billions, rounding tolerance): a number found in the chunk is `verified`; one not found is marked `derived, unverified` and the answer says so, instead of being silently passed or hard-failed. Calculation provenance for derived numbers is RAG-021. Return a structured `Answer {text, citations, unsupported_sentences, derived_numbers}`. v1 targets `lookup` questions from RAG-019; `derived` and `cross_period` results are reported separately.
+- **Done when:** `rag ask "What was Apple's Q2 FY24 revenue?"` returns an answer whose citations resolve to real chunks, unsupported sentences and derived numbers are flagged rather than silently returned, and baseline citation-resolution and number-match rates by question type are in `docs/learning/grounding.md`.
+
+### RAG-011: Refusal policy and abstention evaluation
+- **Type:** feat
+- **Created:** 2026-09-03
+- **Competency:** when to refuse to answer
+- **Description:** Implement a refusal gate with explicit reasons: (a) retrieval confidence below threshold, (b) question outside corpus scope (company or period not indexed, non-financial question), (c) generator reports insufficient evidence, (d) citation verification fails. Grow the `unanswerable` seeds from RAG-019 into `data/eval/unanswerable.jsonl` (30+ questions that must be refused) and measure abstention precision/recall alongside answer accuracy.
+- **Done when:** `docs/learning/refusal.md` reports the tradeoff curve between refusing too much and hallucinating, and thresholds are chosen from it.
+
+### Phase 2: compare alternatives against the baseline
+
+### RAG-020: Chunking strategy comparison
+- **Type:** feat
+- **Created:** 2026-09-04
+- **Competency:** chunking
+- **Description:** Split from RAG-005. Add recursive character, section-aware with sub-splitting, and parent-child (small chunks for retrieval, parent section returned for generation) chunkers behind the `Chunker` protocol, each keeping full provenance. Extend the harness to report chunk count, size distribution, and boundary violations per strategy, and score every strategy with RAG-008 on the same RAG-019 labels.
+- **Done when:** `docs/tradeoffs/chunking.md` contains a filled comparison table with run records and a recommendation, and an ADR records the default chunker.
 
 ### RAG-007: FAISS adapter and Chroma vs FAISS benchmark
 - **Type:** feat
@@ -53,13 +112,6 @@ so the repo tells the story on its own.
 - **Description:** Implement a FAISS adapter (flat and HNSW) behind the same protocol. Benchmark both on the same corpus: build time, query p50/p95 latency, memory, metadata filtering support, persistence story, operational complexity.
 - **Done when:** `docs/tradeoffs/vector-stores.md` is filled with measured numbers and ADR-007 records the default choice and when to pick the other.
 
-### RAG-008: Retrieval evaluation set and metrics
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** retrieval quality
-- **Description:** Build `data/eval/retrieval.jsonl`: 50+ questions across both companies with gold answer spans and gold chunk ids (LLM-assisted drafting, human verified). Implement recall@k, MRR, nDCG@k. `rag eval retrieval --k 5` prints a table and writes `reports/retrieval-<timestamp>.json`.
-- **Done when:** the eval runs end to end and the first baseline numbers are recorded in `docs/learning/retrieval-quality.md`.
-
 ### RAG-009: Hybrid retrieval, metadata filtering, and reranking
 - **Type:** feat
 - **Created:** 2026-09-03
@@ -67,26 +119,21 @@ so the repo tells the story on its own.
 - **Description:** Add BM25 (rank_bm25) alongside dense retrieval with reciprocal rank fusion. Add metadata filters inferred from the question (ticker, fiscal period, section). Add a cross-encoder reranker (`bge-reranker-base`). Compare dense / BM25 / hybrid / hybrid+rerank on the RAG-008 eval.
 - **Done when:** the comparison table is in `docs/tradeoffs/retrieval-strategies.md` and the best configuration becomes the default.
 
-### RAG-010: Grounded answer generation with verified citations
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** grounding, hallucination control
-- **Description:** Prompt the LLM with retrieved chunks tagged by id and require inline citations `[c12]`. Post-process: every claim sentence must carry a citation that maps to a retrieved chunk, numbers quoted must appear verbatim in the cited chunk. Return a structured `Answer {text, citations, unsupported_sentences}`.
-- **Done when:** `rag ask "What was Apple's Q2 FY24 revenue?"` returns an answer whose citations resolve to real chunks, and unsupported sentences are flagged rather than silently returned.
-
-### RAG-011: Refusal policy and abstention evaluation
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** when to refuse to answer
-- **Description:** Implement a refusal gate with explicit reasons: (a) retrieval confidence below threshold, (b) question outside corpus scope (company or period not indexed, non-financial question), (c) generator reports insufficient evidence, (d) citation verification fails. Build `data/eval/unanswerable.jsonl` (questions that must be refused) and measure abstention precision/recall alongside answer accuracy.
-- **Done when:** `docs/learning/refusal.md` reports the tradeoff curve between refusing too much and hallucinating, and thresholds are chosen from it.
-
 ### RAG-012: Faithfulness and end-to-end evaluation
 - **Type:** feat
 - **Created:** 2026-09-03
 - **Competency:** hallucination control
 - **Description:** Add an LLM-as-judge faithfulness check (claims in answer entailed by cited context) using a local model, and compare against RAGAS. Add answer correctness against gold answers. `make eval` runs retrieval + generation evals and fails if scores regress below a stored baseline.
 - **Done when:** `docs/tradeoffs/evaluation.md` compares RAGAS vs custom judge, and `make eval` is wired into CI as an optional job.
+
+### RAG-021: Calculation provenance for derived numbers
+- **Type:** feat
+- **Created:** 2026-09-04
+- **Competency:** hallucination control
+- **Description:** `derived` and `cross_period` questions need arithmetic (growth rates, differences, ratios, unit conversions), and a verbatim number check passes a wrong relationship between two correct numbers. Extend the answer format so the generator emits each derived number as a calculation: operands with citations, the operation, and the result. A deterministic verifier recomputes it from the cited operands and marks the result `verified` only when the recomputation matches within rounding; a growth rate built from the wrong two periods then fails instead of passing.
+- **Done when:** the RAG-019 `derived` and `cross_period` questions are scored separately, and `docs/learning/hallucination-control.md` reports the verified rate before and after.
+
+### Phase 3: production readiness and writeup
 
 ### RAG-013: Langfuse tracing (self-hosted)
 - **Type:** chore

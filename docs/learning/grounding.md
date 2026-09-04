@@ -8,7 +8,7 @@ An answer is grounded when every claim in it can be traced to a specific passage
 
 - **Provenance is mandatory** on every `Chunk`: ticker, form type, fiscal period, filing date, SEC section, character offsets, and source URL (RAG-004).
 - **Chunk ids are visible to the model**: retrieved chunks are rendered as `[c17] ...text...` and the prompt requires inline citations per sentence (RAG-010).
-- **Citations are verified, not trusted**: each citation must resolve to a retrieved chunk, and numbers in a cited sentence must appear in that chunk (RAG-010). Sentences that fail are returned as `unsupported_sentences`, not silently kept.
+- **Citations are verified, not trusted**: each citation must resolve to a retrieved chunk, and numbers in a cited sentence must appear in that chunk after unit normalisation (RAG-010). Sentences that fail are returned as `unsupported_sentences`, and numbers that are not in the chunk are returned as `derived_numbers`, not silently kept. Derived numbers get calculation provenance in RAG-021: operands cited, operation stated, result recomputed.
 - **The UI shows the evidence**: citation, highlighted passage, and a link to the filing on EDGAR (RAG-014).
 
 ## Measured
@@ -31,4 +31,4 @@ _Fill in: citation resolution rate, number-match rate, share of answers with at 
 
 ## Related
 
-RAG-004, RAG-010, RAG-014. See also `hallucination-control.md`.
+RAG-004, RAG-010, RAG-014, RAG-021. See also `hallucination-control.md`.
