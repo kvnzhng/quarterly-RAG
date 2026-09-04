@@ -113,6 +113,22 @@ def check_embed(embedder: Embedder) -> CheckResult:
     )
 
 
+def _with_path_hint(result: CheckResult, provider: str, base_url: str, env_var: str) -> CheckResult:
+    """A 404 from an OpenAI-compatible URL without `/v1` is almost always the missing suffix."""
+    if (
+        result.status == "ok"
+        or provider != "openai_compatible"
+        or "HTTP 404" not in result.detail
+        or base_url.rstrip("/").endswith("/v1")
+    ):
+        return result
+    hint = (
+        f"Hint: {env_var} has no /v1 suffix; OpenAI-compatible endpoints usually live at "
+        f"{base_url.rstrip('/')}/v1 (Ollama's own API is at the root)."
+    )
+    return CheckResult(result.name, result.status, f"{result.detail} {hint}", result.latency_ms)
+
+
 def _pull_hint(provider: str, base_url: str, model: str, env_var: str) -> str:
     if provider == "openai_compatible" and ":11434" in base_url:
         return f"Run `ollama pull {model}` on the server (or `make models` with OLLAMA_HOST set)."
@@ -138,10 +154,15 @@ def run_doctor(
         hint = _pull_hint(
             settings.llm_provider, settings.llm_base_url, settings.llm_model, "LLM_MODEL"
         )
-        results.append(
-            check_model_listed("chat model listed", llm.list_models, settings.llm_model, hint=hint)
-        )
-        results.append(check_chat(llm))
+        for result in (
+            check_model_listed("chat model listed", llm.list_models, settings.llm_model, hint=hint),
+            check_chat(llm),
+        ):
+            results.append(
+                _with_path_hint(
+                    result, settings.llm_provider, settings.llm_base_url, "LLM_BASE_URL"
+                )
+            )
 
     try:
         embedder = embedder_factory(settings)
@@ -151,12 +172,17 @@ def run_doctor(
         hint = _pull_hint(
             settings.embed_provider, settings.embed_base_url, settings.embed_model, "EMBED_MODEL"
         )
-        results.append(
+        for result in (
             check_model_listed(
                 "embedding model listed", embedder.list_models, settings.embed_model, hint=hint
+            ),
+            check_embed(embedder),
+        ):
+            results.append(
+                _with_path_hint(
+                    result, settings.embed_provider, settings.embed_base_url, "EMBED_BASE_URL"
+                )
             )
-        )
-        results.append(check_embed(embedder))
     return results
 
 

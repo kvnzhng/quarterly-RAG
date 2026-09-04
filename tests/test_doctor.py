@@ -103,6 +103,21 @@ def test_server_without_listing_is_a_warning(settings: Settings) -> None:
     assert results["chat round-trip"].status == "ok"
 
 
+def test_404_without_v1_suffix_gets_a_path_hint(settings: Settings) -> None:
+    configured = settings.model_copy(update={"llm_base_url": "http://ai-server.local:11434/"})
+    error = ModelServerError(
+        "POST http://ai-server.local:11434/chat/completions -> HTTP 404", status_code=404
+    )
+    results = by_name(run(configured, llm=FakeLLM(list_error=error, chat_error=error)))
+    assert results["chat model listed"].status == "warn"
+    assert results["chat round-trip"].status == "fail"
+    assert "http://ai-server.local:11434/v1" in results["chat round-trip"].detail
+    assert "LLM_BASE_URL" in results["chat round-trip"].detail
+    # With the suffix present, a 404 is reported as is.
+    results = by_name(run(settings, llm=FakeLLM(chat_error=error)))
+    assert "Hint" not in results["chat round-trip"].detail
+
+
 def test_unreachable_server_fails_listing_and_chat(settings: Settings) -> None:
     error = ModelServerError("ConnectError: connection refused")
     results = by_name(run(settings, llm=FakeLLM(list_error=error, chat_error=error)))
