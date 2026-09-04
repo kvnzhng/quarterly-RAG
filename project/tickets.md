@@ -204,4 +204,4 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Done when:** chunks from one 10-Q round-trip to JSONL with provenance intact, offsets map back into the section text, and unit tests cover the boundary and table rules.
 - **Verified:** 1,391 chunks over the 16-filing corpus, median 304 words, p90 347, largest 809. `filing_text[char_start:char_end] == chunk.text` holds for every chunk, none crosses a section boundary, none holds half a table, ids are unique, and all 35 gold evidence spans overlap at least one chunk. 61 chunks exceed the target, every one of them a single table kept whole. `make test-all`: 128 passed.
 - **Observations for RAG-020:** Nvidia's Part IV Item 15 yields 61 chunks in the FY2026 10-K alone, all sharing one section label, so a section filter buys nothing there; one gold span (q003) already straddles two chunks, which is the case parent-child chunking exists to fix; and overlap is whole-line, so 398 of 1,179 boundaries get none (325 because the preceding line exceeds the 60-word budget, 73 because a table is never carried forward).
-- **Commits:** `6ec7cd3`
+- **Commits:** `6ec7cd3`, `b89bff6`
