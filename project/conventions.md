@@ -34,7 +34,7 @@
 
 ## Process (learned in this repo)
 
-- **Edit, then verify.** Any scripted edit to a document checks that the anchor text exists and reports which edits did not apply. Two commits once described changes that had silently failed; the fix is a helper that applies each edit independently and never claims success it did not check.
+- **Edit, then verify.** Scripted edits to documents go through `scripts/edit_docs.py`, which applies each edit independently, writes after each success, and prints which anchors it could not find. Two commits once described changes that had silently failed because an all-or-nothing helper discarded everything on one stale anchor. Read its PARTIAL lines before writing a commit message.
 - **Hashes must resolve.** After a reset, amend or rebase, every commit hash quoted in `project/tickets.md` is checked with `git cat-file -e`. A ticket once cited a discarded commit.
 - **Claims match measurements exactly.** Say "the ticker filter buys nothing", not "filtering buys nothing". A conclusion wider than its experiment is a bug and has to be corrected in a later ticket.
 - **Negative results are recorded with the same care as positive ones.** RAGAS not working, reranking making things worse, and parent-child losing to section-aware are all in the tradeoff pages with numbers, because the next reader will otherwise re-run them.

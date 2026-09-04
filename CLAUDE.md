@@ -83,6 +83,7 @@ The binding constraint moved twice: retrieval was the ceiling until hybrid fusio
 ./pyproject.toml
 ./scripts/check-commit-msg.sh
 ./scripts/draft_eval_questions.py
+./scripts/edit_docs.py
 ./src/quarterly_rag/__init__.py
 ./src/quarterly_rag/chunking/__init__.py
 ./src/quarterly_rag/chunking/base.py
@@ -215,7 +216,7 @@ See [project/conventions.md](project/conventions.md) for detailed conventions, i
 
 ## Working in this repo: lessons
 
-- **Measure before writing a number, and verify a claim before committing it.** Twice a commit message described documentation edits that had silently failed to apply. Apply edits one at a time, check the file afterwards, and never trust an all-or-nothing helper.
+- **Measure before writing a number, and verify a claim before committing it.** Twice a commit message described documentation edits that had silently failed to apply. Use `scripts/edit_docs.py`, which applies edits one at a time and reports which did not land, and read its output before writing the commit message.
 - **Check that every commit hash in `project/tickets.md` resolves** after any reset or amend. A ticket once pointed at a discarded commit.
 - **A generalised conclusion is a bug.** "Filtering buys nothing" was true of the ticker filter and false of the period filter, and it shipped as a general claim. State exactly what was measured.
 - **Fair comparisons need fair budgets.** A thinking-mode model scored 43% until `ANSWER_MAX_TOKENS` rose from 400 to 1024; a truncated answer scores as ungrounded.

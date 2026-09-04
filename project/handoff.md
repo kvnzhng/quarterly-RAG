@@ -30,7 +30,7 @@ The next ticket is **RAG-021, calculation provenance for derived numbers**. Then
 ## Rules that were learned the hard way
 
 - **Measure before writing a number.** Every number in `docs/` carries a run record. An estimate that ships as a fact gets corrected in a later commit, and that has happened.
-- **Verify a documentation edit landed before committing a message that says it did.** Use an edit helper that applies each change independently and reports failures; the pattern is in `project/conventions.md` under Process. Two commits once described changes that had silently failed.
+- **Verify a documentation edit landed before committing a message that says it did.** Use `scripts/edit_docs.py`: it applies each change independently, writes after each success, and prints which anchors it could not find. Two commits once described changes that had silently failed because an all-or-nothing helper discarded everything on one stale anchor.
 - **After any reset or amend, check every commit hash in `project/tickets.md` resolves** (`git cat-file -e <hash>^{commit}`).
 - **State exactly what was measured.** "The ticker filter buys nothing" was true; "filtering buys nothing" was not, and it shipped.
 - **Compare models at equal budgets.** `ANSWER_MAX_TOKENS` is 1024 because a thinking model at 400 scored 20 points low.
