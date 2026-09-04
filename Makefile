@@ -1,8 +1,8 @@
 .PHONY: setup lint fmt test test-all models langfuse-up langfuse-down eval
 
-setup:          ## Create venv, install deps, install git hooks
+setup:          ## Create venv, install deps, install git hooks (pre-commit + commit-msg)
 	uv sync
-	uv run pre-commit install
+	uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
 
 lint:           ## Lint and type-ish checks
 	uv run ruff check .

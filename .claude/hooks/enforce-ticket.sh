@@ -6,8 +6,16 @@
 # Read hook input from stdin
 INPUT=$(cat)
 
-# Extract the file path being edited
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.filePath // ""')
+# Extract the file path being edited (jq if present, python3 otherwise)
+if command -v jq >/dev/null 2>&1; then
+  FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.filePath // ""')
+elif command -v python3 >/dev/null 2>&1; then
+  FILE_PATH=$(echo "$INPUT" | python3 -c 'import json, sys
+tool_input = json.load(sys.stdin).get("tool_input") or {}
+print(tool_input.get("file_path") or tool_input.get("filePath") or "")')
+else
+  FILE_PATH=$(echo "$INPUT" | sed -nE 's/.*"(file_path|filePath)"[[:space:]]*:[[:space:]]*"([^"]*)".*/\2/p' | head -n 1)
+fi
 
 # If we can't determine the file path, allow
 if [ -z "$FILE_PATH" ]; then

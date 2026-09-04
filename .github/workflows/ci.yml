@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: astral-sh/setup-uv@v3
         with:
           enable-cache: true
@@ -21,3 +23,10 @@ jobs:
           uv run ruff format --check .
       - name: Unit tests
         run: uv run pytest
+      - name: Commit messages reference a ticket
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            scripts/check-commit-msg.sh --range "origin/${{ github.base_ref }}..HEAD"
+          else
+            git log -1 --format=%B | scripts/check-commit-msg.sh -
+          fi
