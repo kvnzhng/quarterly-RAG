@@ -9,6 +9,7 @@
 - 2026-09-03: `jq` on PATH comes from Anaconda (`/opt/homebrew/anaconda3/bin/jq`); the ticket hook depends on it.
 
 - 2026-09-03: Kevin runs a local AI server on the network; its address is given at RAG-002 start and lives in `.env` only. Provider choice is the user's (ADR-005).
+- 2026-09-04: Corpus v0 on disk: 8 filings per company for the two-year default window (AAPL FY2024 10-K to FY2026 Q3; NVDA FY2025 Q3 to FY2027 Q2), 19 MB of inline-XBRL HTML, 0.7 to 2.1 MB each. EDGAR's `size` field is the whole submission, not the primary document. Two-year default `--since` drifts with the calendar; RAG-019 pins accession numbers.
 - 2026-09-04: External review of the scaffold. Accepted: ship one thin end-to-end path before comparing tools; build the eval set right after parsing; label evidence as spans, not chunk ids; flag derived numbers and add calculation provenance; attach a run record to every number; make ticket enforcement portable; fix README tense and stale lines. Backlog reordered into phases, RAG-019 to RAG-023 added.
 
 ## Open Questions

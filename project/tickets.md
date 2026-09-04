@@ -13,13 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-003: SEC EDGAR filing downloader
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** grounding (the corpus is the ground truth)
-- **Description:** `rag ingest download --ticker AAPL --forms 10-Q,10-K --since 2023-01-01`. Resolve ticker to CIK via EDGAR, list filings from the submissions API, download the primary document, and write a manifest (`data/raw/<ticker>/manifest.json`) with accession number, form type, period of report, filing date, and source URL. Respect EDGAR fair-access rules (declared User-Agent, max 10 req/s).
-- **Done when:** Apple and Nvidia 10-Q/10-K filings for the last 8 quarters are on disk with a manifest, re-running is idempotent.
-
 ## Backlog
 
 ### Phase 1: one thin end-to-end path, measured
@@ -186,3 +179,12 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Dependencies added:** `anthropic` (official SDK for the `anthropic` provider: retries, typed errors, and it tracks API changes such as adaptive thinking and removed sampling parameters; a hand-rolled client would need re-verifying on every change). The OpenAI-compatible provider uses the existing `httpx`.
 - **Verified:** `rag doctor` and the live integration test pass against Ollama 0.32.13 on the network server (address in `.env`); cold chat 3.8 s, warm 242 ms; embeddings 768-dim. Not exercised: Ollama on this laptop (not installed). `make models` now pulls over Ollama's HTTP API so no local CLI is needed.
 - **Commits:** `b34731a`, `b17ae67`, `f0e9fb4`
+
+### RAG-003: SEC EDGAR filing downloader
+- **Type:** feat
+- **Created:** 2026-09-03 | **Completed:** 2026-09-04
+- **Competency:** grounding (the corpus is the ground truth)
+- **Description:** `rag ingest download --ticker AAPL --forms 10-Q,10-K --since 2023-01-01`. Resolve ticker to CIK via EDGAR, list filings from the submissions API, download the primary document, and write a manifest (`data/raw/<ticker>/manifest.json`) with accession number, form type, period of report, filing date, and source URL. Respect EDGAR fair-access rules (declared User-Agent, max 10 req/s).
+- **Done when:** Apple and Nvidia 10-Q/10-K filings for the last 8 quarters are on disk with a manifest, re-running is idempotent.
+- **Verified:** `rag ingest download --ticker AAPL --ticker NVDA` fetched 8 filings per company for the default two-year window (exactly eight quarters each, fiscal labels checked against the companies' own naming); the second run downloaded nothing and left both manifests byte-identical. Live EDGAR test in `tests/integration/`. `make test-all`: 72 passed.
+- **Commits:** `de44ec4`

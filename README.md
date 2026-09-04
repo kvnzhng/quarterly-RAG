@@ -112,7 +112,8 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 - [x] RAG-018 provider-agnostic model configuration
 - [x] RAG-022 / 023 portable ticket enforcement, docs match the plan
 - [x] RAG-002 model clients and `rag doctor`
-- [ ] RAG-003 / 004 EDGAR download and section parser
+- [x] RAG-003 EDGAR downloader with manifest
+- [ ] RAG-004 section parser
 - [ ] RAG-019 evaluation set v0 (evidence spans, question types)
 - [ ] RAG-005 / 006 v1 chunker, embeddings, Chroma, dense retrieval
 - [ ] RAG-008 retrieval metrics, run record, baseline
