@@ -13,16 +13,17 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-## Backlog
-
-### Phase 1: one thin end-to-end path, measured
-
 ### RAG-004: Filing parser with section detection
 - **Type:** feat
 - **Created:** 2026-09-03
 - **Competency:** grounding, chunking
 - **Description:** Convert filing HTML to clean text. Detect SEC items (Item 1, 1A Risk Factors, 2/7 MD&A, 3 Quantitative disclosures, 8 Financial Statements). Preserve tables as pipe-delimited text with a table marker. Emit `data/processed/<ticker>/<accession>.jsonl`, one record per section, with provenance fields (ticker, form, period, section, char offsets, source URL).
 - **Done when:** parser tests pass on one 10-Q and one 10-K per company, and a section coverage report shows every expected item was found.
+- **Dependencies added:** `beautifulsoup4` and `lxml` (HTML parsing; `lxml` is the fast, lenient tree builder these 1-2 MB inline-XBRL documents need). Both are runtime dependencies, not dev-only.
+
+## Backlog
+
+### Phase 1: one thin end-to-end path, measured
 
 ### RAG-019: Evaluation set v0 with evidence spans and question types
 - **Type:** feat

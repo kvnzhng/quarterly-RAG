@@ -6,6 +6,7 @@ An answer is grounded when every claim in it can be traced to a specific passage
 
 ## What this repo does
 
+- **Sections carry offsets into one canonical string**: the parser writes the normalized filing text next to the section records, and every offset (section, chunk, gold evidence span, citation) indexes into that same string (RAG-004).
 - **The corpus is reproducible**: `rag ingest download` writes `data/raw/<TICKER>/manifest.json` with accession number, form, period of report, fiscal period label, filing date, source URL, and byte count for every filing on disk, and re-running it is a no-op (RAG-003).
 - **Provenance is mandatory** on every `Chunk`: ticker, form type, fiscal period, filing date, SEC section, character offsets, and source URL (RAG-004).
 - **Chunk ids are visible to the model**: retrieved chunks are rendered as `[c17] ...text...` and the prompt requires inline citations per sentence (RAG-010).

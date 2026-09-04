@@ -13,7 +13,7 @@ Chunking decides the unit of retrieval and the unit of evidence. Too small and a
 | Section-aware | split within SEC Items only, never across | chunks are semantically coherent, section metadata is exact | uneven sizes, long sections still need sub-splitting |
 | Parent-child | retrieve small child chunks, return the parent section to the generator | precise retrieval and rich context | more complex, larger prompts |
 
-Tables get special handling: a table is never split, and its header row is repeated in every chunk that contains part of it.
+Tables get special handling: a table is never split, and its header row is repeated in every chunk that contains part of it. The parser (RAG-004) makes this possible by rendering each table as pipe-delimited rows between `[TABLE]` and `[/TABLE]` markers, with the header row labelled.
 
 ## What this repo does
 

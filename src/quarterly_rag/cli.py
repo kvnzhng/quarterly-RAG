@@ -15,6 +15,7 @@ from quarterly_rag.config import get_settings
 from quarterly_rag.doctor import failed, run_doctor
 from quarterly_rag.ingestion.download import DEFAULT_FORMS, download_filings
 from quarterly_rag.ingestion.edgar import EdgarClient, EdgarError
+from quarterly_rag.ingestion.records import parse_ticker
 
 app = typer.Typer(help="Local RAG over SEC 10-Q/10-K filings.", no_args_is_help=True)
 ingest = typer.Typer(help="Fetch and parse SEC filings.", no_args_is_help=True)
@@ -139,8 +140,65 @@ def ingest_download(
         raise typer.Exit(code=1)
 
 
+@ingest.command("parse")
+def ingest_parse(
+    ticker: Annotated[
+        list[str], typer.Option("--ticker", "-t", help="Ticker symbol; repeat for several.")
+    ],
+) -> None:
+    """Parse downloaded filings into sectioned JSONL with provenance and offsets."""
+    settings = get_settings()
+    failures = 0
+    for symbol in ticker:
+        try:
+            report = parse_ticker(settings, symbol)
+        except FileNotFoundError as exc:
+            console.print(f"[red]{escape(str(exc))}[/red]")
+            failures += 1
+            continue
+        table = Table(title=f"{report.ticker}: parsed filings")
+        table.add_column("form")
+        table.add_column("period")
+        table.add_column("sections", justify="right")
+        table.add_column("chars", justify="right")
+        table.add_column("coverage")
+        for result in report.results:
+            missing = result.coverage.missing
+            if not result.ok:
+                coverage = (
+                    "[red]missing "
+                    + ", ".join(f"{p}.{i}" for p, i in result.coverage.missing_critical)
+                    + "[/red]"
+                )
+            elif missing:
+                coverage = (
+                    "[yellow]all critical; absent: "
+                    + ", ".join(f"{p}.{i}" for p, i in missing)
+                    + "[/yellow]"
+                )
+            else:
+                coverage = "[green]complete[/green]"
+            table.add_row(
+                result.form,
+                result.period_label,
+                str(result.sections),
+                f"{result.chars:,}",
+                coverage,
+            )
+        for accession, message in report.errors:
+            table.add_row("", accession, "", "", f"[red]{escape(message)}[/red]")
+        console.print(table)
+        written = sum(1 for r in report.results if r.written)
+        console.print(
+            f"{len(report.results)} filings parsed, {written} written, "
+            f"{report.failures} failed -> {settings.processed_dir / report.ticker}"
+        )
+        failures += report.failures
+    if failures:
+        raise typer.Exit(code=1)
+
+
 # Planned subcommands (see project/tickets.md):
-#   rag ingest parse      RAG-004  filings -> sectioned text
 #   rag eval check        RAG-019  every gold evidence span resolves into the parsed filings
 #   rag index build       RAG-006  chunk + embed + store
 #   rag ask "..."         RAG-010  grounded answer or refusal

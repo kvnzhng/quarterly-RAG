@@ -64,9 +64,10 @@ uv run rag doctor    # endpoint reachable, models listed, one chat + one embeddi
 
 # 5. Corpus: the last two years of 10-Q / 10-K filings, about eight per company, with a manifest
 uv run rag ingest download --ticker AAPL --ticker NVDA
+uv run rag ingest parse --ticker AAPL --ticker NVDA   # -> sectioned JSONL with offsets
 ```
 
-Later tickets add `rag ingest parse`, `rag index`, `rag ask`, and `rag eval`. The commands are listed in `src/quarterly_rag/cli.py` as they are planned.
+Later tickets add `rag index`, `rag ask`, and `rag eval`. The commands are listed in `src/quarterly_rag/cli.py` as they are planned.
 
 ## Choosing a model provider
 
@@ -113,7 +114,7 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 - [x] RAG-022 / 023 portable ticket enforcement, docs match the plan
 - [x] RAG-002 model clients and `rag doctor`
 - [x] RAG-003 EDGAR downloader with manifest
-- [ ] RAG-004 section parser
+- [x] RAG-004 section parser
 - [ ] RAG-019 evaluation set v0 (evidence spans, question types)
 - [ ] RAG-005 / 006 v1 chunker, embeddings, Chroma, dense retrieval
 - [ ] RAG-008 retrieval metrics, run record, baseline
