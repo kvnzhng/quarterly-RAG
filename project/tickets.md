@@ -13,15 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-002: Model clients, `rag doctor`, and local model setup
-- **Type:** chore
-- **Created:** 2026-09-03
-- **Competency:** foundation
-- **Description:** Implement the `LLM` and `Embedder` protocols with the `openai_compatible` provider (Ollama and other local servers, plus hosted OpenAI-style APIs) and the `anthropic` provider (ADR-005). Add `rag doctor`: configured endpoint reachable, configured models listed by the server, one chat round-trip and one embedding call succeed, data dirs writable. `make models` pulls the default Ollama models for people running Ollama themselves (honours `OLLAMA_HOST` for a remote Ollama). Kevin's local AI server address is provided at ticket start and goes in `.env`, never in the repo.
-- **Done when:** `rag doctor` passes against a local Ollama and against a remote OpenAI-compatible server; unit tests mock the HTTP layer.
-- **Artifacts:** `docs/tradeoffs/llm-serving.md` first pass (which local models were tried and why), ADR-006 model selection.
-- **Dependencies added:** `anthropic` (official SDK for the `anthropic` provider: retries, typed errors, and it tracks API changes such as adaptive thinking and removed sampling parameters; a hand-rolled client would need re-verifying on every change). The OpenAI-compatible provider uses the existing `httpx`.
-
 ## Backlog
 
 ### Phase 1: one thin end-to-end path, measured
@@ -184,3 +175,14 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Description:** The review found the README describing planned work in the present tense, a duplicated clone command, a layout line naming "RAG-001 ... RAG-015", and a status list missing RAG-016 to RAG-018; `project/conventions.md` still says the provider is "Ollama today". Fix these, add the run-record requirement to conventions, and update ticket references in `docs/`, `README.md`, and package docstrings for the RAG-005/RAG-020 split and the new RAG-019 and RAG-021.
 - **Done when:** every ticket reference in `docs/` and `README.md` resolves to the right ticket and the README status list matches this file.
 - **Commits:** `8e81db6`
+
+### RAG-002: Model clients, `rag doctor`, and local model setup
+- **Type:** chore
+- **Created:** 2026-09-03 | **Completed:** 2026-09-04
+- **Competency:** foundation
+- **Description:** Implement the `LLM` and `Embedder` protocols with the `openai_compatible` provider (Ollama and other local servers, plus hosted OpenAI-style APIs) and the `anthropic` provider (ADR-005). Add `rag doctor`: configured endpoint reachable, configured models listed by the server, one chat round-trip and one embedding call succeed, data dirs writable. `make models` pulls the default Ollama models for people running Ollama themselves (honours `OLLAMA_HOST` for a remote Ollama). Kevin's local AI server address is provided at ticket start and goes in `.env`, never in the repo.
+- **Done when:** `rag doctor` passes against a local Ollama and against a remote OpenAI-compatible server; unit tests mock the HTTP layer.
+- **Artifacts:** `docs/tradeoffs/llm-serving.md` first pass (which local models were tried and why), ADR-006 model selection.
+- **Dependencies added:** `anthropic` (official SDK for the `anthropic` provider: retries, typed errors, and it tracks API changes such as adaptive thinking and removed sampling parameters; a hand-rolled client would need re-verifying on every change). The OpenAI-compatible provider uses the existing `httpx`.
+- **Verified:** `rag doctor` and the live integration test pass against Ollama 0.32.13 on the network server (address in `.env`); cold chat 3.8 s, warm 242 ms; embeddings 768-dim. Not exercised: Ollama on this laptop (not installed). `make models` now pulls over Ollama's HTTP API so no local CLI is needed.
+- **Commits:** `b34731a`, `b17ae67`, `f0e9fb4`

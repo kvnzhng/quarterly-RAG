@@ -9,20 +9,21 @@ Which chat model answers grounded questions about filings well enough, at zero c
 
 ## Candidates
 
-All local candidates are pulled by tag on Ollama; the hosted ones are reached through the same `LLM` protocol (ADR-005). Sizes are the default Ollama quantisation.
+The serving machine is an Ollama server on the local network that already holds a ladder from 8B to 32B, so the local comparison is not limited to laptop-sized models. Sizes are as reported by `ollama list` there (Q4_K_M unless noted). Hosted candidates go through the same `LLM` protocol (ADR-005). "Uncensored" community variants on the server are excluded.
 
 | Candidate | One-line description | License | Runs locally? |
 |---|---|---|---|
-| `llama3.1:8b` (default) | Meta 8B instruct, 128k context, the common baseline | Llama 3.1 community | yes, ~4.9 GB |
-| `qwen2.5:7b` | Alibaba 7B instruct, strong on structured and numeric text | Apache-2.0 | yes, ~4.7 GB |
-| `qwen3:8b` | Qwen3 8B with optional thinking mode | Apache-2.0 | yes, ~5.2 GB |
-| `mistral:7b` | Mistral 7B instruct v0.3 | Apache-2.0 | yes, ~4.1 GB |
-| `gemma3:12b` | Google 12B, 128k context | Gemma terms | yes, ~8.1 GB |
-| `phi4:14b` | Microsoft 14B, strong reasoning for its size | MIT | yes, ~9.1 GB |
+| `llama3.1:8b` (default) | Meta 8B instruct, 128k context, the common baseline | Llama 3.1 community | yes, 4.9 GB |
+| `gpt-oss:20b` | OpenAI open-weight 20.9B, MXFP4 | Apache-2.0 | yes, 13.8 GB |
+| `mistral-small:latest` | Mistral Small, 23.6B | Apache-2.0 | yes, 14.3 GB |
+| `gemma4:26b` | Google 25.8B | Gemma terms | yes, 18.0 GB |
+| `qwen3.6:27b` | Qwen 27.8B | see model card | yes, 17.4 GB |
+| `qwen3.8-27b-64k:latest` (also a 256k-context tag) | Qwen 27.3B, extended context | see model card | yes, 17.7 GB |
+| `deepseek-r1:32b` | DeepSeek reasoning model, 32.8B, slow by design | MIT | yes, 19.9 GB |
 | `claude-opus-5` | Anthropic frontier model via `LLM_PROVIDER=anthropic` | hosted, paid | no |
 | `claude-sonnet-5` | Anthropic mid-tier via `LLM_PROVIDER=anthropic` | hosted, paid | no |
 
-Tags and sizes are checked with `ollama list` on the serving machine before a candidate is measured; the table is updated then.
+Smaller alternatives that fit a laptop (`qwen2.5:7b`, `mistral:7b`, `gemma3:12b`, `phi4:14b`) are not on the server; pulling one is `make models` with `LLM_MODEL` set.
 
 ## Criteria
 
@@ -32,7 +33,7 @@ Tags and sizes are checked with `ollama list` on the serving machine before a ca
 | Faithfulness | RAG-012 judge: share of cited sentences entailed by their chunk | high |
 | Refusal calibration | RAG-011 abstention precision/recall on the `unanswerable` set at the chosen threshold | high |
 | Citation format compliance | share of answers whose `[c12]` citations parse and resolve (RAG-010 verifier) | medium |
-| Throughput | output tokens/s from `rag doctor` and the eval run, on the serving machine | medium |
+| Throughput | output tokens/s from the eval run, on the serving machine | medium |
 | Context window | must hold the grounded prompt with parent chunks (RAG-020); 32k or more preferred | medium |
 | Cost per eval run | tokens x price for hosted models; zero for local | low, but reported |
 
@@ -42,15 +43,18 @@ _Not yet measured. `rag doctor` at RAG-002 only proves the configured endpoint a
 
 ### Tried at RAG-002
 
-_Filled after the live `rag doctor` runs: which server, which models it lists, cold and warm chat latency for the default model._
+`rag doctor` on 2026-09-04, Ollama 0.32.13 on the network server, one-word chat reply and one short embedding. Cold means the model had to be loaded while a 27B model was resident; warm is the immediate second run.
 
 | Endpoint | Model | Chat latency (cold / warm) | Embedding dims | Notes |
 |---|---|---|---|---|
+| network Ollama server | `llama3.1:8b` | 3804 ms / 242 ms | | 11 models listed; `GET /v1/models` works |
+| network Ollama server | `nomic-embed-text` | 4351 ms / 38 ms (embedding call) | 768 | pulled onto the server between the first and second doctor run |
+| Ollama on this laptop | | not tried | | Ollama is not installed locally; `make models` no longer needs the CLI |
 
 ## Decision
 
-Pending. `llama3.1:8b` and `nomic-embed-text` stay the defaults (ADR-006) until the RAG-012 table shows a local candidate that beats them on correctness or faithfulness without losing refusal calibration.
+Pending. `llama3.1:8b` and `nomic-embed-text` stay the defaults (ADR-006) until the RAG-012 table shows a local candidate that beats them on correctness or faithfulness without losing refusal calibration. The 20B to 32B models on the server are the first ones to try.
 
 ## Interview one-liner
 
-The pipeline talks to models through two small interfaces, so swapping a local 8B model for a hosted frontier model is a `.env` change, and the eval set says exactly what that swap buys.
+The pipeline talks to models through two small interfaces, so swapping a local 8B model for a 27B one on the network or a hosted frontier model is a `.env` change, and the eval set says exactly what that swap buys.

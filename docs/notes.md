@@ -5,6 +5,7 @@
 ## Observations
 
 - 2026-09-03: Ollama is not installed yet; Docker is installed but was not running at init. Both are needed from RAG-002 / RAG-013 onward.
+- 2026-09-04: Models run on Kevin's network Ollama server (v0.32.13; address in `.env` only). It holds an 8B to 32B ladder (llama3.1:8b, gpt-oss:20b, mistral-small, gemma4:26b, qwen3.6:27b, qwen3.8-27b, deepseek-r1:32b), so local comparisons are not laptop-bound. There is no Ollama on the laptop; `make models` pulls over the HTTP API. Warm `rag doctor`: chat 242 ms, embedding 38 ms.
 - 2026-09-03: `jq` on PATH comes from Anaconda (`/opt/homebrew/anaconda3/bin/jq`); the ticket hook depends on it.
 
 - 2026-09-03: Kevin runs a local AI server on the network; its address is given at RAG-002 start and lives in `.env` only. Provider choice is the user's (ADR-005).
