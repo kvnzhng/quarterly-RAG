@@ -1,6 +1,6 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-024
+> Next ID: RAG-025
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
@@ -13,9 +13,12 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-## Backlog
-
-### Phase 1: one thin end-to-end path, measured
+### RAG-024: Section key renders Part IV as "Part IIII"
+- **Type:** fix
+- **Created:** 2026-09-04
+- **Competency:** grounding
+- **Description:** `Section.key` builds the roman numeral with `"I" * part`, so Part IV becomes `Part IIII`. It shows on every 10-K Item 15 and 16 record, which is where Nvidia files its consolidated financial statements. Section keys are the handle for gold evidence spans (RAG-019) and citations (RAG-010), so fix before eval data is generated against them.
+- **Done when:** `Part IV.Item 15` renders correctly, a test covers all four parts, and the corpus is re-parsed.
 
 ### RAG-019: Evaluation set v0 with evidence spans and question types
 - **Type:** feat
@@ -23,6 +26,10 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Competency:** retrieval quality, hallucination control, refusal
 - **Description:** Build `data/eval/questions.jsonl` before any chunker or index exists, so every later choice is measured against the same labels. Each record: `id`, `question`, `ticker`, `type` (`lookup` | `derived` | `cross_period` | `unanswerable`), `gold_answer`, and `evidence`: a list of spans `{accession, section, char_start, char_end}` into the RAG-004 output. Labels are spans, not chunk ids, so they survive a change of chunking strategy; a chunk counts as relevant when it overlaps a span. Start with 30 answerable questions (mostly `lookup`, a few `derived` and `cross_period`) and 10 `unanswerable` seeds across both companies. LLM-assisted drafting is fine; every record is human-verified against the filing. A loader and `rag eval check` verify that every span resolves to text in the processed filings and that the gold answer appears inside the evidence for `lookup` questions (test marked `integration` until sample filings are committed, see the open question in `docs/notes.md`).
 - **Done when:** `rag eval check` reports every span resolves, and the set is committed under `data/eval/`.
+
+## Backlog
+
+### Phase 1: one thin end-to-end path, measured
 
 ### RAG-005: Chunker protocol and v1 chunker
 - **Type:** feat

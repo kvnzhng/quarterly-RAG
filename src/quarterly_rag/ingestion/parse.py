@@ -37,6 +37,7 @@ _ITEM_HEADING = re.compile(
 _PART_LINE = re.compile(r"^part\s+(i{1,3}|iv)\b\s*(?P<rest>.*)$", re.I)
 _SIGNATURES = re.compile(r"^signatures?$", re.I)
 _ROMAN = {"i": 1, "ii": 2, "iii": 3, "iv": 4}
+ROMAN_NUMERALS = {1: "I", 2: "II", 3: "III", 4: "IV"}
 # What may follow a part number in a real heading: "PART II - OTHER INFORMATION".
 _PART_SEPARATORS = " \u2013\u2014\u2010-:."
 _PART_SEPARATOR_STRIP = re.compile(f"^[{re.escape(_PART_SEPARATORS)}]+")
@@ -105,7 +106,9 @@ class Section:
 
     @property
     def key(self) -> str:
-        return f"Part {'I' * self.part}.Item {self.item}" if self.part else f"Item {self.item}"
+        if not self.part:
+            return f"Item {self.item}"
+        return f"Part {ROMAN_NUMERALS[self.part]}.Item {self.item}"
 
 
 @dataclass(frozen=True)

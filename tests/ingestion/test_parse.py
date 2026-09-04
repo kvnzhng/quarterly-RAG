@@ -96,6 +96,25 @@ def test_tenk_covers_its_items_across_parts(tenk) -> None:
     assert coverage.unexpected == []
 
 
+def test_section_keys_use_real_roman_numerals() -> None:
+    # Part IV is where Nvidia files its consolidated financial statements, so "Part IIII"
+    # would be wrong on exactly the records that matter most.
+    html = (
+        "<html><body>"
+        "<div>Part I</div><div>Item 1. Business</div><div>a</div>"
+        "<div>Part II</div><div>Item 7. MD and A</div><div>b</div>"
+        "<div>Part III</div><div>Item 10. Directors</div><div>c</div>"
+        "<div>Part IV</div><div>Item 15. Exhibits and Schedules</div><div>d</div>"
+        "</body></html>"
+    )
+    assert [s.key for s in parse_filing(html).sections] == [
+        "Part I.Item 1",
+        "Part II.Item 7",
+        "Part III.Item 10",
+        "Part IV.Item 15",
+    ]
+
+
 def test_coverage_flags_a_missing_critical_item() -> None:
     parsed = parse_filing("<html><body><div>Item 9B. Other Information</div></body></html>")
     coverage = parsed.coverage("10-K")
