@@ -13,13 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-012: Faithfulness and end-to-end evaluation
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** hallucination control
-- **Description:** Add an LLM-as-judge faithfulness check (claims in answer entailed by cited context) using a local model, and compare against RAGAS. Add answer correctness against gold answers. `make eval` runs retrieval + generation evals and fails if scores regress below a stored baseline.
-- **Done when:** `docs/tradeoffs/evaluation.md` compares RAGAS vs custom judge, and `make eval` is wired into CI as an optional job.
-
 ## Backlog
 
 
@@ -269,3 +262,15 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Description:** The file tree in `CLAUDE.md` was hand-edited after each ticket and had drifted: four test files were missing and the ordering was inconsistent. Regenerate it from `git ls-files` so it cannot drift again.
 - **Done when:** every tracked path outside `reports/` and `notebooks/` appears exactly once, in a stable order.
 - **Commits:** `b7c68d3`
+
+### RAG-012: Faithfulness and end-to-end evaluation
+- **Type:** feat
+- **Created:** 2026-09-03 | **Completed:** 2026-09-04
+- **Competency:** hallucination control
+- **Description:** Add an LLM-as-judge faithfulness check (claims in answer entailed by cited context) using a local model, and compare against RAGAS. Add answer correctness against gold answers. `make eval` runs retrieval + generation evals and fails if scores regress below a stored baseline.
+- **Done when:** `docs/tradeoffs/evaluation.md` compares RAGAS vs custom judge, and `make eval` is wired into CI as an optional job.
+- **Verified:** `docs/tradeoffs/evaluation.md` compares the custom judge with RAGAS and `make eval` gates on `data/eval/baseline.json`, which is committed. `make test-all`: 331 passed.
+- **Judge calibration:** against the deterministic number verifier over 57 cited sentences, 86% agreement, 6 sentences where the judge was stricter and 2 where it was looser. That 25% miss rate on unverified sentences is reported beside every faithfulness number.
+- **RAGAS rejected on measurement:** 45 packages, uninstallable alongside langchain-community 0.4, and after pinning it back it scores faithful answers 0.0 and an unfaithful derived claim 1.0 with two different local judges. Removed rather than carried.
+- **CI caveat:** the ticket asked for `make eval` as an optional CI job. It calls a model, which a project principle forbids in CI, and GitHub's runners cannot reach the endpoint or the corpus. The job exists behind `workflow_dispatch`; in practice the gate is a local command.
+- **Commits:** `16ca8a7`, `b740d66`
