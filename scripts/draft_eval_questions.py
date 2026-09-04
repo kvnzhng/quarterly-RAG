@@ -355,7 +355,7 @@ questions = [
         ticker="NVDA",
         type="lookup",
         question="What are Nvidia's two reportable segments?",
-        gold_answer="Compute & Networking and Graphics",
+        gold_answer="the Compute & Networking segment and the Graphics segment",
         evidence=[
             span(
                 "NVDA",
@@ -366,7 +366,9 @@ questions = [
         ],
         note=(
             "The counterpart to q011. Apple splits by geography, Nvidia by product line, so a "
-            "question about 'segments' means different things per company."
+            "question about 'segments' means different things per company. The answer repeats the "
+            "word 'segment' on purpose: the ampersand inside 'Compute & Networking' makes a bare "
+            "list read as three items rather than two."
         ),
     ),
     EvalQuestion(
@@ -459,11 +461,14 @@ questions = [
         question="What were Apple's total net sales in the first quarter of fiscal 2025?",
         gold_answer="$124,300 million",
         evidence=[
-            table_span("AAPL", A_Q125, r"Total net sales \| \$124,300 \| \$119,575", lead_lines=2)
+            table_span("AAPL", A_Q125, r"Total net sales \| \$124,300 \| \$119,575", lead_lines=2),
+            span("AAPL", A_Q125, r"During the first quarter of 2025, the Company announced"),
         ],
         note=(
             "Apple's first fiscal quarter ends in late December, so this covers the 2024 holiday "
-            "season. A calendar-year filter would look in the wrong filing."
+            "season and a calendar-year filter would look in the wrong filing. The second span is "
+            "the filing naming its own quarter, which is what ties 'December 28, 2024' in the "
+            "table header to 'first quarter of fiscal 2025' in the question."
         ),
     ),
     EvalQuestion(
@@ -584,12 +589,15 @@ questions = [
                 r"Total operating expenses \| 19,075 \| 15,516 \| 56,350 \| 46,237\n"
                 r"Operating income \| 35,695 \| 28,202 \| 122,432 \| 100,623",
                 lead_lines=2,
-            )
+            ),
+            span("AAPL", A_Q326, r"During the third quarter of 2026, the Company announced"),
         ],
         note=(
-            "The figure is stated outright, so the arithmetic in the gold answer is a check on the "
-            "answer rather than the only route to it. A model that computes instead of reading "
-            "should still land on the same number."
+            "The figure is stated outright, so the arithmetic in the gold answer checks the answer "
+            "rather than being the only route to it. The first column is the three months ended "
+            "June 27, 2026; Apple's fiscal year ends in late September, so that quarter is fiscal "
+            "Q3 and not calendar Q2. The second span is the filing saying so in its own words, "
+            "which is what makes the label verifiable without knowing Apple's calendar."
         ),
     ),
     EvalQuestion(
