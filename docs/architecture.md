@@ -18,7 +18,10 @@ Each box is a package under `src/quarterly_rag/`. A layer may import from layers
 ## Data model (crosses every boundary)
 
 ```
-Chunk           id, text, ticker, form, fiscal_period, filing_date, section, char_start, char_end, source_url
+Chunk           chunk_id, strategy, text, word_count, contains_table, plus the section record's provenance
+                (ticker, cik, company, form, accession, filing_date, period_of_report, fiscal_year,
+                fiscal_quarter, period_label, part, item, section, title, source_url, text_path)
+                and char_start/char_end into the same <accession>.txt sections and gold spans use
 RetrievedChunk  Chunk + score + retriever ("dense" | "bm25" | "hybrid") + rank
 Answer          text, citations: list[Citation], unsupported_sentences: list[str], derived_numbers: list[DerivedNumber], confidence
 Citation        chunk_id, quote, char_start, char_end
@@ -38,7 +41,7 @@ Every row is a tradeoff page under `docs/tradeoffs/`. "Chosen" is provisional un
 |---|---|---|---|---|
 | Data source | SEC EDGAR HTML filings | XBRL financial data API, IR PDFs, transcripts | ADR-004 | RAG-003 |
 | Parsing | custom HTML -> sections (BeautifulSoup/lxml) | `sec-parser`, `edgartools`, unstructured | `parsing.md` | RAG-004 |
-| Chunking | fixed window within a section (v1) | recursive, section-aware with sub-splitting, parent-child, semantic | `chunking.md` | RAG-005, RAG-020 |
+| Chunking | fixed window of whole lines within a section, tables atomic (v1) | recursive, section-aware with sub-splitting, parent-child, semantic | `chunking.md` | RAG-005, RAG-020 |
 | Embeddings | `nomic-embed-text` via the configured embed endpoint (Ollama by default) | `bge-m3`, `all-MiniLM-L6-v2`, `e5` via sentence-transformers | `embeddings.md` | RAG-006 |
 | Vector store | ChromaDB | FAISS (flat, HNSW), LanceDB, Qdrant (docker), pgvector | `vector-stores.md` | RAG-007 |
 | Sparse retrieval | rank_bm25 | Elasticsearch/OpenSearch, SPLADE | `retrieval-strategies.md` | RAG-009 |

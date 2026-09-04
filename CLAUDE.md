@@ -60,6 +60,9 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./scripts/draft_eval_questions.py
 ./src/quarterly_rag/__init__.py
 ./src/quarterly_rag/chunking/__init__.py
+./src/quarterly_rag/chunking/base.py
+./src/quarterly_rag/chunking/build.py
+./src/quarterly_rag/chunking/fixed.py
 ./src/quarterly_rag/cli.py
 ./src/quarterly_rag/config.py
 ./src/quarterly_rag/doctor.py
@@ -100,7 +103,10 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./tests/ingestion/test_parse.py
 ./tests/ingestion/test_records.py
 ./tests/integration/test_live_doctor.py
+./tests/chunking/test_build.py
+./tests/chunking/test_fixed.py
 ./tests/evaluation/test_questions.py
+./tests/integration/test_live_chunks.py
 ./tests/integration/test_live_edgar.py
 ./tests/integration/test_live_eval_set.py
 ./tests/integration/test_live_parse.py
@@ -116,6 +122,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 - **Test:** `make test`
 - **Run CLI:** `uv run rag --help`
 - **Doctor:** `make doctor` or `uv run rag doctor` (configured endpoints, models, data dirs)
+- **Chunks:** `uv run rag chunk build --ticker AAPL --ticker NVDA` (sections into `data/chunks/<strategy>/`)
 - **Eval set:** `uv run rag eval check` (every gold evidence span still resolves)
 - **Corpus:** `uv run rag ingest download --ticker AAPL --ticker NVDA` then `rag ingest parse --ticker AAPL --ticker NVDA` (EDGAR into `data/raw/`, sections into `data/processed/`, both idempotent)
 - **Models:** `make models` (pulls Ollama models, RAG-002)

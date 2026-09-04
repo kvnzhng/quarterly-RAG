@@ -11,6 +11,7 @@ from rich.markup import escape
 from rich.table import Table
 
 from quarterly_rag import __version__
+from quarterly_rag.chunking.build import SMALL_CHUNK_WORDS, build_ticker
 from quarterly_rag.config import get_settings
 from quarterly_rag.doctor import failed, run_doctor
 from quarterly_rag.evaluation.questions import (
@@ -27,6 +28,8 @@ from quarterly_rag.ingestion.records import parse_ticker
 app = typer.Typer(help="Local RAG over SEC 10-Q/10-K filings.", no_args_is_help=True)
 ingest = typer.Typer(help="Fetch and parse SEC filings.", no_args_is_help=True)
 app.add_typer(ingest, name="ingest")
+chunk = typer.Typer(help="Build and inspect chunks.", no_args_is_help=True)
+app.add_typer(chunk, name="chunk")
 evaluate = typer.Typer(help="Evaluation sets and metrics.", no_args_is_help=True)
 app.add_typer(evaluate, name="eval")
 console = Console()
@@ -207,6 +210,74 @@ def ingest_parse(
         raise typer.Exit(code=1)
 
 
+@chunk.command("build")
+def chunk_build(
+    ticker: Annotated[
+        list[str], typer.Option("--ticker", "-t", help="Ticker symbol; repeat for several.")
+    ],
+    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = "fixed",
+) -> None:
+    """Split parsed sections into chunks under data/chunks/<strategy>/<TICKER>/."""
+    settings = get_settings()
+    failures = 0
+    for symbol in ticker:
+        try:
+            report = build_ticker(settings, symbol, strategy)
+        except (FileNotFoundError, ValueError) as exc:
+            console.print(f"[red]{escape(str(exc))}[/red]")
+            failures += 1
+            continue
+
+        table = Table(title=f"{report.ticker}: chunks, {report.strategy} strategy")
+        table.add_column("form")
+        table.add_column("period")
+        table.add_column("sections", justify="right")
+        table.add_column("chunks", justify="right")
+        table.add_column("state")
+        for filing in report.filings:
+            table.add_row(
+                filing.form,
+                filing.period_label,
+                str(filing.sections),
+                str(filing.chunks),
+                "written" if filing.written else "[dim]unchanged[/dim]",
+            )
+        for accession, message in report.errors:
+            table.add_row("", accession, "", "", f"[red]{escape(message)}[/red]")
+        console.print(table)
+
+        stats = report.stats
+        sizes = Table(
+            title=f"{report.ticker}: size distribution, target {report.target_words} words"
+        )
+        sizes.add_column("chunks", justify="right")
+        sizes.add_column("smallest", justify="right")
+        sizes.add_column("median", justify="right")
+        sizes.add_column("p90", justify="right")
+        sizes.add_column("largest", justify="right")
+        sizes.add_column(f"under {SMALL_CHUNK_WORDS}w", justify="right")
+        sizes.add_column("over target", justify="right")
+        sizes.add_column("with a table", justify="right")
+        sizes.add_row(
+            str(stats.count),
+            str(stats.smallest),
+            str(stats.median),
+            str(stats.p90),
+            str(stats.largest),
+            str(stats.small),
+            str(stats.oversized),
+            str(stats.with_table),
+        )
+        console.print(sizes)
+        console.print(
+            f"{report.written} of {len(report.filings)} files written -> "
+            f"{settings.chunk_dir / report.strategy / report.ticker}"
+        )
+        failures += len(report.errors)
+    if failures:
+        raise typer.Exit(code=1)
+
+
 @evaluate.command("check")
 def eval_check() -> None:
     """Verify every gold evidence span still resolves in the parsed filings."""
@@ -251,7 +322,7 @@ def eval_check() -> None:
 
 
 # Planned subcommands (see project/tickets.md):
-#   rag index build       RAG-006  chunk + embed + store
+#   rag index build       RAG-006  embed chunks + store
 #   rag ask "..."         RAG-010  grounded answer or refusal
 #   rag eval retrieval    RAG-008  recall@k / MRR / nDCG
 #   rag eval all          RAG-012  retrieval + faithfulness + abstention

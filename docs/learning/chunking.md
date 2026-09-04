@@ -17,11 +17,17 @@ Tables get special handling: a table is never split, and its header row is repea
 
 ## What this repo does
 
-Chunkers implement one `Chunker` protocol. The first chunker (RAG-005) is deliberately simple: a fixed token window inside each parsed section, so the end-to-end path and its baseline numbers exist before any chunking is optimised. RAG-020 adds the other strategies and a harness that reports chunk count, size distribution, and how often a chunk crosses a section boundary. Every strategy is scored on the same eval set (RAG-019 labels, RAG-008 metrics); because the labels are evidence spans rather than chunk ids, re-chunking never invalidates them. The chunking decision is made on recall@k and answer faithfulness, not on intuition.
+Chunkers implement one `Chunker` protocol. The first chunker (RAG-005) is deliberately simple: a fixed window of whole lines inside each parsed section, so the end-to-end path and its baseline numbers exist before any chunking is optimised. RAG-020 adds the other strategies and a harness that reports chunk count, size distribution, and how often a chunk crosses a section boundary. Every strategy is scored on the same eval set (RAG-019 labels, RAG-008 metrics); because the labels are evidence spans rather than chunk ids, re-chunking never invalidates them. The chunking decision is made on recall@k and answer faithfulness, not on intuition.
 
 ## Measured
 
-_Fill in from `docs/tradeoffs/chunking.md`._
+The v1 fixed-window chunker (RAG-005) over the 16-filing corpus, target 350 words, overlap 60:
+
+| Chunks | Median | p90 | Largest | Under 50 words | Over target | Holding a table |
+|---|---|---|---|---|---|---|
+| 1,391 | 304 | 347 | 809 | 78 | 61 | 473 |
+
+Every chunk resolves back into the filing text it came from, none crosses an Item boundary, and none holds half a table. The 61 oversized chunks are all a single table kept whole. Full numbers and what they say about the corpus: `docs/tradeoffs/chunking.md`. The strategy comparison is RAG-020.
 
 ## Talking points
 
@@ -29,6 +35,8 @@ _Fill in from `docs/tradeoffs/chunking.md`._
 - Overlap is a band-aid for boundary problems; structure-aware splitting is the real fix when structure exists.
 - Why financial tables need different treatment than prose.
 - Small-to-big (parent-child) as the usual production answer, and its cost.
+- Chunk sizes here are counted in whitespace words, not model tokens. A word averages 6.4 characters on this corpus and a subword tokenizer splits a figure like `$109,417` into several tokens, so the two numbers are not interchangeable and the code does not pretend otherwise.
+- Every chunk's offsets point into the same filing text the gold evidence spans do, so re-chunking re-scores against the same labels instead of invalidating them.
 
 ## Reading
 

@@ -13,16 +13,16 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-## Backlog
-
-### Phase 1: one thin end-to-end path, measured
-
 ### RAG-005: Chunker protocol and v1 chunker
 - **Type:** feat
 - **Created:** 2026-09-03
 - **Competency:** chunking
 - **Description:** Define the `Chunker` protocol and the `Chunk` model with mandatory provenance (ticker, form, period, section, char offsets, source URL). Implement one chunker: a fixed token window with overlap applied within each RAG-004 section record, so no chunk crosses an Item boundary and a table is never split. Report chunk count and size distribution. The other strategies and the comparison are RAG-020.
 - **Done when:** chunks from one 10-Q round-trip to JSONL with provenance intact, offsets map back into the section text, and unit tests cover the boundary and table rules.
+
+## Backlog
+
+### Phase 1: one thin end-to-end path, measured
 
 ### RAG-006: Embeddings, VectorStore interface, ChromaDB adapter, dense retrieval
 - **Type:** feat

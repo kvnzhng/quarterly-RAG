@@ -36,6 +36,7 @@ build/
 data/raw/*
 data/processed/*
 data/indexes/*
+data/chunks/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/indexes/.gitkeep

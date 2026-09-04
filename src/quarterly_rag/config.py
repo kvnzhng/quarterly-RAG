@@ -45,6 +45,12 @@ class Settings(BaseSettings):
         description="Per-request timeout. A cold local model can take a minute to load.",
     )
 
+    # --- Chunking ---------------------------------------------------------------
+    # Sizes are whitespace words, not model tokens: a word here averages 6.4 characters on
+    # this corpus and a BPE tokenizer splits figures like `$109,417` into several tokens.
+    chunk_words: int = 350
+    chunk_overlap_words: int = 60
+
     # --- Vector store -----------------------------------------------------------
     vector_store: Literal["chroma", "faiss"] = "chroma"
 
@@ -77,6 +83,10 @@ class Settings(BaseSettings):
     @property
     def eval_dir(self) -> Path:
         return self.data_dir / "eval"
+
+    @property
+    def chunk_dir(self) -> Path:
+        return self.data_dir / "chunks"
 
     def model_label(self) -> str:
         """Provider + model, for eval reports and traces (e.g. 'openai_compatible/llama3.1:8b')."""

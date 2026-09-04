@@ -7,7 +7,7 @@ Use `_template.md` for new pages.
 | Page | Question | Status | Ticket |
 |---|---|---|---|
 | `parsing.md` | custom parser vs sec-parser vs edgartools vs unstructured | **decided** | RAG-004 |
-| `chunking.md` | fixed vs recursive vs section-aware vs parent-child | draft | RAG-020 |
+| `chunking.md` | fixed vs recursive vs section-aware vs parent-child | draft (v1 built and measured) | RAG-005, RAG-020 |
 | `embeddings.md` | nomic-embed-text vs bge-m3 vs MiniLM | draft | RAG-006 |
 | `vector-stores.md` | ChromaDB vs FAISS (vs LanceDB / Qdrant / pgvector) | draft | RAG-007 |
 | `retrieval-strategies.md` | dense vs BM25 vs hybrid vs hybrid+rerank | draft | RAG-009 |
