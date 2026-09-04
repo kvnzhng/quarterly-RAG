@@ -13,13 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-010: Grounded answer generation with verified citations
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** grounding, hallucination control
-- **Description:** Prompt the LLM with retrieved chunks tagged by id and require inline citations `[c12]`. Post-process: every claim sentence must carry a citation that maps to a retrieved chunk. Numbers are checked against the cited chunk after parsing and unit scaling (thousands / millions / billions, rounding tolerance): a number found in the chunk is `verified`; one not found is marked `derived, unverified` and the answer says so, instead of being silently passed or hard-failed. Calculation provenance for derived numbers is RAG-021. Return a structured `Answer {text, citations, unsupported_sentences, derived_numbers}`. v1 targets `lookup` questions from RAG-019; `derived` and `cross_period` results are reported separately.
-- **Done when:** `rag ask "What was Apple's Q2 FY24 revenue?"` returns an answer whose citations resolve to real chunks, unsupported sentences and derived numbers are flagged rather than silently returned, and baseline citation-resolution and number-match rates by question type are in `docs/learning/grounding.md`.
-
 ## Backlog
 
 ### Phase 1: one thin end-to-end path, measured
@@ -214,3 +207,15 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Baseline:** context variant recall@5 36.4%, MRR 0.267, nDCG@5 0.232; raw variant 18.2%, 0.131, 0.096.
 - **Findings for RAG-009:** the near-miss ladder shows retrieval reaching the right filing 90.9% of the time, the right section 63.6%, and the right chunk 36.4%, so the loss is inside the document and metadata filtering would buy little. All seven 10-Q questions score 0.0% against 46.2% for 10-K, because retrieval returns the management discussion of a filing instead of its condensed financial statements. Both point at exact-term matching (BM25) and reranking.
 - **Commits:** `81a7c67`
+
+### RAG-010: Grounded answer generation with verified citations
+- **Type:** feat
+- **Created:** 2026-09-03 | **Completed:** 2026-09-04
+- **Competency:** grounding, hallucination control
+- **Description:** Prompt the LLM with retrieved chunks tagged by id and require inline citations `[c12]`. Post-process: every claim sentence must carry a citation that maps to a retrieved chunk. Numbers are checked against the cited chunk after parsing and unit scaling (thousands / millions / billions, rounding tolerance): a number found in the chunk is `verified`; one not found is marked `derived, unverified` and the answer says so, instead of being silently passed or hard-failed. Calculation provenance for derived numbers is RAG-021. Return a structured `Answer {text, citations, unsupported_sentences, derived_numbers}`. v1 targets `lookup` questions from RAG-019; `derived` and `cross_period` results are reported separately.
+- **Done when:** `rag ask "What was Apple's Q2 FY24 revenue?"` returns an answer whose citations resolve to real chunks, unsupported sentences and derived numbers are flagged rather than silently returned, and baseline citation-resolution and number-match rates by question type are in `docs/learning/grounding.md`.
+- **Verified:** `rag ask` returns an answer whose citations resolve to passages that were actually provided, with unsupported sentences and unverified figures labelled inline. Baselines by question type are in `docs/learning/grounding.md`. `make test-all`: 209 passed.
+- **Baseline (23 lookup questions, prompt v1):** `gpt-oss:20b` on gold passages, citations resolve 100%, fully grounded 91%, states the gold figure 77%; on retrieved passages, 100% / 87% / 67% with 35% refused. `llama3.1:8b` on gold passages, 50% / 41% / 95%.
+- **Finding:** citation discipline is a model capability. The 8B default invents passage labels in half its answers while being the best of three at finding the right figure. ADR-006 amended; `docs/tradeoffs/llm-serving.md` has the table. Set `LLM_MODEL=gpt-oss:20b` on hardware with room.
+- **Known limit:** the verifier checks whether a figure is *present* in the cited passage, not whether the claim about it is true, so a wrong-column figure passes. RAG-021 recomputes derived numbers from their operands.
+- **Commits:** `5c11778`
