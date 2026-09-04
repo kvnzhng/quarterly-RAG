@@ -115,7 +115,7 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 - [x] RAG-002 model clients and `rag doctor`
 - [x] RAG-003 EDGAR downloader with manifest
 - [x] RAG-004 section parser
-- [ ] RAG-019 evaluation set v0 (evidence spans, question types)
+- [x] RAG-019 evaluation set v0 (43 questions, evidence spans, question types)
 - [ ] RAG-005 / 006 v1 chunker, embeddings, Chroma, dense retrieval
 - [ ] RAG-008 retrieval metrics, run record, baseline
 - [ ] RAG-010 / 011 grounded generation and refusal
