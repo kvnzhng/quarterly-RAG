@@ -69,7 +69,17 @@ Retrieval almost always finds the right document and then loses inside it. Filte
 
 Not one of the seven quarterly questions found its evidence. Every one of them asks for a figure that lives in the condensed financial statements, and retrieval returned the management discussion of the same filing instead: prose that talks about the number, ranked above the table that contains it. Two consequences. Answer quality on quarterly questions is currently capped at zero, and the fix is exact-term matching, since `109,417` and `Total net sales` are strings that BM25 handles and embeddings do not (RAG-009).
 
-_Fill in: baseline table with its run record (commit, corpus hash, chunker, embedding model, k) from RAG-008, then the best configuration from `docs/tradeoffs/retrieval-strategies.md` and `vector-stores.md`._
+### Where retrieval ended up
+
+The final default, after RAG-009, RAG-026 and RAG-020, on the same 33 questions:
+
+| Configuration | recall@1 | recall@3 | recall@5 | recall@10 | MRR | nDCG@5 |
+|---|---|---|---|---|---|---|
+| dense, fixed chunks (RAG-008 baseline) | 18.2% | 30.3% | 36.4% | 45.5% | 0.266 | 0.232 |
+| hybrid + quarter filter, fixed chunks | 21.2% | 33.3% | 48.5% | 51.5% | 0.306 | 0.282 |
+| **hybrid + quarter filter, section-aware chunks** | **39.4%** | **45.5%** | 48.5% | **57.6%** | **0.440** | **0.406** |
+
+recall@1 more than doubled and MRR rose 65% from the baseline, while recall@5 moved 12 points. Retrieval improved most in *where* the evidence lands, which is what the generator reads first. The remaining ceiling is real: recall@20 is 72.7%, so about a quarter of questions have evidence neither ranking nor chunking reaches.
 
 ## Talking points
 

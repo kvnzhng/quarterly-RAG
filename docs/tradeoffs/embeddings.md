@@ -1,6 +1,6 @@
 # Embeddings: which model, and what text to embed
 
-**Status:** draft. The v1 embedder is measured and two variants are built (RAG-006); the model comparison is RAG-008.
+**Status:** the embed-text question is decided (task prefixes on, provenance header on); the model comparison was never run and `nomic-embed-text` stays by default rather than by measurement
 **Ticket:** RAG-006, RAG-008
 
 ## Question

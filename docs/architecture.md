@@ -35,29 +35,30 @@ Every eval report embeds a `RunRecord`; every number quoted in `docs/` points at
 
 ## Component choices and alternatives
 
-Every row is a tradeoff page under `docs/tradeoffs/`. "Chosen" is provisional until the page has numbers.
+Every row is a tradeoff page under `docs/tradeoffs/`. A row is **decided** once the page has numbers from this corpus and an ADR records the choice.
 
-| Layer | Chosen (provisional) | Alternatives to compare | Tradeoff page | Ticket |
+| Layer | Decision | Status | Alternatives measured or noted | Page |
 |---|---|---|---|---|
-| Data source | SEC EDGAR HTML filings | XBRL financial data API, IR PDFs, transcripts | ADR-004 | RAG-003 |
-| Parsing | custom HTML -> sections (BeautifulSoup/lxml) | `sec-parser`, `edgartools`, unstructured | `parsing.md` | RAG-004 |
-| Chunking | fixed window of whole lines within a section, tables atomic (v1) | recursive, section-aware with sub-splitting, parent-child, semantic | `chunking.md` | RAG-005, RAG-020 |
-| Embeddings | `nomic-embed-text` via the configured embed endpoint (Ollama by default) | `bge-m3`, `all-MiniLM-L6-v2`, `e5` via sentence-transformers | `embeddings.md` | RAG-006 |
-| Vector store | ChromaDB | FAISS (flat, HNSW), LanceDB, Qdrant (docker), pgvector | `vector-stores.md` | RAG-007 |
-| Sparse retrieval | rank_bm25 | Elasticsearch/OpenSearch, SPLADE | `retrieval-strategies.md` | RAG-009 |
-| Reranker | `bge-reranker-base` (cross-encoder) | ColBERT, LLM rerank, none | `retrieval-strategies.md` | RAG-009 |
-| LLM | any OpenAI-compatible server, Ollama `llama3.1:8b` by default | other local 7B-8B models; hosted OpenAI-compatible or Anthropic API on the same eval set | `llm-serving.md` | RAG-002 |
-| Orchestration | plain Python + LangChain components | full LangChain/LCEL, LlamaIndex, Haystack, LangGraph | `orchestration.md` | RAG-010 |
-| Evaluation | span-labeled eval set, custom metrics + local LLM judge | RAGAS, DeepEval, TruLens | `evaluation.md` | RAG-019, RAG-008, RAG-012 |
-| Observability | Langfuse (self-hosted) | Arize Phoenix, MLflow tracing, OpenTelemetry only | `observability.md` | RAG-013 |
-| Serving | FastAPI + Streamlit | Gradio, Chainlit | - | RAG-014 |
+| Data source | SEC EDGAR primary documents, 8 quarters per company | decided, ADR-004 | XBRL facts, IR PDFs, transcripts (out of scope) | ADR-004 |
+| Parsing | custom block-boundary parser (BeautifulSoup/lxml) | decided, ADR-007 | `sec-parser`, `edgartools`, `unstructured` (not benchmarked; coverage was full first time) | `parsing.md` |
+| Chunking | section-aware: cut on the filing's own sub-headings | decided, ADR-009 | fixed, recursive, parent-child (all measured) | `chunking.md` |
+| Embeddings | `nomic-embed-text` with task prefixes, provenance header prepended | provisional, ADR-006 | other models not yet measured; the two embed-text variants were | `embeddings.md` |
+| Vector store | ChromaDB | decided, ADR-010 | FAISS flat and HNSW (measured, kept for scale) | `vector-stores.md` |
+| Retrieval | hybrid dense+BM25, RRF, ticker and quarter filters | decided, ADR-008 | dense, BM25, no filter, LLM rerank (all measured; rerank is off) | `retrieval-strategies.md` |
+| Reranker | none by default; LLM reranker available | decided, ADR-008 | cross-encoder deferred: 2 GB dependency for a gain that shows at k=1, not k=5 | `retrieval-strategies.md` |
+| LLM | `llama3.1:8b` default for laptops; `qwen3.8-27b` recommended | provisional, ADR-006 | four local models measured on citation discipline and correctness | `llm-serving.md` |
+| Orchestration | plain Python; no LangChain anywhere | in practice decided | LangChain, LlamaIndex, Haystack, LangGraph | `orchestration.md` (draft) |
+| Evaluation | span-labelled eval set, deterministic figure check, cross-model judge | decided | RAGAS (measured, anti-correlated, rejected) | `evaluation.md` |
+| Observability | Langfuse (self-hosted) | planned | Arize Phoenix, MLflow tracing | `observability.md` (draft) |
+| Serving | FastAPI + Streamlit | planned | Gradio, Chainlit | RAG-014 |
 
-## Request flow for `rag ask`
+## Request flow for `rag ask` (as built, `pipeline.py`)
 
-1. Parse question -> optional metadata filters (ticker, fiscal period, section hints).
-2. Retrieve top-k from dense and BM25, fuse with reciprocal rank fusion, rerank.
-3. Refusal gate, stage 1: if best rerank score < threshold or filters match nothing -> `Refusal(low_confidence | out_of_scope)`.
-4. Generate with a grounded prompt: chunks tagged `[c<id>]`, instructions to cite every sentence and to answer "insufficient evidence" when needed.
-5. Verify: every sentence has a citation resolving to a retrieved chunk; numbers in the sentence appear in the cited chunk after unit normalisation. A number that does not is flagged as derived and unverified (RAG-010); derived numbers are later recomputed from their cited operands (RAG-021).
-6. Refusal gate, stage 2: generator said insufficient evidence, or verification failed for the core claim -> `Refusal(insufficient_evidence | verification_failed)`.
-7. Return `Answer` with citations and any flagged unsupported sentences. Everything is traced to Langfuse.
+1. **Scope check, before any model call.** A company the corpus does not hold, a fiscal year before the corpus, or a question filings never answer (advice, live prices, transcripts) -> `Refusal(out_of_scope)`.
+2. **Read the question** for a company and a fiscal period (`retrieval/query.py`). One named company becomes a ticker filter; a named quarter becomes a period filter; a bare year is never filtered, because filings quote prior years.
+3. **Retrieve** the top 50 from dense search and from BM25 (which indexes the chunk plus its provenance header and sees the question expanded with `FY2026 Q3`-style terms), fuse by reciprocal rank, keep 5. A filter that empties the result falls back to no filter.
+4. **Retrieval gate.** `MIN_RETRIEVAL_SCORE` is 0 by default: the sweep showed the threshold is worse than useless on this corpus. Kept as a setting.
+5. **Generate** with passages tagged `[c1]`..`[c5]`; the prompt requires a citation on every sentence and the sentinel `INSUFFICIENT_EVIDENCE` when the passages do not answer.
+6. **Verify deterministically.** Each sentence must cite a passage that was actually provided; each figure must appear in the cited passage after unit scaling. A figure that does not is labelled `derived, unverified`, not rejected. RAG-021 will recompute those from their operands.
+7. **Answer gate.** The sentinel -> `Refusal(insufficient_evidence)`; no resolvable citation anywhere -> `Refusal(verification_failed)`.
+8. **Return** the `Answer` with citations and inline markers, or the `Refusal` with its reason and the closest passages. Tracing to Langfuse is RAG-013.

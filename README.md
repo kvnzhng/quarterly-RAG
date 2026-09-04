@@ -4,9 +4,9 @@
 
 > Local, open-source Retrieval-Augmented Generation over SEC quarterly and annual filings (10-Q, 10-K), built to learn and demonstrate what "shipping a production RAG system" actually requires: **grounding, chunking, retrieval quality, hallucination control, and knowing when to refuse to answer.**
 
-The plan keeps everything on a laptop with no paid API: Ollama for the LLM and embeddings, ChromaDB and FAISS for vectors, Langfuse self-hosted for traces. The model provider is your choice: point it at a model server on your network or at a hosted API by editing `.env`.
+Everything runs on a laptop with no paid API: Ollama for the LLM and embeddings, ChromaDB for vectors, a local model as the judge. The model provider is your choice: point it at a model server on your network or at a hosted API by editing `.env`.
 
-**Current state:** scaffolding, tooling, and the roadmap. The pipeline itself starts with RAG-002; see [Status](#status).
+**Current state:** the pipeline answers questions from the filings or refuses with a reason, and every layer is measured against a 63-question human-verified eval set. Ten decisions are recorded as ADRs, each backed by a tradeoff page with numbers. See [Results so far](#results-so-far) and [Status](#status).
 
 ## Why filings?
 
@@ -16,15 +16,13 @@ Starting companies: **Apple (AAPL)** and **Nvidia (NVDA)**. Adding a ticker is a
 
 ## The five competencies and where they live
 
-This table is the plan, not a feature list. Each row becomes true when its tickets close.
-
-| Competency | What the project will do | Where to look |
+| Competency | What the project does | Where to look |
 |---|---|---|
 | Grounding | Every chunk carries ticker, form, period, section, and offsets. Every answer sentence cites a chunk id that is verified to exist and to contain the quoted numbers. | `docs/learning/grounding.md`, RAG-004, RAG-010 |
-| Chunking | One simple chunker first, then fixed, recursive, section-aware, and parent-child compared on retrieval metrics, not on intuition. | `docs/learning/chunking.md`, `docs/tradeoffs/chunking.md`, RAG-005, RAG-020 |
-| Retrieval quality | Human-verified eval set labeled with evidence spans, so the labels survive a change of chunker. recall@k, MRR, nDCG with a run record on every number. Dense vs BM25 vs hybrid vs hybrid + reranker. Chroma vs FAISS benchmark. | `docs/learning/retrieval-quality.md`, `docs/tradeoffs/vector-stores.md`, RAG-019, RAG-006 to RAG-009 |
-| Hallucination control | Citation verification, number matching after unit normalisation with derived numbers flagged, calculation provenance for arithmetic, LLM-as-judge faithfulness compared with RAGAS, regression gate in CI. | `docs/learning/hallucination-control.md`, RAG-010, RAG-012, RAG-021 |
-| Refusal | Explicit refusal gate with reasons (low retrieval confidence, out of scope, insufficient evidence, failed verification) and an unanswerable eval set measuring abstention precision/recall. | `docs/learning/refusal.md`, RAG-011 |
+| Chunking | Four chunkers compared on the same labels. Cutting on the filing's own sub-headings nearly doubled recall@1 and is the default. | `docs/learning/chunking.md`, `docs/tradeoffs/chunking.md`, RAG-005, RAG-020 |
+| Retrieval quality | Human-verified eval set labelled with evidence spans, so the labels survive a change of chunker. recall@k, MRR, nDCG with a run record on every number. Hybrid dense+BM25 with a fiscal-quarter filter is the default; reranking was measured and made things worse; FAISS was measured and is 3% of a retrieval. | `docs/learning/retrieval-quality.md`, `docs/tradeoffs/vector-stores.md`, RAG-019, RAG-006 to RAG-009 |
+| Hallucination control | Every sentence checked against the passage it cites; figures matched after unit scaling, with derived figures flagged; a cross-model judge calibrated against that check; RAGAS measured and rejected; a regression gate with a committed baseline. Calculation provenance is next (RAG-021). | `docs/learning/hallucination-control.md`, RAG-010, RAG-012, RAG-021 |
+| Refusal | A gate with four named reasons and 30 questions that must be refused. Abstention recall 93%, one leak. The retrieval-score threshold turned out to be worse than useless and is off. | `docs/learning/refusal.md`, RAG-011 |
 
 ## Architecture
 
@@ -74,7 +72,7 @@ uv run rag eval refusal                    # -> abstention precision/recall and 
 make eval                                  # -> every metric against data/eval/baseline.json
 ```
 
-Later tickets add `rag index`, `rag ask`, and `rag eval`. The commands are listed in `src/quarterly_rag/cli.py` as they are planned.
+`rag --help` lists every command; each ticket's Verified line in `project/tickets.md` says what it was run against.
 
 ## Choosing a model provider
 
@@ -110,6 +108,23 @@ notebooks/           exploration only
 ## Workflow
 
 Work is ticket-driven. Each change references a ticket (`feat(retrieval): add BM25 (RAG-009)`). `make setup` installs a `commit-msg` hook that rejects messages without one, CI runs the same check over every push and pull request, and a Claude Code edit hook blocks edits with no active ticket. `AGENTS.md` is a symlink to `CLAUDE.md` so Codex follows the same rules. See `CLAUDE.md`.
+
+## Results so far
+
+Default configuration, 33 answerable and 30 unanswerable questions, `gpt-oss:20b` answering and `qwen3.8-27b` judging, measured 2026-09-04. These are the numbers `make eval` gates against.
+
+| What | Value | Where it comes from |
+|---|---|---|
+| Retrieval recall@5 | 48.5% | hybrid + quarter filter, section-aware chunks (`docs/tradeoffs/retrieval-strategies.md`, `chunking.md`) |
+| Retrieval MRR | 0.440 | same |
+| Citations that resolve | 100% | every sentence checked against the passage it cites (`docs/learning/grounding.md`) |
+| Answers fully grounded | 87.5% | end to end, with retrieval's misses inside the number |
+| Judged correct | 93.8% | cross-model judge (`docs/tradeoffs/evaluation.md`) |
+| Faithfulness | 75% | same judge, reported with its 25% miss rate on unverified figures |
+| Abstention F1 | 0.812 | 30 must-refuse questions, one leak (`docs/learning/refusal.md`) |
+| Answerable coverage | 66.7% | bounded by retrieval, not by the gate |
+
+The largest single levers, in the order they were found: the embedding model's task prefixes (a third of recall), a provenance header on each chunk (doubled recall), fusion of dense and keyword search (+9 points at k=5), the fiscal-quarter filter (quarterly questions off zero), and cutting chunks on the filing's own sub-headings (recall@1 doubled). What did not work is recorded with the same care: reranking, the retrieval-score threshold, RAGAS.
 
 ## Status
 

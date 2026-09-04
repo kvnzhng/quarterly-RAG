@@ -1,6 +1,6 @@
 # LLM serving: which local model, and local vs hosted
 
-**Status:** draft (candidates and criteria set at RAG-002; numbers arrive with RAG-010 and RAG-012)
+**Status:** decided for local models (ADR-006, amended by RAG-010 and RAG-025); a hosted model has not been measured
 **Ticket:** RAG-002, RAG-012
 
 ## Question

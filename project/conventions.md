@@ -32,6 +32,15 @@
   - Always include ticket ID; `scripts/check-commit-msg.sh` enforces it as a `commit-msg` hook (installed by `make setup`) and in CI
 - **Branching:** Create a branch per ticket for non-trivial work
 
+## Process (learned in this repo)
+
+- **Edit, then verify.** Any scripted edit to a document checks that the anchor text exists and reports which edits did not apply. Two commits once described changes that had silently failed; the fix is a helper that applies each edit independently and never claims success it did not check.
+- **Hashes must resolve.** After a reset, amend or rebase, every commit hash quoted in `project/tickets.md` is checked with `git cat-file -e`. A ticket once cited a discarded commit.
+- **Claims match measurements exactly.** Say "the ticker filter buys nothing", not "filtering buys nothing". A conclusion wider than its experiment is a bug and has to be corrected in a later ticket.
+- **Negative results are recorded with the same care as positive ones.** RAGAS not working, reranking making things worse, and parent-child losing to section-aware are all in the tradeoff pages with numbers, because the next reader will otherwise re-run them.
+- **A comparison is only fair at equal budgets.** Check `ANSWER_MAX_TOKENS` and the like before concluding a model is worse; a truncated answer scores as ungrounded.
+- **Every ticket closes with a Verified line** naming what was actually run, what was not, and the commit hashes, so the ticket file is a record and not a plan.
+
 ## Code Quality
 
 - Re-read code before committing

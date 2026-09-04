@@ -1,6 +1,6 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-028
+> Next ID: RAG-029
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
@@ -12,6 +12,13 @@ against that baseline. Phase 3 is production readiness and the writeup.
 Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
+
+### RAG-028: Document the state of the project and write the handoff
+- **Type:** docs
+- **Created:** 2026-09-04
+- **Competency:** all
+- **Description:** Phases one and two are complete except RAG-021. Bring every top-level document up to what was actually built and measured: `CLAUDE.md` (stack, current state, lessons about working in this repo), `README.md` (results so far, no more "the plan"), `docs/architecture.md` (decided rows, real request flow), the learning pages' stale placeholders, and `docs/notes.md`. Record the process lessons in `project/conventions.md`. Write `project/handoff.md`: a prompt that lets a fresh session continue from here with the user's preferences and the project's rules intact.
+- **Done when:** no top-level doc describes planned work in the present tense, every tradeoff status matches its ADR, and the handoff prompt names the next ticket, the setup facts, and the working rules.
 
 ## Backlog
 

@@ -2,7 +2,28 @@
 
 A local, open-source Retrieval-Augmented Generation system that answers questions about SEC quarterly and annual filings (10-Q, 10-K) of NASDAQ/NYSE companies (starting with Apple and Nvidia). Built to learn and demonstrate five production RAG competencies: grounding, chunking, retrieval quality, hallucination control, and when to refuse to answer.
 
-**Stack:** Python 3.12, uv, LangChain (selectively), any OpenAI-compatible model server (Ollama by default, local or on the network) or the Anthropic API, embeddings configured separately, ChromaDB and FAISS (compared), rank_bm25, RAGAS, Langfuse (self-hosted), FastAPI, Streamlit, pytest, ruff.
+**Stack:** Python 3.12, uv, plain Python orchestration (no LangChain), any OpenAI-compatible model server (Ollama by default, local or on the network) or the Anthropic API, embeddings configured separately, ChromaDB (default) and FAISS (measured, kept), rank_bm25, a custom LLM judge (RAGAS was measured and rejected), pytest, ruff. Planned: Langfuse (self-hosted), FastAPI, Streamlit.
+
+## Current state (2026-09-04)
+
+Phases one and two are done except RAG-021. The pipeline answers questions from the filings or refuses with a reason, and every layer is measured against a 63-question human-verified eval set. Ten ADRs record the decisions.
+
+| Layer | Decision | Measured |
+|---|---|---|
+| Corpus | 16 filings, Apple and Nvidia, 8 quarters each (ADR-004) | idempotent download, byte-identical manifests |
+| Parser | custom block-boundary parser (ADR-007) | 16/16 filings, 0 missing critical items, 0 false headings |
+| Chunking | section-aware (ADR-009) | recall@1 39.4% vs 21.2% fixed; MRR 0.449 vs 0.314 |
+| Embeddings | nomic-embed-text with task prefixes, context header prepended (ADR-006) | prefixes and header each roughly double recall |
+| Store | ChromaDB (ADR-010); FAISS kept for scale | identical retrieval quality; store is 3% of a retrieval |
+| Retrieval | hybrid dense+BM25, RRF pool 50, ticker and quarter filters (ADR-008) | recall@5 48.5% vs 36.4% dense; rerank measured and off |
+| Generation | cited answers, deterministic figure check, refusal gate | 100% citations resolve, 87.5% fully grounded end to end |
+| Model | llama3.1:8b default for laptops; qwen3.8-27b recommended (ADR-006) | 8B invents citations in half its answers |
+| Judge | custom, cross-model, calibrated against the figure check | 86% agreement, 25% miss rate on unverified figures |
+| Gate | `make eval` against `data/eval/baseline.json`, 5-point tolerance | nine metrics, committed |
+
+The binding constraint moved twice: retrieval was the ceiling until hybrid fusion (RAG-009), then chunking was (RAG-020). It is now roughly a quarter of questions whose evidence neither ranking nor chunking reaches (recall@20 72.7%).
+
+**Next:** RAG-021 (calculation provenance for derived numbers), then phase three: RAG-013 Langfuse, RAG-014 API and UI, RAG-015 writeup. See `project/handoff.md` to resume.
 
 ## File Structure
 
@@ -57,6 +78,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./docs/tradeoffs/vector-stores.md
 ./infra/README.md
 ./project/conventions.md
+./project/handoff.md
 ./project/tickets.md
 ./pyproject.toml
 ./scripts/check-commit-msg.sh
@@ -184,12 +206,21 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 - **Retrieval eval:** `uv run rag eval retrieval -k 5 --context --retrieval hybrid` (recall@k, MRR, nDCG, run record)
 - **Eval set:** `uv run rag eval check` (every gold evidence span still resolves)
 - **Corpus:** `uv run rag ingest download --ticker AAPL --ticker NVDA` then `rag ingest parse --ticker AAPL --ticker NVDA` (EDGAR into `data/raw/`, sections into `data/processed/`, both idempotent)
-- **Models:** `make models` (pulls Ollama models, RAG-002)
-- **Eval:** `make eval` (RAG-008+)
+- **Models:** `make models` (pulls the models named in `.env` onto the Ollama at `OLLAMA_HOST`, over its HTTP API)
+- **Regression gate:** `make eval` (every metric against `data/eval/baseline.json`; calls a model, ~5 min) and `make eval-accept` (overwrite the baseline deliberately)
 
 ## Coding Conventions
 
-See [project/conventions.md](project/conventions.md) for detailed conventions.
+See [project/conventions.md](project/conventions.md) for detailed conventions, including the process rules learned the hard way in this repo.
+
+## Working in this repo: lessons
+
+- **Measure before writing a number, and verify a claim before committing it.** Twice a commit message described documentation edits that had silently failed to apply. Apply edits one at a time, check the file afterwards, and never trust an all-or-nothing helper.
+- **Check that every commit hash in `project/tickets.md` resolves** after any reset or amend. A ticket once pointed at a discarded commit.
+- **A generalised conclusion is a bug.** "Filtering buys nothing" was true of the ticker filter and false of the period filter, and it shipped as a general claim. State exactly what was measured.
+- **Fair comparisons need fair budgets.** A thinking-mode model scored 43% until `ANSWER_MAX_TOKENS` rose from 400 to 1024; a truncated answer scores as ungrounded.
+- **The eval set exists before the index does**, and that ordering found every real bug so far: the missing embedding prefixes, the citation parser mistakes, the presence-check limit, the RAGAS failure.
+- **The server address never enters the repo, a commit, or a recap.** Refer to "the network Ollama server".
 
 ## Architecture Decisions
 
