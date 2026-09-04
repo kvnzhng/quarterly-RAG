@@ -13,13 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-011: Refusal policy and abstention evaluation
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** when to refuse to answer
-- **Description:** Implement a refusal gate with explicit reasons: (a) retrieval confidence below threshold, (b) question outside corpus scope (company or period not indexed, non-financial question), (c) generator reports insufficient evidence, (d) citation verification fails. Grow the `unanswerable` seeds from RAG-019 into `data/eval/unanswerable.jsonl` (30+ questions that must be refused) and measure abstention precision/recall alongside answer accuracy.
-- **Done when:** `docs/learning/refusal.md` reports the tradeoff curve between refusing too much and hallucinating, and thresholds are chosen from it.
-
 ## Backlog
 
 ### Phase 1: one thin end-to-end path, measured
@@ -228,3 +221,16 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Done when:** the llm-serving table covers four models with a latency column and the recommended `LLM_MODEL` follows the measurement rather than a guess.
 - **Verified:** four models scored on gold passages, two on retrieved, with latency. `qwen3.8-27b-64k` is 100% on every grounding measure end to end and 75% on the labelled figure, against 87% and 67% for `gpt-oss:20b`, at 9.6 s versus 3.8 s per answer. Recommendation and ADR-006 updated to match.
 - **Commits:** `e041a64`
+
+### RAG-011: Refusal policy and abstention evaluation
+- **Type:** feat
+- **Created:** 2026-09-03 | **Completed:** 2026-09-04
+- **Competency:** when to refuse to answer
+- **Description:** Implement a refusal gate with explicit reasons: (a) retrieval confidence below threshold, (b) question outside corpus scope (company or period not indexed, non-financial question), (c) generator reports insufficient evidence, (d) citation verification fails. Grow the `unanswerable` seeds from RAG-019 into `data/eval/unanswerable.jsonl` (30+ questions that must be refused) and measure abstention precision/recall alongside answer accuracy.
+- **Done when:** `docs/learning/refusal.md` reports the tradeoff curve between refusing too much and hallucinating, and thresholds are chosen from it.
+- **Verified:** `docs/learning/refusal.md` carries the threshold sweep and names the operating point. `rag ask` refuses with a reason and shows its closest passages. `make test-all`: 235 passed.
+- **Baseline (63 questions, 30 unanswerable, qwen3.8-27b-64k, k=5):** abstention precision 67.4%, recall 96.7%, F1 0.795, answerable coverage 57.6%, one leak.
+- **Operating point:** `MIN_RETRIEVAL_SCORE=0.0`, the check off. The sweep shows raising it buys 3.3 points of recall and costs 45 points of coverage, because cosine scores cluster between 0.74 and 0.84. A calibrated signal would have to come from a reranker or token probabilities instead (RAG-009).
+- **Deviation from the ticket:** the unanswerable questions live in `data/eval/questions.jsonl` rather than a separate `unanswerable.jsonl`. The schema already carries the type, so a second file would need a second loader, hash and check command for no gain.
+- **Finding:** 13 of the 14 over-refusals had no evidence in the top 5, so coverage is bounded by retrieval rather than by the gate. Refusal calibration is also not answer quality: the 8B model has the best abstention F1 and invents citations in half its answers.
+- **Commits:** `6a10b9a`
