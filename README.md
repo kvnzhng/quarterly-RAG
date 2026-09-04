@@ -21,7 +21,7 @@ Starting companies: **Apple (AAPL)** and **Nvidia (NVDA)**. Adding a ticker is a
 | Grounding | Every chunk carries ticker, form, period, section, and offsets. Every answer sentence cites a chunk id that is verified to exist and to contain the quoted numbers. | `docs/learning/grounding.md`, RAG-004, RAG-010 |
 | Chunking | Four chunkers compared on the same labels. Cutting on the filing's own sub-headings nearly doubled recall@1 and is the default. | `docs/learning/chunking.md`, `docs/tradeoffs/chunking.md`, RAG-005, RAG-020 |
 | Retrieval quality | Human-verified eval set labelled with evidence spans, so the labels survive a change of chunker. recall@k, MRR, nDCG with a run record on every number. Hybrid dense+BM25 with a fiscal-quarter filter is the default; reranking was measured and made things worse; FAISS was measured and is 3% of a retrieval. | `docs/learning/retrieval-quality.md`, `docs/tradeoffs/vector-stores.md`, RAG-019, RAG-006 to RAG-009 |
-| Hallucination control | Every sentence checked against the passage it cites; figures matched after unit scaling, with derived figures flagged; a cross-model judge calibrated against that check; RAGAS measured and rejected; a regression gate with a committed baseline. Calculation provenance is next (RAG-021). | `docs/learning/hallucination-control.md`, RAG-010, RAG-012, RAG-021 |
+| Hallucination control | Every sentence checked against the passage it cites; figures matched after unit scaling; a derived figure recomputed from the operands the answer cites, or labelled unverified (opt-in, `ANSWER_PROMPT_VERSION=2`, because the gate measured what it costs); a cross-model judge calibrated against that check; RAGAS measured and rejected; a regression gate with a committed baseline. | `docs/learning/hallucination-control.md`, RAG-010, RAG-012, RAG-021 |
 | Refusal | A gate with four named reasons and 30 questions that must be refused. Abstention recall 93%, one leak. The retrieval-score threshold turned out to be worse than useless and is off. | `docs/learning/refusal.md`, RAG-011 |
 
 ## Architecture
@@ -124,6 +124,8 @@ Default configuration, 33 answerable and 30 unanswerable questions, `gpt-oss:20b
 | Abstention F1 | 0.812 | 30 must-refuse questions, one leak (`docs/learning/refusal.md`) |
 | Answerable coverage | 66.7% | bounded by retrieval, not by the gate |
 
+Those nine are the `lookup` questions. The 10 questions that need arithmetic are scored apart from them: with calculation provenance on (`ANSWER_PROMPT_VERSION=2`), `qwen3.8-27b-64k` answers all 10 where it used to refuse 4, recomputes 5 of the 7 figures no passage prints, and is judged correct on all 10. `llama3.1:8b` shows its working and gets it wrong, 6 of 10 calculations verifying. It is off by default because the same switch costs two answerable questions on the gate, which is the kind of trade this project exists to measure. Both numbers and the gate runs are in `docs/learning/hallucination-control.md`.
+
 The largest single levers, in the order they were found: the embedding model's task prefixes (a third of recall), a provenance header on each chunk (doubled recall), fusion of dense and keyword search (+9 points at k=5), the fiscal-quarter filter (quarterly questions off zero), and cutting chunks on the filing's own sub-headings (recall@1 doubled). What did not work is recorded with the same care: reranking, the retrieval-score threshold, RAGAS.
 
 ## Status
@@ -148,7 +150,7 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 - [x] RAG-020 chunking comparison, section-aware is the new default
 - [x] RAG-007 vector store comparison, ChromaDB stays the default
 - [x] RAG-012 faithfulness judge and the regression gate
-- [ ] RAG-021 calculation provenance
+- [x] RAG-021 calculation provenance for derived numbers
 - [ ] RAG-013 Langfuse
 - [ ] RAG-014 API + UI
 - [ ] RAG-015 writeup

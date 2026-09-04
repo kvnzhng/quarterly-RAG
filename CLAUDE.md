@@ -6,7 +6,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 
 ## Current state (2026-09-04)
 
-Phases one and two are done except RAG-021. The pipeline answers questions from the filings or refuses with a reason, and every layer is measured against a 63-question human-verified eval set. Ten ADRs record the decisions.
+Phases one and two are done. The pipeline answers questions from the filings or refuses with a reason, and every layer is measured against a 63-question human-verified eval set. Ten ADRs record the decisions.
 
 | Layer | Decision | Measured |
 |---|---|---|
@@ -19,11 +19,12 @@ Phases one and two are done except RAG-021. The pipeline answers questions from 
 | Generation | cited answers, deterministic figure check, refusal gate | 100% citations resolve, 87.5% fully grounded end to end |
 | Model | llama3.1:8b default for laptops; qwen3.8-27b recommended (ADR-006) | 8B invents citations in half its answers |
 | Judge | custom, cross-model, calibrated against the figure check | 86% agreement, 25% miss rate on unverified figures |
-| Gate | `make eval` against `data/eval/baseline.json`, 5-point tolerance | nine metrics, committed |
+| Calculations | derived numbers written as `CALC:` lines and recomputed from cited operands; opt-in via `ANSWER_PROMPT_VERSION=2` (RAG-021) | qwen answers 10/10 derived questions where the default prompt refused 4; 8B model's arithmetic fails 4 of 10; costs 2 answerable questions on the gate |
+| Gate | `make eval` against `data/eval/baseline.json`, 5-point tolerance | nine metrics, committed; covers `lookup` only |
 
 The binding constraint moved twice: retrieval was the ceiling until hybrid fusion (RAG-009), then chunking was (RAG-020). It is now roughly a quarter of questions whose evidence neither ranking nor chunking reaches (recall@20 72.7%).
 
-**Next:** RAG-021 (calculation provenance for derived numbers), then phase three: RAG-013 Langfuse, RAG-014 API and UI, RAG-015 writeup. See `project/handoff.md` to resume.
+**Next:** phase three: RAG-013 Langfuse, RAG-014 API and UI, RAG-015 writeup. RAG-029 holds three named limits of the calculation verifier. See `project/handoff.md` to resume.
 
 ## File Structure
 
@@ -201,7 +202,7 @@ The binding constraint moved twice: retrieval was the ceiling until hybrid fusio
 - **Doctor:** `make doctor` or `uv run rag doctor` (configured endpoints, models, data dirs)
 - **Chunks:** `uv run rag chunk build --ticker AAPL --ticker NVDA` (sections into `data/chunks/<strategy>/`)
 - **Index:** `uv run rag index build --ticker AAPL --ticker NVDA [--context]` then `rag index query "..."`
-- **Ask:** `uv run rag ask "..."` (retrieve, answer, verify every sentence against its source)
+- **Ask:** `uv run rag ask "..."` (retrieve, answer, verify every sentence against its source). `ANSWER_PROMPT_VERSION=2` lets the model compute a derived number and shows the arithmetic it is checked against.
 - **Generation eval:** `uv run rag eval generation --context gold|retrieved`
 - **Refusal eval:** `uv run rag eval refusal` (abstention precision/recall, threshold sweep)
 - **Retrieval eval:** `uv run rag eval retrieval -k 5 --context --retrieval hybrid` (recall@k, MRR, nDCG, run record)

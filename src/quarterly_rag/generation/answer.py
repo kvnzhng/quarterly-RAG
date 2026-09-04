@@ -54,9 +54,13 @@ __all__ = [
     "verify",
 ]
 
-DEFAULT_PROMPT_VERSION = "2"
+DEFAULT_PROMPT_VERSION = "1"
 """v1 answers only from what a passage prints; v2 adds calculation provenance (RAG-021).
-Both are kept so the before and after can be re-measured against the same eval set."""
+
+v1 is the default because `make eval` measured the cost of v2 and it is not free: with
+`gpt-oss:20b` it answers two fewer of the 33 answerable questions. Set
+`ANSWER_PROMPT_VERSION=2` to turn calculation provenance on, which is the only way to get an
+answer at all to a question whose number no filing prints."""
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 INSUFFICIENT = "INSUFFICIENT_EVIDENCE"

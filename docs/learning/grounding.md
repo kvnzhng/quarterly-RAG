@@ -10,7 +10,7 @@ An answer is grounded when every claim in it can be traced to a specific passage
 - **The corpus is reproducible**: `rag ingest download` writes `data/raw/<TICKER>/manifest.json` with accession number, form, period of report, fiscal period label, filing date, source URL, and byte count for every filing on disk, and re-running it is a no-op (RAG-003).
 - **Provenance is mandatory** on every `Chunk`: ticker, form type, fiscal period, filing date, SEC section, character offsets, and source URL (RAG-004).
 - **Chunk ids are visible to the model**: retrieved chunks are rendered as `[c17] ...text...` and the prompt requires inline citations per sentence (RAG-010).
-- **Citations are verified, not trusted**: each citation must resolve to a passage that was actually provided, and numbers in a cited sentence must appear in that passage after unit normalisation (RAG-010). A model that cites `[c9]` when it was given five passages is caught, and `llama3.1:8b` does exactly that in half its answers. Sentences that fail are returned as `unsupported_sentences`, and numbers that are not in the chunk are returned as `derived_numbers`, not silently kept. Derived numbers get calculation provenance in RAG-021: operands cited, operation stated, result recomputed.
+- **Citations are verified, not trusted**: each citation must resolve to a passage that was actually provided, and numbers in a cited sentence must appear in that passage after unit normalisation (RAG-010). A model that cites `[c9]` when it was given five passages is caught, and `llama3.1:8b` does exactly that in half its answers. Sentences that fail are returned as `unsupported_sentences`, and numbers that are not in the chunk are returned as `derived_numbers`, not silently kept. Each derived number carries the calculation that produced it when the answer showed one, and whether recomputing it from the cited operands agreed (RAG-021).
 - **The UI shows the evidence**: citation, highlighted passage, and a link to the filing on EDGAR (RAG-014).
 
 ## Measured
@@ -41,7 +41,7 @@ It asks whether a figure is **present** in the cited passage, not whether the cl
 - An answer stating "a $15,381 million increase" passes when the passage happens to contain 15,381 anywhere, including as an unrelated line item.
 - An answer reading the wrong column states a real number from the right table and passes.
 
-Checking the relationship rather than the presence needs the operands and the operation, which is RAG-021. `derived, unverified` is the honest label until then: the model may have computed correctly, and this verifier cannot tell.
+Checking the relationship rather than the presence needs the operands and the operation, which RAG-021 added: the answer writes a `CALC:` line, every operand is checked against the passage it cites, and the result is recomputed. A figure that survives is `derived, verified`; one with no arithmetic behind it keeps the honest `derived, unverified` label. The second consequence above survives even that, because the wrong column is still a real number in a real passage.
 
 `states the gold figure` is a strict proxy for correctness, not a judge. It requires the same figure the label writes, so a correct answer phrased at a different scale fails it. RAG-012 adds an actual faithfulness judge.
 

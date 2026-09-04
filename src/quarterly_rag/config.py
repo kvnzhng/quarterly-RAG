@@ -56,10 +56,12 @@ class Settings(BaseSettings):
         description="Cap on a grounded answer. Thinking-mode models need room before they write.",
     )
     answer_prompt_version: str = Field(
-        default="2",
+        default="1",
         description=(
-            "Answer prompt. v1 answers only from what a passage prints; v2 lets the model "
-            "compute a derived number when it shows the arithmetic (RAG-021)."
+            "Answer prompt. v1 answers only from what a passage prints. v2 lets the model "
+            "compute a derived number when it shows the arithmetic, which is what makes the "
+            "`derived` questions answerable at all, and costs two answerable questions of "
+            "coverage on the gate. Off by default because the gate said so (RAG-021)."
         ),
     )
 
