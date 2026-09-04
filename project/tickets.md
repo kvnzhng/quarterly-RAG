@@ -1,6 +1,6 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-027
+> Next ID: RAG-028
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
@@ -12,6 +12,13 @@ against that baseline. Phase 3 is production readiness and the writeup.
 Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
+
+### RAG-027: Derive the CLAUDE.md file tree from git
+- **Type:** chore
+- **Created:** 2026-09-04
+- **Competency:** foundation
+- **Description:** The file tree in `CLAUDE.md` was hand-edited after each ticket and had drifted: four test files were missing and the ordering was inconsistent. Regenerate it from `git ls-files` so it cannot drift again.
+- **Done when:** every tracked path outside `reports/` and `notebooks/` appears exactly once, in a stable order.
 
 ## Backlog
 
