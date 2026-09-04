@@ -60,8 +60,9 @@ class Settings(BaseSettings):
         description=(
             "Answer prompt. v1 answers only from what a passage prints. v2 lets the model "
             "compute a derived number when it shows the arithmetic, which is what makes the "
-            "`derived` questions answerable at all, and costs two answerable questions of "
-            "coverage on the gate. Off by default because the gate said so (RAG-021)."
+            "`derived` questions answerable at all, and costs two of the 33 answerable "
+            "questions on the gate with gpt-oss:20b. Off by default because the gate said "
+            "so (RAG-021)."
         ),
     )
 

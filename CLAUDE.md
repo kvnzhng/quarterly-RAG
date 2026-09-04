@@ -19,7 +19,7 @@ Phases one and two are done. The pipeline answers questions from the filings or 
 | Generation | cited answers, deterministic figure check, refusal gate | 100% citations resolve, 87.5% fully grounded end to end |
 | Model | llama3.1:8b default for laptops; qwen3.8-27b recommended (ADR-006) | 8B invents citations in half its answers |
 | Judge | custom, cross-model, calibrated against the figure check | 86% agreement, 25% miss rate on unverified figures |
-| Calculations | derived numbers written as `CALC:` lines and recomputed from cited operands; opt-in via `ANSWER_PROMPT_VERSION=2` (RAG-021) | qwen answers 10/10 derived questions where the default prompt refused 4; 8B model's arithmetic fails 4 of 10; costs 2 answerable questions on the gate |
+| Calculations | derived numbers written as `CALC:` lines and recomputed from cited operands; opt-in via `ANSWER_PROMPT_VERSION=2` (RAG-021) | qwen answers 10/10 derived questions where the default prompt refused 4; 8B model's arithmetic fails 4 of 10; costs 2 of the 33 answerable questions on the gate with `gpt-oss:20b` |
 | Gate | `make eval` against `data/eval/baseline.json`, 5-point tolerance | nine metrics, committed; covers `lookup` only |
 
 The binding constraint moved twice: retrieval was the ceiling until hybrid fusion (RAG-009), then chunking was (RAG-020). It is now roughly a quarter of questions whose evidence neither ranking nor chunking reaches (recall@20 72.7%).

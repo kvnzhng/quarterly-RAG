@@ -23,6 +23,8 @@ Judge `qwen3.8-27b-64k`, generator `llama3.1:8b`, gold passages, 23 lookup quest
 | Judged correct | 100% |
 | `states the gold figure` proxy | 91.3% |
 
+**Calculation lines move the calibration, for a reason worth knowing.** The judge is shown the prose without them, while the verifier now passes a sentence whose derived figure a calculation accounts for. On the derived questions the two therefore disagree more, not less: `qwen3.8-27b-64k` judged by `gpt-oss:20b` agreed with the verifier on 8 of 8 sentences under v1 and 8 of 13 under v2, every disagreement being the judge stricter. The judge is reading a claim whose support is on a line it was not given.
+
 **The judge is calibrated before it is believed.** Against the deterministic number verifier over 57 cited sentences: 86% agreement, 6 sentences where the judge was stricter than the verifier, and **2 where it was looser**. That second number is the one that matters: of eight sentences whose figures were not in the cited passage, the judge waved two through. A judge that misses a quarter of the cases it exists to catch is reported with that rate attached, never without.
 
 **The hallucination it does catch is the one the verifier cannot.** An answer claiming "a $15,381 million increase" passes a presence check because 15,381 appears somewhere in the income statement. The judge marks it unsupported. That is the whole reason both layers exist.
@@ -31,7 +33,7 @@ Judge `qwen3.8-27b-64k`, generator `llama3.1:8b`, gold passages, 23 lookup quest
 
 ## Measured: calculation provenance (RAG-021)
 
-Gold passages, the 5 `derived` and 5 `cross_period` questions, k=5, `ANSWER_MAX_TOKENS` 1024, commit `fdbb7ef`, corpus `ab54dafa27ee5fe1`, eval set `57ba5e0dfdb94790`, 2026-09-04. Prompt v1 forbids arithmetic; prompt v2 allows it on condition the answer writes a `CALC:` line. The judge is a different model from the generator in both rows. Counts, not rates: ten questions cannot carry a percentage.
+Gold passages, the 5 `derived` and 5 `cross_period` questions, k=5, `ANSWER_MAX_TOKENS` 1024, commit `fdbb7ef`, corpus `ab54dafa27ee5fe1`, eval set `57ba5e0dfdb94790`, 2026-09-04. Prompt v1 forbids arithmetic; prompt v2 allows it on condition the answer writes a `CALC:` line. The judge is a different model from the generator in both rows. Counts, not rates: ten questions cannot carry a percentage. The run records for all but the first show a dirty tree; only markdown was uncommitted, and the code was `fdbb7ef` throughout.
 
 | Generator (judge) | Prompt | Answered | Calculations verified | Derived figures verified | Every figure accounted for | Judged correct |
 |---|---|---|---|---|---|---|
@@ -44,13 +46,15 @@ Gold passages, the 5 `derived` and 5 `cross_period` questions, k=5, `ANSWER_MAX_
 
 **After, the arithmetic is checked rather than trusted.** Both models answer all ten. For `qwen3.8-27b-64k` every `derived` question is now answered, every figure in those five answers is either printed in a cited passage or recomputed from ones that are, and all ten answers are judged correct. That is the ticket's result: the questions that used to be refused are answered, and the numbers in them carry their working.
 
-**The 8B model shows its arithmetic and gets it wrong.** Only 6 of its 10 calculations verify, and all 4 failures are the same one: an operand that is not in the passage it cites. On q031 it wrote `CALC: 12,914 [c2] - 7,331 [c2] = 5,583 million`. The arithmetic is internally consistent, the answer is right, and the judge scored it correct, because Nvidia's research and development spending did grow by $5,583 million. But 7,331 appears in no passage; the real operands, 12,914 and 18,497, are both printed in the passage it cited. A model that reaches a correct answer through a figure it invented is exactly the case a presence check passes and a judge passes, and it is the case this check exists for.
+**The 8B model shows its arithmetic and cites it to the wrong passage.** Only 6 of its 10 calculations verify, and all 4 failures are the same one: an operand that is not in the passage it cites. On q007 it wrote `CALC: (96,221 [c1] - 46,743 [c1]) / 46,743 [c1] * 100 = 106%`. Both figures are real and both are in front of it, but they are in passage c2, which its own sentence cites alongside c1. The judge scored the answer correct. The check refuses it, because an operand attributed to a passage that does not contain it is a citation a reader cannot follow, and following citations is the whole point.
 
-**What `verified` does not mean.** On q009 the same model wrote `CALC: (391,035 [c1] - 383,285 [c1]) / 383,285 [c1] * 100 = 2%`, and the verifier marked it verified: both operands are printed in the passage, and the division is right. They are the wrong two fiscal years for a question about 2024 to 2025. Verified means the arithmetic is sound over figures the passage states, not that the operands answer the question. Choosing the right ones is what the judge's correctness score measures, which is why the two are reported side by side and never merged.
+**What `verified` does not mean.** On q030 the same model answered correctly that Apple's operating income was $35,695 million, then wrote `CALC: (35,695 [c1]) / (28,202 [c1]) * 100 = 126%`. The verifier marked it verified, and it is right to: both operands are printed in the passage, and the division is correct. It also answers nothing anybody asked. Verified means the arithmetic is sound over figures the passage states, not that those figures answer the question. Whether they do is what the judge's correctness score measures, which is why the two are reported side by side and never merged.
+
+**The case this check exists for** appeared under the earlier v2 wording, in report `generation-gold-20260904T184449`: `llama3.1:8b` answered q031 with `CALC: 12,914 [c2] - 7,331 [c2] = 5,583 million`. The arithmetic is internally consistent, the answer is right, and the judge scored it correct, because Nvidia's research and development spending did grow by $5,583 million. But 7,331 appears in no passage; the real operands, 12,914 and 18,497, are both printed in the passage it cited. A correct answer reached through an invented figure is what a presence check passes and a judge passes. Under the shipped wording the same model got q031 right, so this one is quoted from the run that produced it and not from the table above.
 
 **The wording of the same rule moved the numbers more than the rule did.** An earlier v2 (replaced in `fdbb7ef`) ended with a worked example: an answer sentence followed by its `CALC:` line. With it, `llama3.1:8b` verified 9 of 13 calculations and accounted for 9 of 10 questions, far better than the 6 of 10 above, and `gpt-oss:20b` lost 11 points of faithfulness on the 23 `lookup` questions, 75% to 64%, writing terser paraphrases in the example's style instead of the filing's words. Moving the example into the body of the explanation restored lookup faithfulness to 73% and cost the 8B model most of its arithmetic. Small models need the example; the example is what pulls every model's prose toward it.
 
-The shipped v2 leaves the `lookup` questions where v1 had them, which is what lets it be the default. `gpt-oss:20b` through the real pipeline, 23 `lookup` questions, same judge, same day:
+On the `lookup` questions the shipped v2 costs nothing measurable. `gpt-oss:20b` through the real pipeline, 23 `lookup` questions, same judge, same day:
 
 | Prompt | Refused | Fully grounded | Faithfulness | Judged correct | Gold figure present |
 |---|---|---|---|---|---|
@@ -73,10 +77,10 @@ Both failing runs are recorded here, not only the control that passed. Note also
 
 ### What this check still cannot do
 
-- **The wrong two real figures**, as q009 above. Both operands present, arithmetic sound, question unanswered.
-- **A calculation cannot use another calculation's result.** `llama3.1:8b` wrote `CALC: 8.5% [c1] / 24.1% [c1] * 100 = 35.3%` where its own previous line produced the 8.5%, so the operand cites a passage for a figure no passage prints.
-- **A unitless operand does not match a percentage.** `qwen3.8-27b-64k` wrote `CALC: 15.6 [c1] - 24.1 [c1]` against a passage printing `15.6%` and `24.1%`, and the check refused it.
-- **A scale constant written into prose is flagged**, so "we divide the gross margin by total net sales and multiply by 100" costs an otherwise clean answer its accounted mark for the 100 alone.
+- **The wrong real figures**, as q030 above. Both operands present, arithmetic sound, question unanswered.
+- **A unitless operand does not match a percentage.** Both models wrote q032 as `CALC: 15.6 [c1] - 24.1 [c1]` against a passage printing `15.6%` and `24.1%`, and the check refused it. Their answers were correct and judged correct.
+- **A scale constant written into prose is flagged.** `llama3.1:8b` wrote its working into a sentence on q008, "we need to calculate (54,770 / 109,417) * 100 = 50%", and the 100 in that sentence is a figure the passage does not state, so an otherwise clean answer loses its accounted mark for it.
+- **A calculation cannot use another calculation's result.** Under the earlier v2 wording (`generation-gold-20260904T184449`) `llama3.1:8b` wrote `CALC: 8.5% [c1] / 24.1% [c1] * 100 = 35.3%` where its own previous line produced the 8.5%, so the operand cites a passage for a figure no passage prints.
 
 The last three are RAG-029. The first is what the judge is for.
 
