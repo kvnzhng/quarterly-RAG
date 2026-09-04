@@ -799,6 +799,251 @@ questions = [
             "these documents' from 'not in this kind of document'."
         ),
     ),
+    EvalQuestion(
+        id="q044",
+        ticker="AMZN",
+        type="unanswerable",
+        question="How much did Amazon Web Services earn in fiscal 2025?",
+        gold_answer="Not in the filings: the corpus holds only Apple and Nvidia.",
+        refusal_reason="out_of_scope",
+        note="A third out-of-scope company, and a segment a model is likely to recall.",
+    ),
+    EvalQuestion(
+        id="q045",
+        ticker="INTC",
+        type="unanswerable",
+        question="What was Intel's gross margin in fiscal 2026?",
+        gold_answer="Not in the filings: the corpus holds only Apple and Nvidia.",
+        refusal_reason="out_of_scope",
+        note=(
+            "A competitor Nvidia's filings discuss by name, so retrieval will find passages "
+            "mentioning it and none of them answer the question."
+        ),
+    ),
+    EvalQuestion(
+        id="q046",
+        ticker="AMD",
+        type="unanswerable",
+        question="How does AMD's data center revenue compare with Nvidia's?",
+        gold_answer=("Not in the filings: only Nvidia's side of that comparison is in the corpus."),
+        refusal_reason="out_of_scope",
+        note=(
+            "Half the question is answerable, which is the hard case: a partial refusal is "
+            "correct and a partial answer is a hallucination."
+        ),
+    ),
+    EvalQuestion(
+        id="q047",
+        ticker="AAPL",
+        type="unanswerable",
+        question="What were Apple's total net sales in fiscal 2020?",
+        gold_answer="Not in the filings: the corpus starts with Apple's fiscal 2024 annual report.",
+        refusal_reason="out_of_scope",
+        note="A second out-of-corpus period, far enough back that no filing mentions it.",
+    ),
+    EvalQuestion(
+        id="q048",
+        ticker="NVDA",
+        type="unanswerable",
+        question="What was Nvidia's revenue in fiscal 2022?",
+        gold_answer=(
+            "Not in the filings: the corpus starts with Nvidia's fiscal 2025 third quarter."
+        ),
+        refusal_reason="out_of_scope",
+        note=(
+            "Nvidia's fiscal 2026 filings quote fiscal 2024 figures for comparison, so the "
+            "boundary of the corpus is not where a reader might assume."
+        ),
+    ),
+    EvalQuestion(
+        id="q049",
+        ticker="AAPL",
+        type="unanswerable",
+        question="What will Apple's net sales be in the fourth quarter of fiscal 2026?",
+        gold_answer="Not in the filings: a filing reports the past, and no guidance is given.",
+        refusal_reason="insufficient_evidence",
+        note=(
+            "Forward-looking and about the very next quarter, so the surrounding passages are "
+            "the closest possible near miss."
+        ),
+    ),
+    EvalQuestion(
+        id="q050",
+        ticker="NVDA",
+        type="unanswerable",
+        question="How many GPUs did Nvidia ship in fiscal 2026?",
+        gold_answer="Not in the filings: Nvidia reports revenue by market, not unit volumes.",
+        refusal_reason="insufficient_evidence",
+        note="The Nvidia counterpart to the iPhone units question.",
+    ),
+    EvalQuestion(
+        id="q051",
+        ticker="AAPL",
+        type="unanswerable",
+        question="What was the average selling price of an iPhone in fiscal 2025?",
+        gold_answer=(
+            "Not in the filings: an average price needs unit volumes, which Apple does not report."
+        ),
+        refusal_reason="insufficient_evidence",
+        note=(
+            "iPhone revenue is in the corpus and the units are not, so the question looks "
+            "computable and is not."
+        ),
+    ),
+    EvalQuestion(
+        id="q052",
+        ticker="NVDA",
+        type="unanswerable",
+        question="Which customers accounted for Nvidia's largest direct sales in fiscal 2026?",
+        gold_answer=(
+            "Not in the filings: Nvidia discloses customer concentration as percentages, "
+            "without naming the customers."
+        ),
+        refusal_reason="insufficient_evidence",
+        note=(
+            "The filings discuss customer concentration at length, so retrieval will return "
+            "confident-sounding passages that withhold exactly the fact asked for."
+        ),
+    ),
+    EvalQuestion(
+        id="q053",
+        ticker="AAPL",
+        type="unanswerable",
+        question="How much did Apple spend on research and development for Apple Intelligence?",
+        gold_answer=(
+            "Not in the filings: research and development is reported as one line, not by project."
+        ),
+        refusal_reason="insufficient_evidence",
+        note="Total R&D is in the corpus; the breakdown does not exist anywhere in a 10-K.",
+    ),
+    EvalQuestion(
+        id="q054",
+        ticker="NVDA",
+        type="unanswerable",
+        question="How many of Nvidia's employees work in the United States?",
+        gold_answer=(
+            "Not in the filings: Nvidia reports a worldwide headcount and a country count, "
+            "with no per-country split."
+        ),
+        refusal_reason="insufficient_evidence",
+        note=(
+            "The passage says 42,000 employees in 38 countries, which is a near miss with the "
+            "right shape and the wrong granularity."
+        ),
+    ),
+    EvalQuestion(
+        id="q055",
+        ticker="AAPL",
+        type="unanswerable",
+        question="What is Apple's market capitalisation?",
+        gold_answer=(
+            "Not in the filings: market capitalisation moves daily and a filing is a "
+            "point-in-time document."
+        ),
+        refusal_reason="out_of_scope",
+        note="Live market data, like the share price question, and not a filing fact at all.",
+    ),
+    EvalQuestion(
+        id="q056",
+        ticker="NVDA",
+        type="unanswerable",
+        question="Should I buy Nvidia or Apple shares?",
+        gold_answer="Not a question the filings answer: they report results, not advice.",
+        refusal_reason="out_of_scope",
+        note=(
+            "Advice about both companies in the corpus, so every scope check based on company "
+            "or period passes it through."
+        ),
+    ),
+    EvalQuestion(
+        id="q057",
+        ticker="AAPL",
+        type="unanswerable",
+        question="Who is Apple's chief financial officer?",
+        gold_answer=(
+            "Not in the filings as asked: officers are listed in the proxy statement, which "
+            "the 10-K incorporates by reference."
+        ),
+        refusal_reason="insufficient_evidence",
+        note="A factual question about the company that the 10-K deliberately defers elsewhere.",
+    ),
+    EvalQuestion(
+        id="q058",
+        ticker="NVDA",
+        type="unanswerable",
+        question="What is the weather in Santa Clara today?",
+        gold_answer="Not a filing question at all.",
+        refusal_reason="out_of_scope",
+        note=(
+            "Nvidia's headquarters city appears in Item 2, so a passage will match on the "
+            "place name while answering nothing."
+        ),
+    ),
+    EvalQuestion(
+        id="q059",
+        ticker="AAPL",
+        type="unanswerable",
+        question="How many Apple Stores were there at the end of fiscal 2025?",
+        gold_answer="Not in the filings: Apple stopped reporting a store count.",
+        refusal_reason="insufficient_evidence",
+        note=(
+            "Retail is described in Item 1 without a count, so the topic is present and the "
+            "number is not."
+        ),
+    ),
+    EvalQuestion(
+        id="q060",
+        ticker="NVDA",
+        type="unanswerable",
+        question="What is Nvidia's gross margin target for fiscal 2028?",
+        gold_answer="Not in the filings: targets and guidance are not part of a 10-K or 10-Q.",
+        refusal_reason="insufficient_evidence",
+        note="Forward-looking, and margin discussion is everywhere in the corpus.",
+    ),
+    EvalQuestion(
+        id="q061",
+        ticker="AAPL",
+        type="unanswerable",
+        question="How much of Apple's Services revenue came from the App Store in fiscal 2025?",
+        gold_answer=(
+            "Not in the filings: Services is reported as one figure, without a breakdown by "
+            "service."
+        ),
+        refusal_reason="insufficient_evidence",
+        note=(
+            "The App Store is named in the corpus and Services revenue is in it, so both "
+            "halves are present and their combination is not."
+        ),
+    ),
+    EvalQuestion(
+        id="q062",
+        ticker="NVDA",
+        type="unanswerable",
+        question="What did Nvidia's chief executive say on the fiscal 2026 earnings call?",
+        gold_answer=(
+            "Not in the filings: an earnings call transcript is a separate document from a 10-K."
+        ),
+        refusal_reason="out_of_scope",
+        note=(
+            "A real document about the right company and period, and one ADR-004 put outside "
+            "the corpus."
+        ),
+    ),
+    EvalQuestion(
+        id="q063",
+        ticker="AAPL",
+        type="unanswerable",
+        question="What was Apple's headcount in fiscal 2026?",
+        gold_answer=(
+            "Not in the filings: headcount is reported in the annual report, and fiscal 2026 "
+            "has not been filed."
+        ),
+        refusal_reason="insufficient_evidence",
+        note=(
+            "The hardest kind: the company, the metric and the fiscal year are all in the "
+            "corpus, and the combination is not, because a 10-Q does not report headcount."
+        ),
+    ),
 ]
 
 path = questions_path(settings)

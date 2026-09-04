@@ -70,6 +70,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./src/quarterly_rag/evaluation/__init__.py
 ./src/quarterly_rag/evaluation/generation_eval.py
 ./src/quarterly_rag/evaluation/metrics.py
+./src/quarterly_rag/evaluation/refusal_eval.py
 ./src/quarterly_rag/evaluation/questions.py
 ./src/quarterly_rag/evaluation/relevance.py
 ./src/quarterly_rag/evaluation/retrieval_eval.py
@@ -77,6 +78,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./src/quarterly_rag/generation/anthropic_api.py
 ./src/quarterly_rag/generation/answer.py
 ./src/quarterly_rag/generation/base.py
+./src/quarterly_rag/generation/refusal.py
 ./src/quarterly_rag/generation/numbers.py
 ./src/quarterly_rag/generation/prompts/grounded_answer_v1.txt
 ./src/quarterly_rag/generation/llm.py
@@ -97,11 +99,13 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./src/quarterly_rag/ingestion/records.py
 ./src/quarterly_rag/observability/__init__.py
 ./src/quarterly_rag/openai_compatible.py
+./src/quarterly_rag/pipeline.py
 ./src/quarterly_rag/retrieval/__init__.py
 ./src/quarterly_rag/retrieval/base.py
 ./src/quarterly_rag/retrieval/dense.py
 ./tests/conftest.py
 ./tests/generation/test_answer.py
+./tests/generation/test_refusal.py
 ./tests/generation/test_anthropic_api.py
 ./tests/generation/test_numbers.py
 ./tests/generation/test_llm_factory.py
@@ -120,6 +124,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./tests/chunking/test_build.py
 ./tests/chunking/test_fixed.py
 ./tests/evaluation/test_metrics.py
+./tests/evaluation/test_refusal_eval.py
 ./tests/evaluation/test_questions.py
 ./tests/evaluation/test_relevance.py
 ./tests/evaluation/test_retrieval_eval.py
@@ -143,6 +148,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 - **Index:** `uv run rag index build --ticker AAPL --ticker NVDA [--context]` then `rag index query "..."`
 - **Ask:** `uv run rag ask "..."` (retrieve, answer, verify every sentence against its source)
 - **Generation eval:** `uv run rag eval generation --context gold|retrieved`
+- **Refusal eval:** `uv run rag eval refusal` (abstention precision/recall, threshold sweep)
 - **Retrieval eval:** `uv run rag eval retrieval -k 5 --context` (recall@k, MRR, nDCG, run record)
 - **Eval set:** `uv run rag eval check` (every gold evidence span still resolves)
 - **Corpus:** `uv run rag ingest download --ticker AAPL --ticker NVDA` then `rag ingest parse --ticker AAPL --ticker NVDA` (EDGAR into `data/raw/`, sections into `data/processed/`, both idempotent)

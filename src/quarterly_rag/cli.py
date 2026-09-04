@@ -24,9 +24,10 @@ from quarterly_rag.evaluation.questions import (
     load_questions,
     questions_path,
 )
+from quarterly_rag.evaluation.refusal_eval import gate_settings, run_refusal_eval, score
 from quarterly_rag.evaluation.relevance import OverlapRule
 from quarterly_rag.evaluation.retrieval_eval import run_retrieval_eval
-from quarterly_rag.generation.answer import PROMPT_VERSION, answer_question
+from quarterly_rag.generation.answer import PROMPT_VERSION
 from quarterly_rag.generation.llm import build_llm
 from quarterly_rag.indexing.build import build_index, build_store, load_manifest
 from quarterly_rag.indexing.embed_text import CONTEXT, RAW
@@ -34,6 +35,7 @@ from quarterly_rag.indexing.embedder import build_embedder
 from quarterly_rag.ingestion.download import DEFAULT_FORMS, download_filings
 from quarterly_rag.ingestion.edgar import EdgarClient, EdgarError
 from quarterly_rag.ingestion.records import parse_ticker
+from quarterly_rag.pipeline import Pipeline
 from quarterly_rag.retrieval.dense import DenseRetriever
 
 app = typer.Typer(help="Local RAG over SEC 10-Q/10-K filings.", no_args_is_help=True)
@@ -565,6 +567,101 @@ def eval_generation(
     console.print(f"report written to {report.write(settings)}")
 
 
+@evaluate.command("refusal")
+def eval_refusal(
+    k: Annotated[int, typer.Option("-k", help="Passages retrieved per question.")] = 5,
+    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = "fixed",
+    raw: Annotated[bool, typer.Option("--raw/--context-embed")] = False,
+    min_score: Annotated[
+        float | None, typer.Option(help="Override MIN_RETRIEVAL_SCORE for this run.")
+    ] = None,
+) -> None:
+    """Measure whether the system refuses the questions it should, and only those."""
+    settings = get_settings()
+    variant = RAW if raw else CONTEXT
+    vector_store = build_store(settings, "chroma", strategy, variant)
+    if vector_store.count() == 0:
+        console.print("[red]index is empty; run `rag index build` first[/red]")
+        raise typer.Exit(code=1)
+
+    llm = build_llm(settings)
+    pipeline = Pipeline.build(
+        settings,
+        DenseRetriever(build_embedder(settings), vector_store),
+        llm,
+        gate=gate_settings(settings, min_score),
+        strategy=strategy,
+    )
+    console.print(
+        f"{llm.label} | prompt v{PROMPT_VERSION} | k={k} | "
+        f"min score {pipeline.gate.min_retrieval_score:.2f}"
+    )
+    with console.status("asking"):
+        try:
+            report = run_refusal_eval(settings, pipeline, k=k, strategy=strategy, variant=variant)
+        except (FileNotFoundError, ValueError, ModelServerError) as exc:
+            console.print(f"[red]{escape(str(exc))}[/red]")
+            raise typer.Exit(code=1) from None
+
+    metrics = score(report.results)
+    summary = Table(title="abstention")
+    for column in (
+        "questions",
+        "must refuse",
+        "refused",
+        "correct",
+        "precision",
+        "recall",
+        "F1",
+        "answerable coverage",
+    ):
+        summary.add_column(column, justify="right")
+    summary.add_row(
+        str(metrics.total),
+        str(metrics.should_refuse),
+        str(metrics.refused),
+        str(metrics.true_refusals),
+        f"{metrics.precision:.1%}",
+        f"{metrics.recall:.1%}",
+        f"{metrics.f1:.3f}",
+        f"{metrics.answerable_coverage:.1%}",
+    )
+    console.print(summary)
+
+    reasons = Table(title="why it refused")
+    reasons.add_column("reason")
+    reasons.add_column("count", justify="right")
+    for reason, count in report.by_reason().items():
+        reasons.add_row(reason, str(count))
+    console.print(reasons)
+
+    sweep = Table(title="threshold sweep: refusing too much vs hallucinating")
+    sweep.add_column("min score", justify="right")
+    sweep.add_column("refused", justify="right")
+    sweep.add_column("precision", justify="right")
+    sweep.add_column("recall", justify="right")
+    sweep.add_column("F1", justify="right")
+    sweep.add_column("answerable coverage", justify="right")
+    for row in report.sweep:
+        sweep.add_row(
+            f"{row['min_retrieval_score']:.2f}",
+            str(row["refused"]),
+            f"{row['abstention_precision']:.1%}",
+            f"{row['abstention_recall']:.1%}",
+            f"{row['abstention_f1']:.3f}",
+            f"{row['answerable_coverage']:.1%}",
+        )
+    console.print(sweep)
+
+    leaked = report.leaks()
+    if leaked:
+        console.print(
+            f"[yellow]{len(leaked)} unanswerable question(s) were answered: "
+            f"{', '.join(r.question_id for r in leaked)}[/yellow]"
+        )
+    console.print(f"report written to {report.write(settings)}")
+
+
 @evaluate.command("check")
 def eval_check() -> None:
     """Verify every gold evidence span still resolves in the parsed filings."""
@@ -615,8 +712,11 @@ def ask(
     strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = "fixed",
     raw: Annotated[bool, typer.Option("--raw/--context-embed")] = False,
     ticker: Annotated[str | None, typer.Option("--ticker", "-t")] = None,
+    min_score: Annotated[
+        float | None, typer.Option(help="Override MIN_RETRIEVAL_SCORE for this question.")
+    ] = None,
 ) -> None:
-    """Answer a question from the filings, with every sentence checked against its source."""
+    """Answer from the filings with every sentence checked, or refuse and say why."""
     settings = get_settings()
     variant = RAW if raw else CONTEXT
     vector_store = build_store(settings, "chroma", strategy, variant)
@@ -624,22 +724,41 @@ def ask(
         console.print("[red]index is empty; run `rag index build` first[/red]")
         raise typer.Exit(code=1)
 
-    retriever = DenseRetriever(build_embedder(settings), vector_store)
     llm = build_llm(settings)
+    pipeline = Pipeline.build(
+        settings,
+        DenseRetriever(build_embedder(settings), vector_store),
+        llm,
+        gate=gate_settings(settings, min_score),
+        strategy=strategy,
+    )
     where = {"ticker": ticker.upper()} if ticker else None
     try:
         with console.status("retrieving and answering"):
-            chunks = [r.chunk for r in retriever.retrieve(question, k=k, where=where)]
-            answer = answer_question(llm, question, chunks, max_tokens=settings.answer_max_tokens)
+            outcome = pipeline.ask(question, k=k, where=where)
     except ModelServerError as exc:
         console.print(f"[red]{escape(str(exc))}[/red]")
         raise typer.Exit(code=1) from None
 
-    if answer.insufficient_evidence:
-        console.print("[yellow]The filings retrieved do not contain the answer.[/yellow]")
-        console.print(f"[dim]{len(chunks)} passages were considered.[/dim]")
+    if outcome.refusal is not None:
+        refusal = outcome.refusal
+        console.print(f"\n[yellow]Cannot answer: {refusal.reason}[/yellow]")
+        console.print(escape(refusal.detail))
+        if refusal.best_chunks:
+            table = Table(title="closest passages, so you can look yourself")
+            table.add_column("score", justify="right")
+            table.add_column("filing")
+            table.add_column("section")
+            for hit in refusal.best_chunks:
+                c = hit.chunk
+                table.add_row(
+                    f"{hit.score:.3f}", f"{c.ticker} {c.form} {c.period_label}", c.section
+                )
+            console.print(table)
+        console.print(f"[dim]{llm.label} | prompt v{PROMPT_VERSION}[/dim]")
         return
 
+    answer = outcome.answer
     console.print(f"\n{escape(answer.text)}\n")
     table = Table(title="citations")
     table.add_column("tag")
@@ -661,10 +780,6 @@ def ask(
     if answer.derived_numbers:
         listed = ", ".join(d.text for d in answer.derived_numbers)
         console.print(f"[yellow]figures not found in the cited passage: {listed}[/yellow]")
-    if answer.invalid_tags:
-        console.print(
-            f"[red]cited passages that were never provided: {', '.join(answer.invalid_tags)}[/red]"
-        )
     console.print(f"[dim]{llm.label} | prompt v{answer.prompt_version}[/dim]")
 
 

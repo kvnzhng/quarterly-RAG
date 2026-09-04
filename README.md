@@ -70,6 +70,7 @@ uv run rag index build --ticker AAPL --ticker NVDA --context   # -> embeddings i
 uv run rag index query "What were Apple's total net sales in Q3 FY2026?" --context
 uv run rag eval retrieval -k 5 --context   # -> recall@k, MRR, nDCG with a run record
 uv run rag ask "How many employees did Apple have at the end of fiscal 2025?"
+uv run rag eval refusal                    # -> abstention precision/recall and the threshold sweep
 ```
 
 Later tickets add `rag index`, `rag ask`, and `rag eval`. The commands are listed in `src/quarterly_rag/cli.py` as they are planned.
@@ -126,7 +127,7 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 - [x] RAG-006 embeddings, Chroma, dense retrieval
 - [x] RAG-008 retrieval metrics, run record, baseline
 - [x] RAG-010 grounded generation with verified citations
-- [ ] RAG-011 refusal policy
+- [x] RAG-011 refusal policy with abstention metrics
 - [ ] RAG-020 / 007 / 009 chunking, vector store, and retrieval comparisons
 - [ ] RAG-012 / 021 faithfulness eval, calculation provenance
 - [ ] RAG-013 Langfuse

@@ -56,6 +56,15 @@ class Settings(BaseSettings):
         description="Cap on a grounded answer. Thinking-mode models need room before they write.",
     )
 
+    # --- Refusal gate -----------------------------------------------------------
+    min_retrieval_score: float = Field(
+        default=0.0,
+        description=(
+            "Refuse when the best retrieved passage scores below this. 0 disables the check; "
+            "the operating point is chosen from the sweep in docs/learning/refusal.md."
+        ),
+    )
+
     # --- Chunking ---------------------------------------------------------------
     # Sizes are whitespace words, not model tokens: a word here averages 6.4 characters on
     # this corpus and a BPE tokenizer splits figures like `$109,417` into several tokens.

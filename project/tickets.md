@@ -13,16 +13,16 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-## Backlog
-
-### Phase 1: one thin end-to-end path, measured
-
 ### RAG-011: Refusal policy and abstention evaluation
 - **Type:** feat
 - **Created:** 2026-09-03
 - **Competency:** when to refuse to answer
 - **Description:** Implement a refusal gate with explicit reasons: (a) retrieval confidence below threshold, (b) question outside corpus scope (company or period not indexed, non-financial question), (c) generator reports insufficient evidence, (d) citation verification fails. Grow the `unanswerable` seeds from RAG-019 into `data/eval/unanswerable.jsonl` (30+ questions that must be refused) and measure abstention precision/recall alongside answer accuracy.
 - **Done when:** `docs/learning/refusal.md` reports the tradeoff curve between refusing too much and hallucinating, and thresholds are chosen from it.
+
+## Backlog
+
+### Phase 1: one thin end-to-end path, measured
 
 ### Phase 2: compare alternatives against the baseline
 
