@@ -13,13 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-007: FAISS adapter and Chroma vs FAISS benchmark
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** retrieval quality
-- **Description:** Implement a FAISS adapter (flat and HNSW) behind the same protocol. Benchmark both on the same corpus: build time, query p50/p95 latency, memory, metadata filtering support, persistence story, operational complexity.
-- **Done when:** `docs/tradeoffs/vector-stores.md` is filled with measured numbers and ADR-007 records the default choice and when to pick the other.
-
 ## Backlog
 
 
@@ -256,3 +249,14 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Negative results:** the structure-blind recursive splitter is 21 points worse at k=5 and leaves 221 chunks holding half a table; parent-child came second because a 69-word child cut by word count still crosses topics while a titled block does not.
 - **Remaining ceiling:** recall@20 is 72.7%, so about a quarter of questions have evidence neither ranking nor chunking reaches.
 - **Commits:** `9b3e350`
+
+### RAG-007: FAISS adapter and Chroma vs FAISS benchmark
+- **Type:** feat
+- **Created:** 2026-09-03 | **Completed:** 2026-09-04
+- **Competency:** retrieval quality
+- **Description:** Implement a FAISS adapter (flat and HNSW) behind the same protocol. Benchmark both on the same corpus: build time, query p50/p95 latency, memory, metadata filtering support, persistence story, operational complexity.
+- **Done when:** `docs/tradeoffs/vector-stores.md` is filled with measured numbers and ADR-007 records the default choice and when to pick the other.
+- **Verified:** `docs/tradeoffs/vector-stores.md` holds the benchmark. The decision is recorded in **ADR-010**, not ADR-007 as this ticket said: ADR-007 was taken by the parser decision. `make test-all`: 300 passed.
+- **Result:** all three stores give identical retrieval quality (recall@1 39.4%, recall@5 48.5%, MRR 0.440). FAISS HNSW is 16x faster per lookup and uses a fifth of the memory, which is invisible: the store is 3% of a retrieval against 31.4 ms to embed the question. ChromaDB stays the default on operational grounds (upsert, native filtering, one directory of state).
+- **Dependencies added:** `faiss-cpu` (~30 MB, imported only when a FAISS store is built; worth carrying because the comparison is part of the project's purpose and the decision reverses at scale).
+- **Commits:** `e15d165`
