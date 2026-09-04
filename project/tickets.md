@@ -13,13 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-024: Section key renders Part IV as "Part IIII"
-- **Type:** fix
-- **Created:** 2026-09-04
-- **Competency:** grounding
-- **Description:** `Section.key` builds the roman numeral with `"I" * part`, so Part IV becomes `Part IIII`. It shows on every 10-K Item 15 and 16 record, which is where Nvidia files its consolidated financial statements. Section keys are the handle for gold evidence spans (RAG-019) and citations (RAG-010), so fix before eval data is generated against them.
-- **Done when:** `Part IV.Item 15` renders correctly, a test covers all four parts, and the corpus is re-parsed.
-
 ### RAG-019: Evaluation set v0 with evidence spans and question types
 - **Type:** feat
 - **Created:** 2026-09-04
@@ -198,3 +191,11 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Dependencies added:** `beautifulsoup4` and `lxml` (HTML parsing; `lxml` is the fast, lenient tree builder these 1-2 MB inline-XBRL documents need). Both are runtime dependencies, not dev-only.
 - **Verified:** all 16 filings parse with zero missing critical items and zero false headings; every 10-K yields its 23 expected Items, Apple's 10-Qs 11, Nvidia's 9 (Part II Items 3 and 4 genuinely absent). `text[char_start:char_end] == record.text` holds for every record. `make test-all`: 91 passed.
 - **Commits:** `1c1027c`, `2e2efc1`
+
+### RAG-024: Section key renders Part IV as "Part IIII"
+- **Type:** fix
+- **Created:** 2026-09-04 | **Completed:** 2026-09-04
+- **Competency:** grounding
+- **Description:** `Section.key` builds the roman numeral with `"I" * part`, so Part IV becomes `Part IIII`. It shows on every 10-K Item 15 and 16 record, which is where Nvidia files its consolidated financial statements. Section keys are the handle for gold evidence spans (RAG-019) and citations (RAG-010), so fix before eval data is generated against them.
+- **Done when:** `Part IV.Item 15` renders correctly, a test covers all four parts, and the corpus is re-parsed.
+- **Commits:** `ef148b3`
