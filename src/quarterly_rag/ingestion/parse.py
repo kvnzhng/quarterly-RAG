@@ -37,6 +37,9 @@ _ITEM_HEADING = re.compile(
 _PART_LINE = re.compile(r"^part\s+(i{1,3}|iv)\b\s*(?P<rest>.*)$", re.I)
 _SIGNATURES = re.compile(r"^signatures?$", re.I)
 _ROMAN = {"i": 1, "ii": 2, "iii": 3, "iv": 4}
+# What may follow a part number in a real heading: "PART II - OTHER INFORMATION".
+_PART_SEPARATORS = " \u2013\u2014\u2010-:."
+_PART_SEPARATOR_STRIP = re.compile(f"^[{re.escape(_PART_SEPARATORS)}]+")
 # A heading line is short; a paragraph that happens to open with "Item 5. ..." is not.
 MAX_HEADING_WORDS = 25
 
@@ -215,6 +218,17 @@ class _Heading:
     body_start: int
 
 
+def _is_part_marker(match: re.Match[str]) -> bool:
+    """True for a real part heading, false for a sentence that opens with a cross-reference.
+
+    `Part I, Item 1A of the 2025 Form 10-K describes ...` starts a paragraph inside Part II;
+    letting it set the part would misattribute every heading after it. A real part heading is
+    either bare (`Part II`) or continues with a separator (`PART II - OTHER INFORMATION`).
+    """
+    rest = match.group("rest").strip()
+    return not rest or rest[0] in _PART_SEPARATORS
+
+
 def _find_headings(text: str) -> tuple[list[_Heading], int]:
     """Item headings in document order, plus the offset where the signature block starts."""
     headings: list[_Heading] = []
@@ -234,11 +248,11 @@ def _find_headings(text: str) -> tuple[list[_Heading], int]:
             continue
         if _SIGNATURES.match(stripped) and headings:
             signatures_at = min(signatures_at, offset)
-        if match := _PART_LINE.match(stripped):
+        if (match := _PART_LINE.match(stripped)) and _is_part_marker(match):
             # A bare "Part II" row in the table of contents also matches; harmless, because
             # the body's own part line resets the state before the first real heading.
             part = _ROMAN[match.group(1).lower()]
-            rest = match.group("rest").strip(" \u2013\u2014-:.")
+            rest = _PART_SEPARATOR_STRIP.sub("", match.group("rest"))
             if not rest or not _ITEM_HEADING.match(rest):
                 offset = end + 1
                 continue

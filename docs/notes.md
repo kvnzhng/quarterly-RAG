@@ -15,4 +15,4 @@
 ## Open Questions
 
 - Apple and Nvidia are the starting tickers. Add a third company with a different fiscal calendar (e.g. Microsoft, June FY) to stress period filtering?
-- Should the eval sets be committed under `data/eval/` (yes, planned) and should a small sample of processed filings be committed for CI tests (leaning yes, one 10-Q per company)?
+- ~~Should a sample of processed filings be committed for CI tests?~~ Resolved 2026-09-04 (RAG-004): no. Two truncated HTML fixtures of about 2 KB each under `tests/ingestion/fixtures/` cover the parser's rules; the real 16 filings are exercised by an integration test that skips when the corpus is absent. Eval sets are still committed under `data/eval/`.

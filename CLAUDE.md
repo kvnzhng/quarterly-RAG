@@ -28,6 +28,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./docs/adr/004-corpus-sec-filings.md
 ./docs/adr/005-model-provider-configurable.md
 ./docs/adr/006-model-selection.md
+./docs/adr/007-custom-filing-parser.md
 ./docs/architecture.md
 ./docs/learning/chunking.md
 ./docs/learning/grounding.md
@@ -89,6 +90,8 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./tests/indexing/test_embedder_factory.py
 ./tests/indexing/test_openai_compatible_embedder.py
 ./tests/ingestion/edgar_fixtures.py
+./tests/ingestion/fixtures/tenk.htm
+./tests/ingestion/fixtures/tenq.htm
 ./tests/ingestion/test_download.py
 ./tests/ingestion/test_edgar_client.py
 ./tests/ingestion/test_fiscal.py

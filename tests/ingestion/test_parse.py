@@ -50,7 +50,10 @@ def test_cross_references_are_not_headings(tenq) -> None:
     mda = next(s for s in tenq.sections if s.key == "Part I.Item 2")
     assert "See Item 1A of this Form 10-Q" in mda.text  # kept in the body, not split on
     risks = next(s for s in tenq.sections if s.key == "Part II.Item 1A")
-    assert "Part I, Item 1A of the 2025 Form 10-K" in risks.text
+    # This sentence starts its own line with "Part I, ...". A bare part-prefix match would
+    # set the part back to I and misattribute every heading after it.
+    assert risks.text.count("Part I, Item 1A of the 2025 Form 10-K") == 1
+    assert tenq.sections[-1].part == 2
 
 
 def test_offsets_index_into_the_normalized_text(tenq, tenk) -> None:

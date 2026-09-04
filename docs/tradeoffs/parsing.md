@@ -1,6 +1,6 @@
 # Filing parsing: custom HTML parser vs sec-parser vs edgartools vs unstructured
 
-**Status:** decided (measured on the 16-filing corpus, 2026-09-04)
+**Status:** decided (ADR-007; measured on the 16-filing corpus, 2026-09-04)
 **Ticket:** RAG-004
 
 ## Question
