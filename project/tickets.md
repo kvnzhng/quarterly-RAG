@@ -13,16 +13,16 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-## Backlog
-
-### Phase 1: one thin end-to-end path, measured
-
 ### RAG-008: Retrieval metrics, run record, and baseline numbers
 - **Type:** feat
 - **Created:** 2026-09-03
 - **Competency:** retrieval quality
 - **Description:** Implement recall@k, MRR, and nDCG@k over the RAG-019 set, with a chunk counted relevant when it overlaps a gold evidence span (overlap rule configurable, default any overlap). Break results down by company, form, section, and question type. Every report embeds a **run record**: git commit, corpus manifest hash, parser version, chunker name and config, embedding provider and model, vector store, retrieval parameters (k, filters), prompt version where relevant, and timestamp. `rag eval retrieval --k 5` prints the table and writes `reports/retrieval-<timestamp>.json`.
 - **Done when:** the eval runs end to end on the RAG-005 + RAG-006 baseline and the numbers, with their run record, are in `docs/learning/retrieval-quality.md`.
+
+## Backlog
+
+### Phase 1: one thin end-to-end path, measured
 
 ### RAG-010: Grounded answer generation with verified citations
 - **Type:** feat

@@ -15,6 +15,7 @@ from quarterly_rag.chunking.build import SMALL_CHUNK_WORDS, build_ticker
 from quarterly_rag.config import get_settings
 from quarterly_rag.doctor import failed, run_doctor
 from quarterly_rag.errors import ModelServerError
+from quarterly_rag.evaluation.metrics import DEFAULT_KS, group_by, near_miss_rates, summarise
 from quarterly_rag.evaluation.questions import (
     check_gold_answers,
     check_spans,
@@ -22,6 +23,8 @@ from quarterly_rag.evaluation.questions import (
     load_questions,
     questions_path,
 )
+from quarterly_rag.evaluation.relevance import OverlapRule
+from quarterly_rag.evaluation.retrieval_eval import run_retrieval_eval
 from quarterly_rag.indexing.build import build_index, build_store, load_manifest
 from quarterly_rag.indexing.embed_text import CONTEXT, RAW
 from quarterly_rag.indexing.embedder import build_embedder
@@ -393,6 +396,100 @@ def index_query(
     console.print(table)
 
 
+@evaluate.command("retrieval")
+def eval_retrieval(
+    k: Annotated[int, typer.Option("-k", help="Cutoff highlighted in the summary line.")] = 5,
+    store: Annotated[str, typer.Option(help="Vector store.")] = "chroma",
+    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = "fixed",
+    context: Annotated[bool, typer.Option("--context/--raw")] = False,
+    min_overlap_chars: Annotated[
+        int, typer.Option(help="Characters of a gold span a chunk must cover to count.")
+    ] = 1,
+    min_overlap_fraction: Annotated[
+        float, typer.Option(help="Fraction of a gold span a chunk must cover, 0 to 1.")
+    ] = 0.0,
+) -> None:
+    """Score retrieval against the gold evidence spans and write a report."""
+    settings = get_settings()
+    variant = CONTEXT if context else RAW
+    try:
+        vector_store = build_store(settings, store, strategy, variant)
+    except (NotImplementedError, ValueError) as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from None
+    if vector_store.count() == 0:
+        console.print("[red]index is empty; run `rag index build` first[/red]")
+        raise typer.Exit(code=1)
+
+    retriever = DenseRetriever(build_embedder(settings), vector_store)
+    rule = OverlapRule(min_chars=min_overlap_chars, min_fraction=min_overlap_fraction)
+    ks = tuple(sorted({*DEFAULT_KS, k}))
+    with console.status("retrieving"):
+        try:
+            report = run_retrieval_eval(
+                settings,
+                retriever,
+                store=store,
+                strategy=strategy,
+                variant=variant,
+                ks=ks,
+                rule=rule,
+            )
+        except (FileNotFoundError, ModelServerError) as exc:
+            console.print(f"[red]{escape(str(exc))}[/red]")
+            raise typer.Exit(code=1) from None
+
+    run = report.run
+    console.print(
+        f"{run.question_count} answerable questions "
+        f"({report.skipped_unanswerable} unanswerable excluded) | "
+        f"{run.embedder} | {run.embed_variant} text | {run.chunk_strategy} chunks | "
+        f"{run.indexed_chunks:,} indexed | relevance: {run.overlap_rule}"
+    )
+    if run.git_dirty:
+        console.print("[yellow]working tree is dirty; the run record says so[/yellow]")
+
+    overall = summarise(report.results, report.all_ranks, report.ks)
+    headline = Table(title="overall")
+    headline.add_column("questions", justify="right")
+    for cutoff in report.ks:
+        headline.add_column(f"recall@{cutoff}", justify="right")
+    headline.add_column("MRR", justify="right")
+    headline.add_column(f"nDCG@{k}", justify="right")
+    headline.add_row(
+        str(overall.count),
+        *[f"{overall.recall[c]:.1%}" for c in report.ks],
+        f"{overall.mrr:.3f}",
+        f"{overall.ndcg[k]:.3f}",
+    )
+    console.print(headline)
+
+    near = near_miss_rates(report.results, k)
+    ladder = Table(title=f"how close the top {k} got")
+    ladder.add_column("reached")
+    ladder.add_column("share", justify="right")
+    ladder.add_row("the right filing", f"{near['filing']:.1%}")
+    ladder.add_row("the right section of it", f"{near['section']:.1%}")
+    ladder.add_row("a chunk holding the evidence", f"{near['chunk']:.1%}")
+    console.print(ladder)
+
+    for label, key in (("question type", "question_type"), ("company", "ticker"), ("form", "form")):
+        grouped = group_by(report.results, key, report.all_ranks, report.ks)
+        table = Table(title=f"by {label}")
+        table.add_column(label)
+        table.add_column("n", justify="right")
+        table.add_column(f"recall@{k}", justify="right")
+        table.add_column("MRR", justify="right")
+        for name, metrics in grouped.items():
+            table.add_row(
+                name, str(metrics.count), f"{metrics.recall[k]:.1%}", f"{metrics.mrr:.3f}"
+            )
+        console.print(table)
+
+    path = report.write(settings)
+    console.print(f"report written to {path}")
+
+
 @evaluate.command("check")
 def eval_check() -> None:
     """Verify every gold evidence span still resolves in the parsed filings."""
@@ -438,7 +535,6 @@ def eval_check() -> None:
 
 # Planned subcommands (see project/tickets.md):
 #   rag ask "..."         RAG-010  grounded answer or refusal
-#   rag eval retrieval    RAG-008  recall@k / MRR / nDCG
 #   rag eval all          RAG-012  retrieval + faithfulness + abstention
 
 

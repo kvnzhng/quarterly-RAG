@@ -6,7 +6,8 @@ import pytest
 
 from quarterly_rag.chunking.build import iter_chunks
 from quarterly_rag.config import get_settings
-from quarterly_rag.evaluation.questions import iter_answerable, load_questions, questions_path
+from quarterly_rag.evaluation.metrics import recall_at_k
+from quarterly_rag.evaluation.retrieval_eval import run_retrieval_eval
 from quarterly_rag.indexing.build import build_store, load_manifest
 from quarterly_rag.indexing.embed_text import CONTEXT, RAW
 from quarterly_rag.indexing.embedder import build_embedder
@@ -62,26 +63,19 @@ def test_a_metadata_filter_restricts_results_to_one_company() -> None:
 
 
 def test_context_headers_retrieve_better_than_raw_text() -> None:
-    """The reason both variants exist: the choice is measured, not assumed (RAG-006)."""
+    """The reason both variants exist: the choice is measured, not assumed (RAG-006).
+
+    Uses the RAG-008 metrics so there is one definition of recall in the repo.
+    """
     settings = get_settings()
     embedder = build_embedder(settings)
-    questions = list(iter_answerable(load_questions(questions_path(settings))))
     recall = {}
     for variant in (RAW, CONTEXT):
         store = build_store(settings, "chroma", "fixed", variant)
         if store.count() == 0:
             pytest.skip(f"no {variant} index; run rag index build")
-        retriever = DenseRetriever(embedder, store)
-        found = 0
-        for question in questions:
-            hits = retriever.retrieve(question.question, k=5)
-            if any(
-                hit.chunk.accession == span.accession
-                and hit.chunk.char_start < span.char_end
-                and span.char_start < hit.chunk.char_end
-                for hit in hits
-                for span in question.evidence
-            ):
-                found += 1
-        recall[variant] = found / len(questions)
+        report = run_retrieval_eval(
+            settings, DenseRetriever(embedder, store), variant=variant, ks=(5,)
+        )
+        recall[variant] = recall_at_k(report.results, 5)
     assert recall[CONTEXT] > recall[RAW], recall

@@ -15,7 +15,7 @@ The v0 set (RAG-019) holds 43 questions: 23 lookup, 5 derived, 5 cross-period, 1
 
 ## Metrics used (RAG-008)
 
-- **recall@k**: is a gold chunk in the top k? The metric that bounds answer quality.
+- **recall@k**: is a gold chunk in the top k? A hit rate rather than fractional recall: one relevant chunk in the prompt is what lets the generator answer, so the metric asks whether any was found, not how many. It bounds answer quality.
 - **MRR**: how high does the first gold chunk rank?
 - **nDCG@k**: rank-weighted quality when several chunks are relevant.
 - Broken down by company, form type, section, and question type (numeric lookup, definition, comparison across periods, unanswerable).
@@ -29,16 +29,44 @@ The v0 set (RAG-019) holds 43 questions: 23 lookup, 5 derived, 5 cross-period, 1
 5. Cross-encoder reranking of the fused top-N.
 6. Chunking strategy (see `chunking.md`).
 
-## Measured
+## Baseline
 
-First numbers, RAG-006, dense retrieval only over 33 answerable questions and 1,391 chunks:
+Dense retrieval only, 33 answerable questions, 1,391 chunks from the fixed chunker, measured 2026-09-04 by `rag eval retrieval`.
 
-| Query and document text | recall@1 | recall@5 | recall@10 |
-|---|---|---|---|
-| raw chunk, no task prefix | 3.0% | 15.2% | 24.2% |
-| context header, nomic task prefixes | 18.2% | 36.4% | 45.5% |
+| Embedded text | recall@1 | recall@3 | recall@5 | recall@10 | MRR | nDCG@5 |
+|---|---|---|---|---|---|---|
+| raw chunk | 9.1% | 15.2% | 18.2% | 24.2% | 0.131 | 0.096 |
+| with a context header | 18.2% | 30.3% | 36.4% | 45.5% | 0.267 | 0.232 |
 
-Two lessons, both found only because the eval set existed before the index did. `nomic-embed-text` is trained with `search_query:` and `search_document:` prefixes and silently under-performs without them, which cost a third of recall and raised no error. And a one-line header naming the company, period and section roughly doubles recall, because a chunk of a financial table contains neither the company name nor the fiscal period. Full table and run record: `docs/tradeoffs/embeddings.md`.
+Run record for both: commit `e1c3f08`, corpus `ab54dafa27ee5fe1`, eval set `ed55e0b644402717`, parser 1, chunker `fixed` at 350 words with 60 overlap, `openai_compatible/nomic-embed-text` with nomic task prefixes, ChromaDB, dense retriever, relevance = any overlap with a gold span. Reports under `reports/`.
+
+**Read these with the denominator in view.** 33 questions means one question is three percentage points, and the smallest breakdown cell holds five. These numbers separate large effects, not small ones.
+
+### How close retrieval got
+
+The single most useful cut, because it says which lever to pull next.
+
+| The top 5 reached | raw | with context header |
+|---|---|---|
+| the right filing | 78.8% | 90.9% |
+| the right section of it | 45.5% | 63.6% |
+| a chunk holding the evidence | 18.2% | 36.4% |
+
+Retrieval almost always finds the right document and then loses inside it. Filtering by company or period would therefore buy little; ranking and chunking are where the loss is.
+
+### Two findings the eval set caught
+
+- **The embedding model was being misused.** `nomic-embed-text` is trained with `search_query:` on questions and `search_document:` on passages, and was getting neither. Nothing errored, the vectors were the right shape and already unit-normalised, and recall@5 was a third lower. Fixed in the `Embedder` interface so the mistake is no longer expressible.
+- **A context header roughly doubles recall at every cutoff.** A chunk of a financial table names neither the company nor the fiscal period, so a question naming either has nothing to match. Both variants stay in the repo and both are rebuilt on demand, so the gap keeps being measured.
+
+### The 10-Q result
+
+| Form | questions | recall@5 |
+|---|---|---|
+| 10-K | 26 | 46.2% |
+| 10-Q | 7 | 0.0% |
+
+Not one of the seven quarterly questions found its evidence. Every one of them asks for a figure that lives in the condensed financial statements, and retrieval returned the management discussion of the same filing instead: prose that talks about the number, ranked above the table that contains it. Two consequences. Answer quality on quarterly questions is currently capped at zero, and the fix is exact-term matching, since `109,417` and `Total net sales` are strings that BM25 handles and embeddings do not (RAG-009).
 
 _Fill in: baseline table with its run record (commit, corpus hash, chunker, embedding model, k) from RAG-008, then the best configuration from `docs/tradeoffs/retrieval-strategies.md` and `vector-stores.md`._
 
@@ -48,6 +76,8 @@ _Fill in: baseline table with its run record (commit, corpus hash, chunker, embe
 - Why BM25 still matters for financial text (exact tokens: ticker symbols, line items, "Q3 FY24").
 - Filtering before vs after vector search, and what Chroma vs FAISS let you do.
 - Reranking cost vs gain; when top-k is already good enough.
+- The near-miss ladder as a diagnostic: right filing, right section, right chunk. Losing at the first step is a filtering problem; losing at the last is a ranking or chunking problem, and they need different fixes.
+- Why every reported number carries a run record, and what breaks without one.
 
 ## Reading
 

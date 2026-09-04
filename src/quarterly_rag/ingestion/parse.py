@@ -27,6 +27,9 @@ BLOCK_TAGS = {
     "header", "hr", "li", "main", "nav", "ol", "p", "pre", "section", "table",
     "td", "th", "tr", "ul",
 }  # fmt: skip
+PARSER_VERSION = "1"
+"""Bumped when the heading or table rules change, so a stored offset can be dated."""
+
 TABLE_OPEN = "[TABLE]"
 TABLE_CLOSE = "[/TABLE]"
 HEADER_PREFIX = "header: "
