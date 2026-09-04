@@ -40,6 +40,15 @@ What is the unit of retrieval, and therefore the unit of evidence? Too small and
 
 Invariants checked across all 1,391 chunks: `filing_text[char_start:char_end] == chunk.text` holds everywhere, no chunk crosses a section boundary, no chunk holds half a table, and every chunk id is unique. All 35 gold evidence spans overlap at least one chunk, so none is stranded between chunks.
 
+Overlap is applied at whole-line granularity, so it does not always happen. Of 1,179 boundaries between consecutive chunks in the same section, 781 overlap and 398 do not:
+
+| Cause of a boundary with no overlap | Count |
+|---|---|
+| The preceding chunk's last line is itself longer than the 60-word budget | 325 |
+| The preceding chunk ends with a table, which is never carried forward | 73 |
+
+Filings write long paragraphs as single lines, so a third of boundaries get no overlap in practice. That is a property of v1 to hold constant when RAG-020 compares strategies, not a result to attribute to the strategy being compared.
+
 Run record: commit `754126c`, strategy `fixed`, `CHUNK_WORDS=350`, `CHUNK_OVERLAP_WORDS=60`, corpus manifests `data/raw/{AAPL,NVDA}/manifest.json`, no model involved.
 
 ### What the numbers say about the corpus
@@ -47,7 +56,7 @@ Run record: commit `754126c`, strategy `fixed`, `CHUNK_WORDS=350`, `CHUNK_OVERLA
 - **61 chunks exceed the target, all because a table is atomic.** A table runs 84 words at the median and 801 at the largest, so keeping tables whole costs 4% oversized chunks and buys a rule with no exceptions. Splitting them would mean repeating the header row in each part, which breaks the offset invariant and is deferred to RAG-020.
 - **78 chunks fall under 50 words**, because a short Item is one short chunk. Apple's "Defaults Upon Senior Securities" is 45 characters. These are honest, not padding.
 - **One gold span already straddles two chunks.** Apple's gross margin question (q003) needs a dollar table and a percentage table that sit next to each other. Retrieval must return both, which is precisely the kind of case a parent-child strategy is meant to fix.
-- **Nvidia's Part IV Item 15 alone yields roughly 50 chunks**, because it carries the whole set of financial statements. Every one of them is labelled with the same section, so a section filter buys nothing there. Sub-splitting on note headings is the RAG-020 idea this corpus argues for.
+- **Nvidia's Part IV Item 15 yields 61 chunks in the FY2026 10-K alone**, because it carries the whole set of financial statements. Every one of them is labelled with the same section, so a section filter buys nothing there. Sub-splitting on note headings is the RAG-020 idea this corpus argues for.
 
 ## Decision
 

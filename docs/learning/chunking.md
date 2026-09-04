@@ -27,7 +27,7 @@ The v1 fixed-window chunker (RAG-005) over the 16-filing corpus, target 350 word
 |---|---|---|---|---|---|---|
 | 1,391 | 304 | 347 | 809 | 78 | 61 | 473 |
 
-Every chunk resolves back into the filing text it came from, none crosses an Item boundary, and none holds half a table. The 61 oversized chunks are all a single table kept whole. Full numbers and what they say about the corpus: `docs/tradeoffs/chunking.md`. The strategy comparison is RAG-020.
+Every chunk resolves back into the filing text it came from, none crosses an Item boundary, and none holds half a table. The 61 oversized chunks are all a single table kept whole. Overlap is applied by whole lines, and filings write long paragraphs as single lines, so a third of chunk boundaries get no overlap at all. Full numbers and what they say about the corpus: `docs/tradeoffs/chunking.md`. The strategy comparison is RAG-020.
 
 ## Talking points
 
