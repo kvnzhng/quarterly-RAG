@@ -21,6 +21,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./Makefile
 ./README.md
 ./data/eval/.gitkeep
+./data/eval/baseline.json
 ./data/eval/questions.jsonl
 ./data/indexes/.gitkeep
 ./data/processed/.gitkeep
@@ -72,7 +73,10 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./src/quarterly_rag/doctor.py
 ./src/quarterly_rag/errors.py
 ./src/quarterly_rag/evaluation/__init__.py
+./src/quarterly_rag/evaluation/baseline.py
+./src/quarterly_rag/evaluation/calibration.py
 ./src/quarterly_rag/evaluation/generation_eval.py
+./src/quarterly_rag/evaluation/judge.py
 ./src/quarterly_rag/evaluation/metrics.py
 ./src/quarterly_rag/evaluation/questions.py
 ./src/quarterly_rag/evaluation/refusal_eval.py
@@ -120,6 +124,8 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./tests/chunking/test_structural.py
 ./tests/conftest.py
 ./tests/evaluation/__init__.py
+./tests/evaluation/test_baseline.py
+./tests/evaluation/test_judge.py
 ./tests/evaluation/test_metrics.py
 ./tests/evaluation/test_questions.py
 ./tests/evaluation/test_refusal_eval.py

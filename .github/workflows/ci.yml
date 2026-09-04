@@ -4,6 +4,15 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The eval gate is manual on purpose: it calls a model, and a project principle says
+  # CI never does. Running it needs an endpoint GitHub's runners cannot reach, so it is
+  # started by hand against a self-hosted runner or with LLM_* pointing at a hosted API.
+  workflow_dispatch:
+    inputs:
+      run_eval:
+        description: "Also run the eval regression gate (needs a reachable model endpoint)"
+        type: boolean
+        default: false
 
 jobs:
   test:
@@ -30,3 +39,24 @@ jobs:
           else
             git log -1 --format=%B | scripts/check-commit-msg.sh -
           fi
+
+  eval:
+    # Never on push or pull request: this job calls a model, and the corpus and index it
+    # needs are not in the repository. Start it from the Actions tab with run_eval set,
+    # on a runner that can reach an endpoint, after `rag ingest download`, `rag ingest
+    # parse`, `rag chunk build` and `rag index build` have run there.
+    if: github.event_name == 'workflow_dispatch' && inputs.run_eval
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - name: Install
+        run: uv sync --frozen
+      - name: Eval regression gate
+        env:
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          EMBED_BASE_URL: ${{ secrets.EMBED_BASE_URL }}
+          EDGAR_USER_AGENT: ${{ secrets.EDGAR_USER_AGENT }}
+        run: make eval

@@ -81,6 +81,12 @@ Run record: commit `e71c561`, prompt v1, gold passages, k=5, judge prompt v1, se
 
 **RAGAS is rejected on measurement**, not on principle, and the measurement is recorded so the decision can be revisited.
 
+### The gate, and why it is not in CI
+
+`make eval` runs the retrieval, generation and refusal evals and compares nine numbers with `data/eval/baseline.json`, which is committed alongside the eval set. The tolerance is five points, because 33 questions means one question is three and a gate that fails on noise is one nobody reads. A metric the baseline names and a run does not produce counts as a failure rather than a skip: dropping the judge would otherwise make a faithfulness regression invisible.
+
+It runs on demand and not on every push. A project principle says CI never calls a model, and the gate calls one for every question; GitHub's runners also cannot reach the endpoint or the corpus. The workflow therefore carries the job behind `workflow_dispatch`, so it can be started by hand on a runner that has both. That is a real limitation rather than a wired-up gate: on this project the regression gate is a local command.
+
 ## Interview one-liner
 
 The standard faithfulness library scored our faithful answers zero and our one hallucination one, so we built a judge that checks a sentence against the passage it actually cited, and then calibrated that judge against a deterministic number check to find out it waves through a quarter of the cases it exists to catch.

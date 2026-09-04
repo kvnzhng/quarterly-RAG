@@ -71,6 +71,7 @@ uv run rag index query "What were Apple's total net sales in Q3 FY2026?" --conte
 uv run rag eval retrieval -k 5 --context   # -> recall@k, MRR, nDCG with a run record
 uv run rag ask "How many employees did Apple have at the end of fiscal 2025?"
 uv run rag eval refusal                    # -> abstention precision/recall and the threshold sweep
+make eval                                  # -> every metric against data/eval/baseline.json
 ```
 
 Later tickets add `rag index`, `rag ask`, and `rag eval`. The commands are listed in `src/quarterly_rag/cli.py` as they are planned.
