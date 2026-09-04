@@ -41,6 +41,22 @@ Smaller alternatives that fit a laptop (`qwen2.5:7b`, `mistral:7b`, `gemma3:12b`
 
 _Not yet measured. `rag doctor` at RAG-002 only proves the configured endpoint answers; the first comparable numbers come from RAG-010 (citation rates) and RAG-012 (correctness, faithfulness), each with a run record._
 
+### Citation discipline, measured at RAG-010
+
+23 `lookup` questions with the evidence handed to the model, prompt v1, so this measures the generator alone.
+
+| Model | Size | Citations resolve | Every sentence cited | Figures verified | Fully grounded | States the gold figure |
+|---|---|---|---|---|---|---|
+| `llama3.1:8b` | 4.9 GB | 50% | 50% | 86% | 41% | 95% |
+| `gpt-oss:20b` | 13.8 GB | 100% | 91% | 100% | 91% | 77% |
+| `qwen3.6:27b` | 17.4 GB | 100% | 100% | 100% | 100% | 64% |
+
+The first real tradeoff in this project, and not the one expected. **The 8B model is the best of the three at finding the right figure and by far the worst at saying where it found it**, inventing passage labels it was never given in half its answers. Neither larger model does that once.
+
+A caveat found while measuring: `qwen3.6:27b` scored 43% on the gold figure until the answer budget rose from 400 to 1024 tokens. A thinking-mode model spends tokens before it writes, and a truncated answer scores as ungrounded, which blames the model for the budget. `ANSWER_MAX_TOKENS` is now a setting.
+
+Run record: commit `0ab6a44`, prompt v1, gold passages, k=5, network Ollama server.
+
 ### Tried at RAG-002
 
 `rag doctor` on 2026-09-04, Ollama 0.32.13 on the network server, one-word chat reply and one short embedding. Cold means the model had to be loaded while a 27B model was resident; warm is the immediate second run.
@@ -53,7 +69,7 @@ _Not yet measured. `rag doctor` at RAG-002 only proves the configured endpoint a
 
 ## Decision
 
-Pending. `llama3.1:8b` and `nomic-embed-text` stay the defaults (ADR-006) until the RAG-012 table shows a local candidate that beats them on correctness or faithfulness without losing refusal calibration. The 20B to 32B models on the server are the first ones to try.
+`llama3.1:8b` stays the code default because it is the one that fits a laptop (ADR-003), but it is now known to be the weakest link in grounding: it fails citation discipline in half its answers. **On a machine with room, set `LLM_MODEL=gpt-oss:20b` in `.env`.** The final choice waits on RAG-012, which adds correctness and faithfulness judging; `qwen3.6:27b` is the one to watch there, since it grounds every sentence and currently trails on stating the labelled figure.
 
 ## Interview one-liner
 

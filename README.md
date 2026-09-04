@@ -69,6 +69,7 @@ uv run rag chunk build --ticker AAPL --ticker NVDA    # -> chunks with the same 
 uv run rag index build --ticker AAPL --ticker NVDA --context   # -> embeddings in ChromaDB
 uv run rag index query "What were Apple's total net sales in Q3 FY2026?" --context
 uv run rag eval retrieval -k 5 --context   # -> recall@k, MRR, nDCG with a run record
+uv run rag ask "How many employees did Apple have at the end of fiscal 2025?"
 ```
 
 Later tickets add `rag index`, `rag ask`, and `rag eval`. The commands are listed in `src/quarterly_rag/cli.py` as they are planned.
@@ -81,6 +82,7 @@ The pipeline reaches models through two small interfaces, `LLM` and `Embedder`, 
 |---|---|---|---|---|
 | Ollama on this machine (default) | `openai_compatible` | `http://localhost:11434/v1` | `ollama` (ignored) | `make models` pulls the weights |
 | Ollama, vLLM, LM Studio, llama.cpp on another machine | `openai_compatible` | `http://<host>:<port>/v1` (the `/v1` matters) | whatever that server expects | nothing to install locally; for Ollama, `make models` pulls onto that host |
+| Ollama on a machine with 16 GB+ (recommended) | `openai_compatible` | as above | as above | `LLM_MODEL=gpt-oss:20b`; the 8B default fails citation discipline (`docs/tradeoffs/llm-serving.md`) |
 | Hosted OpenAI-compatible API (OpenAI, OpenRouter, Groq, ...) | `openai_compatible` | the provider's URL | your token | costs money, so evals stop being free |
 | Anthropic API | `anthropic` | unused | your token | `LLM_MODEL=claude-opus-5`; no embeddings endpoint, keep `EMBED_*` local |
 
@@ -123,7 +125,8 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 - [x] RAG-005 v1 chunker (fixed window, tables atomic)
 - [x] RAG-006 embeddings, Chroma, dense retrieval
 - [x] RAG-008 retrieval metrics, run record, baseline
-- [ ] RAG-010 / 011 grounded generation and refusal
+- [x] RAG-010 grounded generation with verified citations
+- [ ] RAG-011 refusal policy
 - [ ] RAG-020 / 007 / 009 chunking, vector store, and retrieval comparisons
 - [ ] RAG-012 / 021 faithfulness eval, calculation provenance
 - [ ] RAG-013 Langfuse

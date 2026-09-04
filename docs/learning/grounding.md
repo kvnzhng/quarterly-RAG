@@ -10,12 +10,37 @@ An answer is grounded when every claim in it can be traced to a specific passage
 - **The corpus is reproducible**: `rag ingest download` writes `data/raw/<TICKER>/manifest.json` with accession number, form, period of report, fiscal period label, filing date, source URL, and byte count for every filing on disk, and re-running it is a no-op (RAG-003).
 - **Provenance is mandatory** on every `Chunk`: ticker, form type, fiscal period, filing date, SEC section, character offsets, and source URL (RAG-004).
 - **Chunk ids are visible to the model**: retrieved chunks are rendered as `[c17] ...text...` and the prompt requires inline citations per sentence (RAG-010).
-- **Citations are verified, not trusted**: each citation must resolve to a retrieved chunk, and numbers in a cited sentence must appear in that chunk after unit normalisation (RAG-010). Sentences that fail are returned as `unsupported_sentences`, and numbers that are not in the chunk are returned as `derived_numbers`, not silently kept. Derived numbers get calculation provenance in RAG-021: operands cited, operation stated, result recomputed.
+- **Citations are verified, not trusted**: each citation must resolve to a passage that was actually provided, and numbers in a cited sentence must appear in that passage after unit normalisation (RAG-010). A model that cites `[c9]` when it was given five passages is caught, and `llama3.1:8b` does exactly that in half its answers. Sentences that fail are returned as `unsupported_sentences`, and numbers that are not in the chunk are returned as `derived_numbers`, not silently kept. Derived numbers get calculation provenance in RAG-021: operands cited, operation stated, result recomputed.
 - **The UI shows the evidence**: citation, highlighted passage, and a link to the filing on EDGAR (RAG-014).
 
 ## Measured
 
-_Fill in: citation resolution rate, number-match rate, share of answers with at least one unsupported sentence._
+23 `lookup` questions, prompt v1, measured 2026-09-04 by `rag eval generation`. **Gold passages** hands the model the chunks that hold the evidence, which isolates the generator and the verifier. **Retrieved passages** runs the real pipeline, so retrieval's recall is inside the number.
+
+| Model | Passages | Refused | Citations resolve | Every sentence cited | Figures verified | Fully grounded | States the gold figure |
+|---|---|---|---|---|---|---|---|
+| `gpt-oss:20b` | gold | 4% | 100% | 91% | 100% | 91% | 77% |
+| `gpt-oss:20b` | retrieved | 35% | 100% | 87% | 100% | 87% | 67% |
+| `llama3.1:8b` | gold | 4% | 50% | 50% | 86% | 41% | 95% |
+
+Run record: commit `0ab6a44`, prompt v1, chunker `fixed`, `context` embed variant, ChromaDB, k=5, `ANSWER_MAX_TOKENS=1024`. Reports under `reports/`.
+
+### What the numbers say
+
+- **Citation discipline is a model capability, not a prompting problem.** The same prompt gets 100% resolvable citations from a 20B model and 50% from an 8B one. `llama3.1:8b` invents passage labels it was never given, in half its answers. It is the better model at finding the right figure (95% against 77%) and the worse one at saying where it found it.
+- **Grounding holds when retrieval degrades; correctness does not.** Moving from gold passages to retrieved ones leaves citation resolution at 100% and fully-grounded at 87%, while refusals rise from 4% to 35%. The system does not start making things up when the evidence thins out. It says it cannot answer.
+- **Refusal is doing real work already.** 35% of end-to-end questions get `INSUFFICIENT_EVIDENCE`, which tracks retrieval's 36% recall@5. Turning that signal into a policy with reasons is RAG-011.
+
+### What the verifier cannot do
+
+It asks whether a figure is **present** in the cited passage, not whether the claim about it is true. Two consequences seen in this run:
+
+- An answer stating "a $15,381 million increase" passes when the passage happens to contain 15,381 anywhere, including as an unrelated line item.
+- An answer reading the wrong column states a real number from the right table and passes.
+
+Checking the relationship rather than the presence needs the operands and the operation, which is RAG-021. `derived, unverified` is the honest label until then: the model may have computed correctly, and this verifier cannot tell.
+
+`states the gold figure` is a strict proxy for correctness, not a judge. It requires the same figure the label writes, so a correct answer phrased at a different scale fails it. RAG-012 adds an actual faithfulness judge.
 
 ## Talking points
 

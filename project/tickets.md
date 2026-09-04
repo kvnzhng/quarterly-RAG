@@ -13,16 +13,16 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-## Backlog
-
-### Phase 1: one thin end-to-end path, measured
-
 ### RAG-010: Grounded answer generation with verified citations
 - **Type:** feat
 - **Created:** 2026-09-03
 - **Competency:** grounding, hallucination control
 - **Description:** Prompt the LLM with retrieved chunks tagged by id and require inline citations `[c12]`. Post-process: every claim sentence must carry a citation that maps to a retrieved chunk. Numbers are checked against the cited chunk after parsing and unit scaling (thousands / millions / billions, rounding tolerance): a number found in the chunk is `verified`; one not found is marked `derived, unverified` and the answer says so, instead of being silently passed or hard-failed. Calculation provenance for derived numbers is RAG-021. Return a structured `Answer {text, citations, unsupported_sentences, derived_numbers}`. v1 targets `lookup` questions from RAG-019; `derived` and `cross_period` results are reported separately.
 - **Done when:** `rag ask "What was Apple's Q2 FY24 revenue?"` returns an answer whose citations resolve to real chunks, unsupported sentences and derived numbers are flagged rather than silently returned, and baseline citation-resolution and number-match rates by question type are in `docs/learning/grounding.md`.
+
+## Backlog
+
+### Phase 1: one thin end-to-end path, measured
 
 ### RAG-011: Refusal policy and abstention evaluation
 - **Type:** feat

@@ -50,6 +50,12 @@ class Settings(BaseSettings):
         description="Per-request timeout. A cold local model can take a minute to load.",
     )
 
+    # --- Generation -------------------------------------------------------------
+    answer_max_tokens: int = Field(
+        default=1024,
+        description="Cap on a grounded answer. Thinking-mode models need room before they write.",
+    )
+
     # --- Chunking ---------------------------------------------------------------
     # Sizes are whitespace words, not model tokens: a word here averages 6.4 characters on
     # this corpus and a BPE tokenizer splits figures like `$109,417` into several tokens.

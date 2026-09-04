@@ -15,6 +15,7 @@ from quarterly_rag.chunking.build import SMALL_CHUNK_WORDS, build_ticker
 from quarterly_rag.config import get_settings
 from quarterly_rag.doctor import failed, run_doctor
 from quarterly_rag.errors import ModelServerError
+from quarterly_rag.evaluation.generation_eval import GOLD, RETRIEVED, run_generation_eval
 from quarterly_rag.evaluation.metrics import DEFAULT_KS, group_by, near_miss_rates, summarise
 from quarterly_rag.evaluation.questions import (
     check_gold_answers,
@@ -25,6 +26,8 @@ from quarterly_rag.evaluation.questions import (
 )
 from quarterly_rag.evaluation.relevance import OverlapRule
 from quarterly_rag.evaluation.retrieval_eval import run_retrieval_eval
+from quarterly_rag.generation.answer import PROMPT_VERSION, answer_question
+from quarterly_rag.generation.llm import build_llm
 from quarterly_rag.indexing.build import build_index, build_store, load_manifest
 from quarterly_rag.indexing.embed_text import CONTEXT, RAW
 from quarterly_rag.indexing.embedder import build_embedder
@@ -490,6 +493,78 @@ def eval_retrieval(
     console.print(f"report written to {path}")
 
 
+@evaluate.command("generation")
+def eval_generation(
+    context: Annotated[
+        str, typer.Option(help="gold: hand over the evidence chunks. retrieved: run the pipeline.")
+    ] = GOLD,
+    k: Annotated[int, typer.Option("-k", help="Passages given to the model.")] = 5,
+    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = "fixed",
+    raw: Annotated[
+        bool, typer.Option("--raw/--context-embed", help="Embed variant to query.")
+    ] = False,
+    types: Annotated[str, typer.Option(help="Comma-separated question types to score.")] = "lookup",
+) -> None:
+    """Score citation resolution and figure verification on grounded answers."""
+    settings = get_settings()
+    variant = RAW if raw else CONTEXT
+    question_types = tuple(t.strip() for t in types.split(",") if t.strip())
+    retriever = None
+    if context == RETRIEVED:
+        vector_store = build_store(settings, "chroma", strategy, variant)
+        if vector_store.count() == 0:
+            console.print("[red]index is empty; run `rag index build` first[/red]")
+            raise typer.Exit(code=1)
+        retriever = DenseRetriever(build_embedder(settings), vector_store)
+
+    llm = build_llm(settings)
+    console.print(
+        f"{llm.label} | prompt v{PROMPT_VERSION} | {context} passages | k={k} | "
+        f"types: {', '.join(question_types)}"
+    )
+    with console.status("answering"):
+        try:
+            report = run_generation_eval(
+                settings,
+                llm,
+                context=context,
+                retriever=retriever,
+                k=k,
+                strategy=strategy,
+                variant=variant,
+                question_types=question_types,
+            )
+        except (FileNotFoundError, ValueError, ModelServerError) as exc:
+            console.print(f"[red]{escape(str(exc))}[/red]")
+            raise typer.Exit(code=1) from None
+
+    table = Table(title=f"grounding, {context} passages")
+    table.add_column("question type")
+    table.add_column("n", justify="right")
+    table.add_column("refused", justify="right")
+    table.add_column("citations resolve", justify="right")
+    table.add_column("every sentence cited", justify="right")
+    table.add_column("figures verified", justify="right")
+    table.add_column("fully grounded", justify="right")
+    table.add_column("gold figure present", justify="right")
+    rows = {**report.by_type(), "all": {"questions": len(report.results), **report.rates()}}
+    for name, stats in rows.items():
+        if not stats.get("questions"):
+            continue
+        table.add_row(
+            name,
+            str(stats["questions"]),
+            f"{stats.get('insufficient_evidence', 0):.0%}",
+            f"{stats.get('citation_resolution', 0):.0%}",
+            f"{stats.get('all_sentences_cited', 0):.0%}",
+            f"{stats.get('figures_verified', 0):.0%}",
+            f"{stats.get('fully_grounded', 0):.0%}",
+            f"{stats.get('gold_figures_present', 0):.0%}",
+        )
+    console.print(table)
+    console.print(f"report written to {report.write(settings)}")
+
+
 @evaluate.command("check")
 def eval_check() -> None:
     """Verify every gold evidence span still resolves in the parsed filings."""
@@ -533,8 +608,67 @@ def eval_check() -> None:
     console.print("[green]every span resolves and every lookup answer is in its evidence[/green]")
 
 
+@app.command()
+def ask(
+    question: Annotated[str, typer.Argument(help="A question about the filings.")],
+    k: Annotated[int, typer.Option("-k", help="Passages to retrieve.")] = 5,
+    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = "fixed",
+    raw: Annotated[bool, typer.Option("--raw/--context-embed")] = False,
+    ticker: Annotated[str | None, typer.Option("--ticker", "-t")] = None,
+) -> None:
+    """Answer a question from the filings, with every sentence checked against its source."""
+    settings = get_settings()
+    variant = RAW if raw else CONTEXT
+    vector_store = build_store(settings, "chroma", strategy, variant)
+    if vector_store.count() == 0:
+        console.print("[red]index is empty; run `rag index build` first[/red]")
+        raise typer.Exit(code=1)
+
+    retriever = DenseRetriever(build_embedder(settings), vector_store)
+    llm = build_llm(settings)
+    where = {"ticker": ticker.upper()} if ticker else None
+    try:
+        with console.status("retrieving and answering"):
+            chunks = [r.chunk for r in retriever.retrieve(question, k=k, where=where)]
+            answer = answer_question(llm, question, chunks, max_tokens=settings.answer_max_tokens)
+    except ModelServerError as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from None
+
+    if answer.insufficient_evidence:
+        console.print("[yellow]The filings retrieved do not contain the answer.[/yellow]")
+        console.print(f"[dim]{len(chunks)} passages were considered.[/dim]")
+        return
+
+    console.print(f"\n{escape(answer.text)}\n")
+    table = Table(title="citations")
+    table.add_column("tag")
+    table.add_column("filing")
+    table.add_column("section")
+    table.add_column("passage")
+    for citation in answer.citations:
+        table.add_row(
+            citation.tag,
+            f"{citation.ticker} {citation.form} {citation.period_label}",
+            citation.section,
+            escape(citation.quote[:110]),
+        )
+    console.print(table)
+    if answer.unsupported_sentences:
+        console.print(
+            f"[red]{len(answer.unsupported_sentences)} sentence(s) without usable citations[/red]"
+        )
+    if answer.derived_numbers:
+        listed = ", ".join(d.text for d in answer.derived_numbers)
+        console.print(f"[yellow]figures not found in the cited passage: {listed}[/yellow]")
+    if answer.invalid_tags:
+        console.print(
+            f"[red]cited passages that were never provided: {', '.join(answer.invalid_tags)}[/red]"
+        )
+    console.print(f"[dim]{llm.label} | prompt v{answer.prompt_version}[/dim]")
+
+
 # Planned subcommands (see project/tickets.md):
-#   rag ask "..."         RAG-010  grounded answer or refusal
 #   rag eval all          RAG-012  retrieval + faithfulness + abstention
 
 
