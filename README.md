@@ -66,6 +66,8 @@ uv run rag doctor    # endpoint reachable, models listed, one chat + one embeddi
 uv run rag ingest download --ticker AAPL --ticker NVDA
 uv run rag ingest parse --ticker AAPL --ticker NVDA   # -> sectioned JSONL with offsets
 uv run rag chunk build --ticker AAPL --ticker NVDA    # -> chunks with the same offsets
+uv run rag index build --ticker AAPL --ticker NVDA --context   # -> embeddings in ChromaDB
+uv run rag index query "What were Apple's total net sales in Q3 FY2026?" --context
 ```
 
 Later tickets add `rag index`, `rag ask`, and `rag eval`. The commands are listed in `src/quarterly_rag/cli.py` as they are planned.
@@ -118,7 +120,7 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 - [x] RAG-004 section parser
 - [x] RAG-019 evaluation set v0 (43 questions, evidence spans, question types)
 - [x] RAG-005 v1 chunker (fixed window, tables atomic)
-- [ ] RAG-006 embeddings, Chroma, dense retrieval
+- [x] RAG-006 embeddings, Chroma, dense retrieval
 - [ ] RAG-008 retrieval metrics, run record, baseline
 - [ ] RAG-010 / 011 grounded generation and refusal
 - [ ] RAG-020 / 007 / 009 chunking, vector store, and retrieval comparisons

@@ -100,7 +100,9 @@ def check_chat(llm: LLM) -> CheckResult:
 
 def check_embed(embedder: Embedder) -> CheckResult:
     try:
-        vectors, ms = _timed(lambda: embedder.embed(["Apple reported quarterly revenue."]))
+        vectors, ms = _timed(
+            lambda: embedder.embed_documents(["Apple reported quarterly revenue."])
+        )
     except ModelServerError as exc:
         return CheckResult("embedding round-trip", "fail", str(exc))
     if len(vectors) != 1 or not vectors[0]:

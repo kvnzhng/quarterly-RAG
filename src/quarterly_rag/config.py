@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     embed_base_url: str = "http://localhost:11434/v1"
     embed_api_key: str = "ollama"
     embed_model: str = "nomic-embed-text"
+    # Asymmetric embedding models want the query and the passage marked differently.
+    # These defaults are what `nomic-embed-text` is trained with; on this corpus they lift
+    # recall@5 from 24% to 36% (RAG-006). Set both empty for a model that does not use them.
+    embed_query_prefix: str = "search_query: "
+    embed_document_prefix: str = "search_document: "
 
     # --- Requests -----------------------------------------------------------------
     request_timeout_s: float = Field(

@@ -20,9 +20,14 @@ class OpenAICompatibleEmbedder:
         model: str,
         *,
         timeout_s: float = 120.0,
+        query_prefix: str = "",
+        document_prefix: str = "",
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         self.model = model
+        # Asymmetric models want the two sides marked. Empty for models that do not.
+        self.query_prefix = query_prefix
+        self.document_prefix = document_prefix
         self._client = OpenAICompatibleClient(
             base_url, api_key, timeout_s=timeout_s, transport=transport
         )
@@ -31,7 +36,14 @@ class OpenAICompatibleEmbedder:
     def label(self) -> str:
         return f"{self.provider}/{self.model}"
 
-    def embed(self, texts: Sequence[str]) -> list[list[float]]:
+    def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
+        return self._embed([self.document_prefix + text for text in texts])
+
+    def embed_query(self, text: str) -> list[float]:
+        (vector,) = self._embed([self.query_prefix + text])
+        return vector
+
+    def _embed(self, texts: Sequence[str]) -> list[list[float]]:
         if not texts:
             return []
         data = self._client.post_json("/embeddings", {"model": self.model, "input": list(texts)})

@@ -13,10 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-## Backlog
-
-### Phase 1: one thin end-to-end path, measured
-
 ### RAG-006: Embeddings, VectorStore interface, ChromaDB adapter, dense retrieval
 - **Type:** feat
 - **Created:** 2026-09-03
@@ -24,6 +20,10 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Description:** Define a `VectorStore` protocol (add, query with metadata filter, persist, load, stats). Implement the ChromaDB adapter with persistence under `data/indexes/`. Embeddings come from the configured embed endpoint (ADR-005; `nomic-embed-text` on Ollama by default) behind the `Embedder` protocol so sentence-transformers models can be swapped in. Add `retrieve(question, k)` returning `RetrievedChunk`s from dense search only; BM25, filters, and reranking are RAG-009.
 - **Done when:** `rag index build --ticker AAPL --store chroma` builds and reloads an index, and a query returns chunks with provenance.
 - **Artifacts:** `docs/tradeoffs/embeddings.md` first pass.
+
+## Backlog
+
+### Phase 1: one thin end-to-end path, measured
 
 ### RAG-008: Retrieval metrics, run record, and baseline numbers
 - **Type:** feat

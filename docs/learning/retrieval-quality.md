@@ -31,6 +31,15 @@ The v0 set (RAG-019) holds 43 questions: 23 lookup, 5 derived, 5 cross-period, 1
 
 ## Measured
 
+First numbers, RAG-006, dense retrieval only over 33 answerable questions and 1,391 chunks:
+
+| Query and document text | recall@1 | recall@5 | recall@10 |
+|---|---|---|---|
+| raw chunk, no task prefix | 3.0% | 15.2% | 24.2% |
+| context header, nomic task prefixes | 18.2% | 36.4% | 45.5% |
+
+Two lessons, both found only because the eval set existed before the index did. `nomic-embed-text` is trained with `search_query:` and `search_document:` prefixes and silently under-performs without them, which cost a third of recall and raised no error. And a one-line header naming the company, period and section roughly doubles recall, because a chunk of a financial table contains neither the company name nor the fiscal period. Full table and run record: `docs/tradeoffs/embeddings.md`.
+
 _Fill in: baseline table with its run record (commit, corpus hash, chunker, embedding model, k) from RAG-008, then the best configuration from `docs/tradeoffs/retrieval-strategies.md` and `vector-stores.md`._
 
 ## Talking points

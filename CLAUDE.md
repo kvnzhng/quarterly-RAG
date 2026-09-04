@@ -76,6 +76,9 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./src/quarterly_rag/generation/openai_compatible.py
 ./src/quarterly_rag/indexing/__init__.py
 ./src/quarterly_rag/indexing/base.py
+./src/quarterly_rag/indexing/build.py
+./src/quarterly_rag/indexing/chroma.py
+./src/quarterly_rag/indexing/embed_text.py
 ./src/quarterly_rag/indexing/embedder.py
 ./src/quarterly_rag/indexing/openai_compatible.py
 ./src/quarterly_rag/ingestion/__init__.py
@@ -88,6 +91,8 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./src/quarterly_rag/observability/__init__.py
 ./src/quarterly_rag/openai_compatible.py
 ./src/quarterly_rag/retrieval/__init__.py
+./src/quarterly_rag/retrieval/base.py
+./src/quarterly_rag/retrieval/dense.py
 ./tests/conftest.py
 ./tests/generation/test_anthropic_api.py
 ./tests/generation/test_llm_factory.py
@@ -123,6 +128,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 - **Run CLI:** `uv run rag --help`
 - **Doctor:** `make doctor` or `uv run rag doctor` (configured endpoints, models, data dirs)
 - **Chunks:** `uv run rag chunk build --ticker AAPL --ticker NVDA` (sections into `data/chunks/<strategy>/`)
+- **Index:** `uv run rag index build --ticker AAPL --ticker NVDA [--context]` then `rag index query "..."`
 - **Eval set:** `uv run rag eval check` (every gold evidence span still resolves)
 - **Corpus:** `uv run rag ingest download --ticker AAPL --ticker NVDA` then `rag ingest parse --ticker AAPL --ticker NVDA` (EDGAR into `data/raw/`, sections into `data/processed/`, both idempotent)
 - **Models:** `make models` (pulls Ollama models, RAG-002)

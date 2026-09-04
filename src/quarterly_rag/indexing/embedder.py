@@ -14,6 +14,8 @@ def build_embedder(settings: Settings) -> Embedder:
             settings.embed_api_key,
             settings.embed_model,
             timeout_s=settings.request_timeout_s,
+            query_prefix=settings.embed_query_prefix,
+            document_prefix=settings.embed_document_prefix,
         )
     if settings.embed_provider == "sentence_transformers":
         raise NotImplementedError(

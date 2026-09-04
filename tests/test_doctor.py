@@ -47,8 +47,11 @@ class FakeEmbedder:
         self.models = list(models)
         self.dim = dim
 
-    def embed(self, texts: Sequence[str]) -> list[list[float]]:
+    def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
         return [[0.1] * self.dim for _ in texts]
+
+    def embed_query(self, text: str) -> list[float]:
+        return [0.1] * self.dim
 
     def list_models(self) -> list[str]:
         return self.models

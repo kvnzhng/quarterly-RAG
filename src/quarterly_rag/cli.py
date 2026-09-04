@@ -14,6 +14,7 @@ from quarterly_rag import __version__
 from quarterly_rag.chunking.build import SMALL_CHUNK_WORDS, build_ticker
 from quarterly_rag.config import get_settings
 from quarterly_rag.doctor import failed, run_doctor
+from quarterly_rag.errors import ModelServerError
 from quarterly_rag.evaluation.questions import (
     check_gold_answers,
     check_spans,
@@ -21,15 +22,21 @@ from quarterly_rag.evaluation.questions import (
     load_questions,
     questions_path,
 )
+from quarterly_rag.indexing.build import build_index, build_store, load_manifest
+from quarterly_rag.indexing.embed_text import CONTEXT, RAW
+from quarterly_rag.indexing.embedder import build_embedder
 from quarterly_rag.ingestion.download import DEFAULT_FORMS, download_filings
 from quarterly_rag.ingestion.edgar import EdgarClient, EdgarError
 from quarterly_rag.ingestion.records import parse_ticker
+from quarterly_rag.retrieval.dense import DenseRetriever
 
 app = typer.Typer(help="Local RAG over SEC 10-Q/10-K filings.", no_args_is_help=True)
 ingest = typer.Typer(help="Fetch and parse SEC filings.", no_args_is_help=True)
 app.add_typer(ingest, name="ingest")
 chunk = typer.Typer(help="Build and inspect chunks.", no_args_is_help=True)
 app.add_typer(chunk, name="chunk")
+index = typer.Typer(help="Build and query the vector index.", no_args_is_help=True)
+app.add_typer(index, name="index")
 evaluate = typer.Typer(help="Evaluation sets and metrics.", no_args_is_help=True)
 app.add_typer(evaluate, name="eval")
 console = Console()
@@ -278,6 +285,114 @@ def chunk_build(
         raise typer.Exit(code=1)
 
 
+@index.command("build")
+def index_build(
+    ticker: Annotated[
+        list[str], typer.Option("--ticker", "-t", help="Ticker symbol; repeat for several.")
+    ],
+    store: Annotated[str, typer.Option(help="Vector store.")] = "chroma",
+    strategy: Annotated[str, typer.Option(help="Chunking strategy to index.")] = "fixed",
+    context: Annotated[
+        bool,
+        typer.Option(
+            "--context/--raw",
+            help="Prepend a company/period/section header to each chunk before embedding.",
+        ),
+    ] = False,
+) -> None:
+    """Embed chunks into a vector store under data/indexes/<store>/<strategy>/<variant>/."""
+    settings = get_settings()
+    variant = CONTEXT if context else RAW
+    embedder = build_embedder(settings)
+    console.print(
+        f"embedding {', '.join(t.upper() for t in ticker)} with {embedder.label}, "
+        f"{variant} text, into {store}"
+    )
+    with console.status("embedding chunks") as status:
+
+        def progress(done: int, total: int) -> None:
+            status.update(f"embedded {done}/{total} chunks")
+
+        try:
+            report = build_index(
+                settings,
+                ticker,
+                embedder=embedder,
+                store_name=store,
+                strategy=strategy,
+                variant=variant,
+                on_batch=progress,
+            )
+        except (FileNotFoundError, NotImplementedError, ValueError, ModelServerError) as exc:
+            console.print(f"[red]{escape(str(exc))}[/red]")
+            raise typer.Exit(code=1) from None
+
+    table = Table(title=f"index: {report.store} / {report.strategy} / {report.variant}")
+    table.add_column("key")
+    table.add_column("value")
+    table.add_row("embedder", report.embedder)
+    table.add_row("dimensions", str(report.dimensions))
+    table.add_row("chunks embedded", f"{report.embedded:,}")
+    table.add_row("chunks in store", f"{report.total:,}")
+    table.add_row("seconds", f"{report.seconds:.1f}")
+    table.add_row("path", str(report.path))
+    console.print(table)
+
+
+@index.command("query")
+def index_query(
+    question: Annotated[str, typer.Argument(help="What to search for.")],
+    k: Annotated[int, typer.Option("-k", help="How many chunks to return.")] = 5,
+    store: Annotated[str, typer.Option(help="Vector store.")] = "chroma",
+    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = "fixed",
+    context: Annotated[bool, typer.Option("--context/--raw")] = False,
+    ticker: Annotated[
+        str | None, typer.Option("--ticker", "-t", help="Restrict to one company.")
+    ] = None,
+) -> None:
+    """Search the index and show the matching chunks with their provenance."""
+    settings = get_settings()
+    variant = CONTEXT if context else RAW
+    try:
+        vector_store = build_store(settings, store, strategy, variant)
+    except (NotImplementedError, ValueError) as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from None
+    if vector_store.count() == 0:
+        console.print("[red]index is empty; run `rag index build` first[/red]")
+        raise typer.Exit(code=1)
+
+    retriever = DenseRetriever(build_embedder(settings), vector_store)
+    where = {"ticker": ticker.upper()} if ticker else None
+    try:
+        results = retriever.retrieve(question, k=k, where=where)
+    except ModelServerError as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from None
+
+    manifest = load_manifest(settings, store, strategy, variant) or {}
+    console.print(
+        f"{vector_store.count():,} chunks | {manifest.get('embedder', '?')} | {variant} text"
+    )
+    table = Table(title=f"top {len(results)} for: {question}")
+    table.add_column("#", justify="right")
+    table.add_column("score", justify="right")
+    table.add_column("filing")
+    table.add_column("section")
+    table.add_column("passage")
+    for hit in results:
+        c = hit.chunk
+        snippet = " / ".join(c.text.split("\n"))[:150]
+        table.add_row(
+            str(hit.rank),
+            f"{hit.score:.3f}",
+            f"{c.ticker} {c.form} {c.period_label}",
+            f"{c.section}",
+            escape(snippet),
+        )
+    console.print(table)
+
+
 @evaluate.command("check")
 def eval_check() -> None:
     """Verify every gold evidence span still resolves in the parsed filings."""
@@ -322,7 +437,6 @@ def eval_check() -> None:
 
 
 # Planned subcommands (see project/tickets.md):
-#   rag index build       RAG-006  embed chunks + store
 #   rag ask "..."         RAG-010  grounded answer or refusal
 #   rag eval retrieval    RAG-008  recall@k / MRR / nDCG
 #   rag eval all          RAG-012  retrieval + faithfulness + abstention
