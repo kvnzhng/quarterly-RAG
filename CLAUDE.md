@@ -73,6 +73,10 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./src/quarterly_rag/indexing/embedder.py
 ./src/quarterly_rag/indexing/openai_compatible.py
 ./src/quarterly_rag/ingestion/__init__.py
+./src/quarterly_rag/ingestion/download.py
+./src/quarterly_rag/ingestion/edgar.py
+./src/quarterly_rag/ingestion/fiscal.py
+./src/quarterly_rag/ingestion/manifest.py
 ./src/quarterly_rag/observability/__init__.py
 ./src/quarterly_rag/openai_compatible.py
 ./src/quarterly_rag/retrieval/__init__.py
@@ -82,7 +86,12 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./tests/generation/test_openai_compatible_llm.py
 ./tests/indexing/test_embedder_factory.py
 ./tests/indexing/test_openai_compatible_embedder.py
+./tests/ingestion/edgar_fixtures.py
+./tests/ingestion/test_download.py
+./tests/ingestion/test_edgar_client.py
+./tests/ingestion/test_fiscal.py
 ./tests/integration/test_live_doctor.py
+./tests/integration/test_live_edgar.py
 ./tests/test_config.py
 ./tests/test_doctor.py
 ./uv.lock
@@ -95,6 +104,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 - **Test:** `make test`
 - **Run CLI:** `uv run rag --help`
 - **Doctor:** `make doctor` or `uv run rag doctor` (configured endpoints, models, data dirs)
+- **Corpus:** `uv run rag ingest download --ticker AAPL --ticker NVDA` (EDGAR 10-Q/10-K into `data/raw/`, idempotent)
 - **Models:** `make models` (pulls Ollama models, RAG-002)
 - **Eval:** `make eval` (RAG-008+)
 

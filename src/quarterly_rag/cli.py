@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import date, timedelta
+from typing import Annotated
+
 import typer
 from rich.console import Console
 from rich.markup import escape
@@ -10,8 +13,12 @@ from rich.table import Table
 from quarterly_rag import __version__
 from quarterly_rag.config import get_settings
 from quarterly_rag.doctor import failed, run_doctor
+from quarterly_rag.ingestion.download import DEFAULT_FORMS, download_filings
+from quarterly_rag.ingestion.edgar import EdgarClient, EdgarError
 
 app = typer.Typer(help="Local RAG over SEC 10-Q/10-K filings.", no_args_is_help=True)
+ingest = typer.Typer(help="Fetch and parse SEC filings.", no_args_is_help=True)
+app.add_typer(ingest, name="ingest")
 console = Console()
 
 
@@ -70,8 +77,69 @@ def doctor() -> None:
     console.print("[green]all checks passed[/green]")
 
 
+@ingest.command("download")
+def ingest_download(
+    ticker: Annotated[
+        list[str], typer.Option("--ticker", "-t", help="Ticker symbol; repeat for several.")
+    ],
+    forms: Annotated[str, typer.Option(help="Comma-separated form types.")] = ",".join(
+        DEFAULT_FORMS
+    ),
+    since: Annotated[
+        str | None,
+        typer.Option(
+            help="Earliest filing date, YYYY-MM-DD. Default: two years ago (about eight quarters)."
+        ),
+    ] = None,
+) -> None:
+    """Download 10-Q/10-K primary documents from EDGAR into data/raw/<TICKER>/ with a manifest."""
+    settings = get_settings()
+    since_date = date.fromisoformat(since) if since else date.today() - timedelta(days=730)
+    form_list = tuple(f.strip() for f in forms.split(",") if f.strip())
+    try:
+        client = EdgarClient(settings.edgar_user_agent, timeout_s=settings.request_timeout_s)
+    except EdgarError as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=2) from None
+
+    failures = 0
+    for symbol in ticker:
+        try:
+            report = download_filings(settings, client, symbol, forms=form_list, since=since_date)
+        except EdgarError as exc:
+            console.print(f"[red]{symbol.upper()}: {escape(str(exc))}[/red]")
+            failures += 1
+            continue
+        table = Table(title=f"{report.ticker} ({report.company}), filings since {since_date}")
+        table.add_column("form")
+        table.add_column("period")
+        table.add_column("filed")
+        table.add_column("accession")
+        table.add_column("status")
+        table.add_column("size", justify="right")
+        styles = {"new": "green", "cached": "dim", "failed": "red"}
+        for item in report.items:
+            detail = item.status if not item.error else f"{item.status}: {escape(item.error)}"
+            table.add_row(
+                item.form,
+                item.period_label,
+                item.filing_date.isoformat(),
+                item.accession,
+                f"[{styles[item.status]}]{detail}[/]",
+                f"{item.size_bytes / 1e6:.1f} MB" if item.size_bytes else "",
+            )
+        console.print(table)
+        console.print(
+            f"{report.count('new')} new, {report.count('cached')} cached, "
+            f"{report.count('failed')} failed; manifest "
+            f"{'written' if report.manifest_written else 'unchanged'}: {report.manifest_path}"
+        )
+        failures += report.count("failed")
+    if failures:
+        raise typer.Exit(code=1)
+
+
 # Planned subcommands (see project/tickets.md):
-#   rag ingest download   RAG-003  fetch filings from EDGAR
 #   rag ingest parse      RAG-004  filings -> sectioned text
 #   rag eval check        RAG-019  every gold evidence span resolves into the parsed filings
 #   rag index build       RAG-006  chunk + embed + store

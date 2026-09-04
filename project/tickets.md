@@ -13,16 +13,16 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-## Backlog
-
-### Phase 1: one thin end-to-end path, measured
-
 ### RAG-003: SEC EDGAR filing downloader
 - **Type:** feat
 - **Created:** 2026-09-03
 - **Competency:** grounding (the corpus is the ground truth)
 - **Description:** `rag ingest download --ticker AAPL --forms 10-Q,10-K --since 2023-01-01`. Resolve ticker to CIK via EDGAR, list filings from the submissions API, download the primary document, and write a manifest (`data/raw/<ticker>/manifest.json`) with accession number, form type, period of report, filing date, and source URL. Respect EDGAR fair-access rules (declared User-Agent, max 10 req/s).
 - **Done when:** Apple and Nvidia 10-Q/10-K filings for the last 8 quarters are on disk with a manifest, re-running is idempotent.
+
+## Backlog
+
+### Phase 1: one thin end-to-end path, measured
 
 ### RAG-004: Filing parser with section detection
 - **Type:** feat

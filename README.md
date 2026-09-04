@@ -61,9 +61,12 @@ uv run rag version
 uv run rag config
 make test
 uv run rag doctor    # endpoint reachable, models listed, one chat + one embedding call, data dirs writable
+
+# 5. Corpus: the last two years of 10-Q / 10-K filings, about eight per company, with a manifest
+uv run rag ingest download --ticker AAPL --ticker NVDA
 ```
 
-Later tickets add `rag ingest`, `rag index`, `rag ask`, and `rag eval`. The commands are listed in `src/quarterly_rag/cli.py` as they are planned.
+Later tickets add `rag ingest parse`, `rag index`, `rag ask`, and `rag eval`. The commands are listed in `src/quarterly_rag/cli.py` as they are planned.
 
 ## Choosing a model provider
 

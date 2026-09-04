@@ -6,6 +6,7 @@ An answer is grounded when every claim in it can be traced to a specific passage
 
 ## What this repo does
 
+- **The corpus is reproducible**: `rag ingest download` writes `data/raw/<TICKER>/manifest.json` with accession number, form, period of report, fiscal period label, filing date, source URL, and byte count for every filing on disk, and re-running it is a no-op (RAG-003).
 - **Provenance is mandatory** on every `Chunk`: ticker, form type, fiscal period, filing date, SEC section, character offsets, and source URL (RAG-004).
 - **Chunk ids are visible to the model**: retrieved chunks are rendered as `[c17] ...text...` and the prompt requires inline citations per sentence (RAG-010).
 - **Citations are verified, not trusted**: each citation must resolve to a retrieved chunk, and numbers in a cited sentence must appear in that chunk after unit normalisation (RAG-010). Sentences that fail are returned as `unsupported_sentences`, and numbers that are not in the chunk are returned as `derived_numbers`, not silently kept. Derived numbers get calculation provenance in RAG-021: operands cited, operation stated, result recomputed.
