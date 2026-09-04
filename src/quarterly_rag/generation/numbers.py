@@ -40,10 +40,15 @@ FALLBACK_SCALES = (1.0, 1e3, 1e6)
 # by a newline and `Percentage of total net sales`, and was read as 29,915 percent. It then
 # matched nothing, so a correct answer quoting it was reported as a figure the passage does
 # not contain (found while measuring RAG-021).
+#
+# The gap is any horizontal whitespace, not just a space: `gpt-oss:20b` writes the narrow
+# no-break space U+202F between a figure and its unit, and a class of `[ \t]` alone dropped
+# the unit from every number it wrote.
+_HORIZONTAL = r"[^\S\r\n]"
 _UNIT_SUFFIX = r"%|(?:percent|thousands?|millions?|billions?|trillion)\b"
 _NUMBER = re.compile(
     r"(?P<currency>[$€£])?\s?(?P<digits>\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)"
-    rf"[ \t]*(?P<suffix>{_UNIT_SUFFIX})?",
+    rf"{_HORIZONTAL}*(?P<suffix>{_UNIT_SUFFIX})?",
     re.I,
 )
 _CAPTION_UNIT = re.compile(r"\(\s*(?:dollars |\$ )?in (thousand|million|billion)s?", re.I)

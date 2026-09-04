@@ -116,3 +116,16 @@ def test_percentage_is_not_read_as_the_unit_percent() -> None:
     assert not figure.is_percent
     (percent,) = parse_figures("8 percent")
     assert percent.is_percent
+
+
+def test_a_narrow_no_break_space_still_attaches_the_unit() -> None:
+    """`gpt-oss:20b` writes U+202F between a figure and its unit, on every figure it writes.
+
+    Restricting the gap to a space or a tab dropped the unit from all of them, so the answer
+    read as 109,417 rather than 109,417 million.
+    """
+    (figure,) = parse_figures("$109,417\u202fmillion")
+    assert figure.absolute == 109_417_000_000.0
+    assert figure_supported(figure, "(In millions)\nTotal net sales | 109,417")
+    (non_breaking,) = parse_figures("$109,417\u00a0million")
+    assert non_breaking.absolute == 109_417_000_000.0
