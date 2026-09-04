@@ -13,13 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-005: Chunker protocol and v1 chunker
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** chunking
-- **Description:** Define the `Chunker` protocol and the `Chunk` model with mandatory provenance (ticker, form, period, section, char offsets, source URL). Implement one chunker: a fixed token window with overlap applied within each RAG-004 section record, so no chunk crosses an Item boundary and a table is never split. Report chunk count and size distribution. The other strategies and the comparison are RAG-020.
-- **Done when:** chunks from one 10-Q round-trip to JSONL with provenance intact, offsets map back into the section text, and unit tests cover the boundary and table rules.
-
 ## Backlog
 
 ### Phase 1: one thin end-to-end path, measured
@@ -202,3 +195,13 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Verified:** 43 questions, every one reviewed against the filing text by Kevin in two rounds (10, then 33). 23 lookup, 5 derived, 5 cross-period, 10 unanswerable split evenly between `out_of_scope` and `insufficient_evidence`. 35/35 spans resolve; `rag eval check` is the gate. Three findings from round two were label presentation, not facts, and are fixed.
 - **Known limits for RAG-008:** evidence concentrates in 6 of the 16 filings, so the other 10 act as distractors and period filtering is under-tested; 30% of spans are prose and the rest tables.
 - **Commits:** `fbb5f19`, `781ff64`, `d0159d5`
+
+### RAG-005: Chunker protocol and v1 chunker
+- **Type:** feat
+- **Created:** 2026-09-03 | **Completed:** 2026-09-04
+- **Competency:** chunking
+- **Description:** Define the `Chunker` protocol and the `Chunk` model with mandatory provenance (ticker, form, period, section, char offsets, source URL). Implement one chunker: a fixed token window with overlap applied within each RAG-004 section record, so no chunk crosses an Item boundary and a table is never split. Report chunk count and size distribution. The other strategies and the comparison are RAG-020.
+- **Done when:** chunks from one 10-Q round-trip to JSONL with provenance intact, offsets map back into the section text, and unit tests cover the boundary and table rules.
+- **Verified:** 1,391 chunks over the 16-filing corpus, median 304 words, p90 347, largest 809. `filing_text[char_start:char_end] == chunk.text` holds for every chunk, none crosses a section boundary, none holds half a table, ids are unique, and all 35 gold evidence spans overlap at least one chunk. 61 chunks exceed the target, every one of them a single table kept whole. `make test-all`: 128 passed.
+- **Observations for RAG-020:** Nvidia's Part IV Item 15 alone yields ~50 chunks all sharing one section label, so a section filter buys nothing there; and one gold span (q003) already straddles two chunks, which is the case parent-child chunking exists to fix.
+- **Commits:** `6ec7cd3`
