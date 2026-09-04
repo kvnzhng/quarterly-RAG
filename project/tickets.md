@@ -190,4 +190,4 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Done when:** parser tests pass on one 10-Q and one 10-K per company, and a section coverage report shows every expected item was found.
 - **Dependencies added:** `beautifulsoup4` and `lxml` (HTML parsing; `lxml` is the fast, lenient tree builder these 1-2 MB inline-XBRL documents need). Both are runtime dependencies, not dev-only.
 - **Verified:** all 16 filings parse with zero missing critical items and zero false headings; every 10-K yields its 23 expected Items, Apple's 10-Qs 11, Nvidia's 9 (Part II Items 3 and 4 genuinely absent). `text[char_start:char_end] == record.text` holds for every record. `make test-all`: 91 passed.
-- **Commits:** `1c1027c`
+- **Commits:** `1c1027c`, `2e2efc1`
