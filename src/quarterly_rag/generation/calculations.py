@@ -87,7 +87,7 @@ _TOKENS = re.compile(
     rf"(?P<space>\s+)"
     rf"|(?P<tag>[{OPEN}][^{CLOSE}]*[{CLOSE}])"
     rf"|(?P<number>[$€£]?\s?\d{{1,3}}(?:,\d{{3}})+(?:\.\d+)?|[$€£]?\s?\d+(?:\.\d+)?)"
-    rf"(?:\s*(?P<unit>{_UNIT}))?"
+    rf"(?:[ \t]*(?P<unit>{_UNIT}))?"
     rf"|(?P<times>(?<=[\d\s)])x(?=[\s(\d$]))"
     rf"|(?P<op>[-+*/()])",
     re.I,

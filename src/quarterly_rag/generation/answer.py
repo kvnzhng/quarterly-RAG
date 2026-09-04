@@ -102,6 +102,9 @@ class Answer(BaseModel):
     """The answer without its calculation lines. A `CALC:` line is working, not a claim, so
     the judge and the sentence counts must not see it as one."""
     citations: list[Citation] = Field(default_factory=list)
+    cited_sentences: int = 0
+    """Sentences carrying a citation that resolves. Calculations cite passages too, so the
+    citation list alone no longer tells you whether any *claim* was grounded (RAG-021)."""
     unsupported_sentences: list[str] = Field(default_factory=list)
     derived_numbers: list[DerivedNumber] = Field(default_factory=list)
     calculations: list[Calculation] = Field(default_factory=list)
@@ -197,6 +200,7 @@ def verify(
     calculations = [verify_calculation(parse_calculation(line), passages) for line in calc_lines]
 
     rendered: list[str] = []
+    cited_sentences = 0
     unsupported: list[str] = []
     derived: list[DerivedNumber] = []
     invalid: list[str] = []
@@ -216,6 +220,7 @@ def verify(
             rendered.append(f"{sentence} [unsupported: {reason}]")
             continue
 
+        cited_sentences += 1
         for tag in known:
             if tag not in used:
                 used.append(tag)
@@ -243,6 +248,7 @@ def verify(
         raw_text=raw_text,
         prose=prose,
         citations=[_citation(tag, by_tag[tag]) for tag in used],
+        cited_sentences=cited_sentences,
         unsupported_sentences=unsupported,
         derived_numbers=derived,
         calculations=calculations,

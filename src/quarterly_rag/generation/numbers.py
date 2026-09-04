@@ -34,9 +34,16 @@ SCALES: dict[str, float] = {
 # Scales to try when a passage names no unit at all.
 FALLBACK_SCALES = (1.0, 1e3, 1e6)
 
+# A unit belongs to the number only when it is written beside it on the same line, and only
+# as a whole word. Allowing the gap to cross a line break made the last figure of a table row
+# take its unit from the row below: in Apple's operating expenses table, `$29,915` is followed
+# by a newline and `Percentage of total net sales`, and was read as 29,915 percent. It then
+# matched nothing, so a correct answer quoting it was reported as a figure the passage does
+# not contain (found while measuring RAG-021).
+_UNIT_SUFFIX = r"%|(?:percent|thousands?|millions?|billions?|trillion)\b"
 _NUMBER = re.compile(
     r"(?P<currency>[$€£])?\s?(?P<digits>\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)"
-    r"\s*(?P<suffix>%|percent|thousand[s]?|million[s]?|billion[s]?|trillion)?",
+    rf"[ \t]*(?P<suffix>{_UNIT_SUFFIX})?",
     re.I,
 )
 _CAPTION_UNIT = re.compile(r"\(\s*(?:dollars |\$ )?in (thousand|million|billion)s?", re.I)

@@ -130,3 +130,12 @@ def test_scope_is_derived_from_the_corpus(make_chunk) -> None:
     assert scope.tickers == {"AAPL", "NVDA"}
     assert scope.company_words == {"apple", "nvidia"}  # Inc and CORP are dropped
     assert scope.year_range == (2025, 2027)
+
+
+def test_a_calculation_citing_a_passage_does_not_satisfy_the_answer_gate(make_chunk) -> None:
+    """A verified calculation is not a grounded claim: the sentence still has to cite."""
+    chunk = make_chunk("a:1-2", "(In millions)\nTotal net sales | 109,417 | 94,036")
+    answer = verify("Net sales rose a lot.\nCALC: 109,417 [c1] - 94,036 [c1] = 15,381", [chunk])
+    refusal = check_answer(answer, [])
+    assert refusal is not None
+    assert refusal.reason == "verification_failed"

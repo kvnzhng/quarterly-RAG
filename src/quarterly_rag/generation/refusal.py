@@ -161,7 +161,7 @@ def check_answer(answer: Answer, results: Sequence[RetrievedChunk]) -> Refusal |
             detail="The model read the passages and reported that they do not answer it.",
             best_chunks=list(results[:3]),
         )
-    if not answer.citations:
+    if not answer.cited_sentences:
         return Refusal(
             reason="verification_failed",
             detail=(

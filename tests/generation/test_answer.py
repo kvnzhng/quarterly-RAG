@@ -249,3 +249,13 @@ def test_a_truncated_answer_is_flagged_rather_than_blamed(passages) -> None:
     answer = verify("Net sales were $109,417 million [c1].", passages, stop_reason="length")
     assert answer.truncated
     assert not verify("Net sales were $109,417 million [c1].", passages).truncated
+
+
+def test_a_calculation_alone_does_not_ground_an_uncited_claim(passages) -> None:
+    """Calculations cite passages, so citations exist while no claim is grounded."""
+    answer = verify(
+        "Net sales rose a lot.\nCALC: 109,417 [c1] - 94,036 [c1] = 15,381",
+        passages,
+    )
+    assert answer.citations and answer.cited_sentences == 0
+    assert answer.unsupported_sentences == ["Net sales rose a lot."]

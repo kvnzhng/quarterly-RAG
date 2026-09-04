@@ -92,3 +92,27 @@ def test_unsupported_figures_checks_every_cited_passage() -> None:
     sentence = "Net sales were $109,417 million and the margin was 46.9%."
     assert [f.raw for f in unsupported_figures(sentence, [TABLE])] == ["46.9%"]
     assert unsupported_figures(sentence, [TABLE, PERCENTS]) == []
+
+
+def test_a_unit_word_on_the_next_line_does_not_belong_to_this_number() -> None:
+    """Apple's operating expenses table put `Percentage` on the row below `$29,915`.
+
+    Reading the unit across the line break made that figure 29,915 percent, so a correct
+    answer quoting it was reported as a figure the passage does not contain. Found while
+    measuring RAG-021.
+    """
+    table = (
+        "Research and development | $34,550 | 10% | $31,370 | 5% | $29,915\n"
+        "Percentage of total net sales | 8% | 8% | 8%"
+    )
+    (last,) = (f for f in parse_figures(table) if f.value == 29915)
+    assert not last.is_percent
+    (quoted,) = parse_figures("$29,915 million")
+    assert figure_supported(quoted, table)
+
+
+def test_percentage_is_not_read_as_the_unit_percent() -> None:
+    (figure,) = parse_figures("8 percentage points")
+    assert not figure.is_percent
+    (percent,) = parse_figures("8 percent")
+    assert percent.is_percent
