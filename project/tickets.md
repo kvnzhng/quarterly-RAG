@@ -13,14 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-004: Filing parser with section detection
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** grounding, chunking
-- **Description:** Convert filing HTML to clean text. Detect SEC items (Item 1, 1A Risk Factors, 2/7 MD&A, 3 Quantitative disclosures, 8 Financial Statements). Preserve tables as pipe-delimited text with a table marker. Emit `data/processed/<ticker>/<accession>.jsonl`, one record per section, with provenance fields (ticker, form, period, section, char offsets, source URL).
-- **Done when:** parser tests pass on one 10-Q and one 10-K per company, and a section coverage report shows every expected item was found.
-- **Dependencies added:** `beautifulsoup4` and `lxml` (HTML parsing; `lxml` is the fast, lenient tree builder these 1-2 MB inline-XBRL documents need). Both are runtime dependencies, not dev-only.
-
 ## Backlog
 
 ### Phase 1: one thin end-to-end path, measured
@@ -189,3 +181,13 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Done when:** Apple and Nvidia 10-Q/10-K filings for the last 8 quarters are on disk with a manifest, re-running is idempotent.
 - **Verified:** `rag ingest download --ticker AAPL --ticker NVDA` fetched 8 filings per company for the default two-year window (exactly eight quarters each, fiscal labels checked against the companies' own naming); the second run downloaded nothing and left both manifests byte-identical. Live EDGAR test in `tests/integration/`. `make test-all`: 72 passed.
 - **Commits:** `de44ec4`
+
+### RAG-004: Filing parser with section detection
+- **Type:** feat
+- **Created:** 2026-09-03 | **Completed:** 2026-09-04
+- **Competency:** grounding, chunking
+- **Description:** Convert filing HTML to clean text. Detect SEC items (Item 1, 1A Risk Factors, 2/7 MD&A, 3 Quantitative disclosures, 8 Financial Statements). Preserve tables as pipe-delimited text with a table marker. Emit `data/processed/<ticker>/<accession>.jsonl`, one record per section, with provenance fields (ticker, form, period, section, char offsets, source URL).
+- **Done when:** parser tests pass on one 10-Q and one 10-K per company, and a section coverage report shows every expected item was found.
+- **Dependencies added:** `beautifulsoup4` and `lxml` (HTML parsing; `lxml` is the fast, lenient tree builder these 1-2 MB inline-XBRL documents need). Both are runtime dependencies, not dev-only.
+- **Verified:** all 16 filings parse with zero missing critical items and zero false headings; every 10-K yields its 23 expected Items, Apple's 10-Qs 11, Nvidia's 9 (Part II Items 3 and 4 genuinely absent). `text[char_start:char_end] == record.text` holds for every record. `make test-all`: 91 passed.
+- **Commits:** `1c1027c`
