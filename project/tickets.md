@@ -13,13 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-020: Chunking strategy comparison
-- **Type:** feat
-- **Created:** 2026-09-04
-- **Competency:** chunking
-- **Description:** Split from RAG-005. Add recursive character, section-aware with sub-splitting, and parent-child (small chunks for retrieval, parent section returned for generation) chunkers behind the `Chunker` protocol, each keeping full provenance. Extend the harness to report chunk count, size distribution, and boundary violations per strategy, and score every strategy with RAG-008 on the same RAG-019 labels.
-- **Done when:** `docs/tradeoffs/chunking.md` contains a filled comparison table with run records and a recommendation, and an ADR records the default chunker.
-
 ## Backlog
 
 
@@ -250,3 +243,15 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Done when:** the period filter is on by default, `docs/tradeoffs/retrieval-strategies.md` and ADR-008 no longer claim filtering buys nothing, and the multi-condition filter has a test.
 - **Verified:** default `hybrid` reaches recall@5 48.5% and recall@10 51.5%, against 45.5% and 45.5% unfiltered; quarterly questions move from 0.0% to 14.3%. ADR-008 amended, tradeoff page corrected.
 - **Commits:** `e9a13fb`
+
+### RAG-020: Chunking strategy comparison
+- **Type:** feat
+- **Created:** 2026-09-04 | **Completed:** 2026-09-04
+- **Competency:** chunking
+- **Description:** Split from RAG-005. Add recursive character, section-aware with sub-splitting, and parent-child (small chunks for retrieval, parent section returned for generation) chunkers behind the `Chunker` protocol, each keeping full provenance. Extend the harness to report chunk count, size distribution, and boundary violations per strategy, and score every strategy with RAG-008 on the same RAG-019 labels.
+- **Done when:** `docs/tradeoffs/chunking.md` contains a filled comparison table with run records and a recommendation, and an ADR records the default chunker.
+- **Verified:** `docs/tradeoffs/chunking.md` holds the four-way comparison with run records and ADR-009 records the decision. `section-aware` is the default in `Settings` and in every CLI command. `make test-all`: 289 passed.
+- **Result:** section-aware nearly doubles recall@1 (21.2% to 39.4%) and lifts MRR 43%, while recall@5 is unchanged at 48.5%. End to end the share of answers stating the labelled figure rose from 75% to 93% and abstention coverage from 57.6% to 63.6%.
+- **Negative results:** the structure-blind recursive splitter is 21 points worse at k=5 and leaves 221 chunks holding half a table; parent-child came second because a 69-word child cut by word count still crosses topics while a titled block does not.
+- **Remaining ceiling:** recall@20 is 72.7%, so about a quarter of questions have evidence neither ranking nor chunking reaches.
+- **Commits:** `9b3e350`
