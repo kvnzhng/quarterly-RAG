@@ -12,6 +12,8 @@ from pathlib import Path
 
 from quarterly_rag.chunking.base import Chunk, Chunker
 from quarterly_rag.chunking.fixed import FixedWindowChunker
+from quarterly_rag.chunking.recursive import RecursiveChunker
+from quarterly_rag.chunking.structural import ParentChildChunker, SectionAwareChunker
 from quarterly_rag.config import Settings
 from quarterly_rag.ingestion.manifest import Manifest
 from quarterly_rag.ingestion.records import load_records
@@ -25,10 +27,20 @@ def chunks_dir(settings: Settings, strategy: str, ticker: str) -> Path:
     return settings.data_dir / CHUNKS_DIRNAME / strategy / ticker.upper()
 
 
+STRATEGIES = ("fixed", "recursive", "section-aware", "parent-child")
+DEFAULT_STRATEGY = "section-aware"
+
+
 def build_chunker(strategy: str, settings: Settings) -> Chunker:
     if strategy == "fixed":
         return FixedWindowChunker(settings.chunk_words, settings.chunk_overlap_words)
-    raise ValueError(f"unknown chunking strategy {strategy!r}; RAG-020 adds the others")
+    if strategy == "recursive":
+        return RecursiveChunker(settings.chunk_words, settings.chunk_overlap_words)
+    if strategy == "section-aware":
+        return SectionAwareChunker(settings.chunk_words, settings.chunk_overlap_words)
+    if strategy == "parent-child":
+        return ParentChildChunker(settings.child_words, settings.chunk_words)
+    raise ValueError(f"unknown chunking strategy {strategy!r}; expected one of {STRATEGIES}")
 
 
 @dataclass(frozen=True)

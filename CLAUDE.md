@@ -30,6 +30,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./docs/adr/006-model-selection.md
 ./docs/adr/007-custom-filing-parser.md
 ./docs/adr/008-hybrid-retrieval-default.md
+./docs/adr/009-section-aware-chunking.md
 ./docs/architecture.md
 ./docs/learning/chunking.md
 ./docs/learning/grounding.md
@@ -64,6 +65,8 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./src/quarterly_rag/chunking/base.py
 ./src/quarterly_rag/chunking/build.py
 ./src/quarterly_rag/chunking/fixed.py
+./src/quarterly_rag/chunking/recursive.py
+./src/quarterly_rag/chunking/structural.py
 ./src/quarterly_rag/cli.py
 ./src/quarterly_rag/config.py
 ./src/quarterly_rag/doctor.py
@@ -134,6 +137,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./tests/integration/test_live_doctor.py
 ./tests/chunking/test_build.py
 ./tests/chunking/test_fixed.py
+./tests/chunking/test_structural.py
 ./tests/evaluation/test_metrics.py
 ./tests/evaluation/test_refusal_eval.py
 ./tests/evaluation/test_questions.py

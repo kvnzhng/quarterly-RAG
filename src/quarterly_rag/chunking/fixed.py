@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 
-from quarterly_rag.chunking.base import Chunk, count_words
+from quarterly_rag.chunking.base import Chunk, chunk_from_span, count_words
 from quarterly_rag.ingestion.parse import TABLE_CLOSE, TABLE_OPEN
 from quarterly_rag.ingestion.records import SectionRecord
 
@@ -109,31 +109,4 @@ class FixedWindowChunker:
         return carried
 
     def _chunk(self, section: SectionRecord, window: list[_Block]) -> Chunk:
-        start = section.char_start + window[0].start
-        end = section.char_start + window[-1].end
-        text = section.text[window[0].start : window[-1].end]
-        return Chunk(
-            chunk_id=Chunk.make_id(section.accession, start, end),
-            strategy=self.name,
-            ticker=section.ticker,
-            cik=section.cik,
-            company=section.company,
-            form=section.form,
-            accession=section.accession,
-            filing_date=section.filing_date.isoformat(),
-            period_of_report=section.period_of_report.isoformat(),
-            fiscal_year=section.fiscal_year,
-            fiscal_quarter=section.fiscal_quarter,
-            period_label=section.period_label,
-            part=section.part,
-            item=section.item,
-            section=section.section,
-            title=section.title,
-            source_url=section.source_url,
-            text_path=section.text_path,
-            char_start=start,
-            char_end=end,
-            text=text,
-            word_count=count_words(text),
-            contains_table=any(b.is_table for b in window),
-        )
+        return chunk_from_span(section, self.name, window[0].start, window[-1].end)

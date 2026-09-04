@@ -129,7 +129,8 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 - [x] RAG-010 grounded generation with verified citations
 - [x] RAG-011 refusal policy with abstention metrics
 - [x] RAG-009 hybrid retrieval (dense + BM25 fusion), the new default
-- [ ] RAG-020 / 007 chunking and vector store comparisons
+- [x] RAG-020 chunking comparison, section-aware is the new default
+- [ ] RAG-007 vector store comparison
 - [ ] RAG-012 / 021 faithfulness eval, calculation provenance
 - [ ] RAG-013 Langfuse
 - [ ] RAG-014 API + UI

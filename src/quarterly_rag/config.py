@@ -85,8 +85,16 @@ class Settings(BaseSettings):
     # --- Chunking ---------------------------------------------------------------
     # Sizes are whitespace words, not model tokens: a word here averages 6.4 characters on
     # this corpus and a BPE tokenizer splits figures like `$109,417` into several tokens.
+    chunk_strategy: str = Field(
+        default="section-aware",
+        description="fixed | recursive | section-aware | parent-child (ADR-009).",
+    )
     chunk_words: int = 350
     chunk_overlap_words: int = 60
+    child_words: int = Field(
+        default=120,
+        description="Child size for parent-child chunking; the parent is the titled block.",
+    )
 
     # --- Vector store -----------------------------------------------------------
     vector_store: Literal["chroma", "faiss"] = "chroma"

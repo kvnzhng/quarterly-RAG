@@ -36,9 +36,16 @@ DEFAULT_RULE = OverlapRule()
 
 
 def overlap_chars(chunk: Chunk, span: EvidenceSpan) -> int:
+    """Characters shared with a gold span.
+
+    Measured against the chunk's effective span, so a parent-child strategy is judged on
+    the passage the generator would receive rather than on the smaller one that was
+    embedded to find it.
+    """
     if chunk.accession != span.accession:
         return 0
-    return max(0, min(chunk.char_end, span.char_end) - max(chunk.char_start, span.char_start))
+    start, end = chunk.effective_span
+    return max(0, min(end, span.char_end) - max(start, span.char_start))
 
 
 def covers(chunk: Chunk, span: EvidenceSpan, rule: OverlapRule = DEFAULT_RULE) -> bool:

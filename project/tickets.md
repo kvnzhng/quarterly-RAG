@@ -13,14 +13,15 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-## Backlog
-
 ### RAG-020: Chunking strategy comparison
 - **Type:** feat
 - **Created:** 2026-09-04
 - **Competency:** chunking
 - **Description:** Split from RAG-005. Add recursive character, section-aware with sub-splitting, and parent-child (small chunks for retrieval, parent section returned for generation) chunkers behind the `Chunker` protocol, each keeping full provenance. Extend the harness to report chunk count, size distribution, and boundary violations per strategy, and score every strategy with RAG-008 on the same RAG-019 labels.
 - **Done when:** `docs/tradeoffs/chunking.md` contains a filled comparison table with run records and a recommendation, and an ADR records the default chunker.
+
+## Backlog
+
 
 ### Phase 1: one thin end-to-end path, measured
 

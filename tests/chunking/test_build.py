@@ -127,7 +127,7 @@ def test_unparsed_filing_is_reported_not_raised(parsed: Settings) -> None:
 def test_missing_manifest_and_unknown_strategy_are_clear_errors(settings: Settings) -> None:
     with pytest.raises(FileNotFoundError, match="rag ingest download"):
         build_ticker(settings, "AAPL")
-    with pytest.raises(ValueError, match="RAG-020"):
+    with pytest.raises(ValueError, match="expected one of"):
         build_ticker(settings, "AAPL", strategy="semantic")
 
 

@@ -11,6 +11,7 @@ from rich.markup import escape
 from rich.table import Table
 
 from quarterly_rag import __version__
+from quarterly_rag.chunking.build import DEFAULT_STRATEGY as DEFAULT_CHUNK_STRATEGY
 from quarterly_rag.chunking.build import SMALL_CHUNK_WORDS, build_ticker
 from quarterly_rag.config import get_settings
 from quarterly_rag.doctor import failed, run_doctor
@@ -252,7 +253,7 @@ def chunk_build(
     ticker: Annotated[
         list[str], typer.Option("--ticker", "-t", help="Ticker symbol; repeat for several.")
     ],
-    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = "fixed",
+    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = DEFAULT_CHUNK_STRATEGY,
 ) -> None:
     """Split parsed sections into chunks under data/chunks/<strategy>/<TICKER>/."""
     settings = get_settings()
@@ -321,7 +322,9 @@ def index_build(
         list[str], typer.Option("--ticker", "-t", help="Ticker symbol; repeat for several.")
     ],
     store: Annotated[str, typer.Option(help="Vector store.")] = "chroma",
-    strategy: Annotated[str, typer.Option(help="Chunking strategy to index.")] = "fixed",
+    strategy: Annotated[
+        str, typer.Option(help="Chunking strategy to index.")
+    ] = DEFAULT_CHUNK_STRATEGY,
     context: Annotated[
         bool,
         typer.Option(
@@ -374,7 +377,7 @@ def index_query(
     question: Annotated[str, typer.Argument(help="What to search for.")],
     k: Annotated[int, typer.Option("-k", help="How many chunks to return.")] = 5,
     store: Annotated[str, typer.Option(help="Vector store.")] = "chroma",
-    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = "fixed",
+    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = DEFAULT_CHUNK_STRATEGY,
     context: Annotated[bool, typer.Option("--context/--raw")] = False,
     ticker: Annotated[
         str | None, typer.Option("--ticker", "-t", help="Restrict to one company.")
@@ -428,7 +431,7 @@ def index_query(
 def eval_retrieval(
     k: Annotated[int, typer.Option("-k", help="Cutoff highlighted in the summary line.")] = 5,
     store: Annotated[str, typer.Option(help="Vector store.")] = "chroma",
-    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = "fixed",
+    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = DEFAULT_CHUNK_STRATEGY,
     context: Annotated[bool, typer.Option("--context/--raw")] = False,
     min_overlap_chars: Annotated[
         int, typer.Option(help="Characters of a gold span a chunk must cover to count.")
@@ -525,7 +528,7 @@ def eval_generation(
         str, typer.Option(help="gold: hand over the evidence chunks. retrieved: run the pipeline.")
     ] = GOLD,
     k: Annotated[int, typer.Option("-k", help="Passages given to the model.")] = 5,
-    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = "fixed",
+    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = DEFAULT_CHUNK_STRATEGY,
     raw: Annotated[
         bool, typer.Option("--raw/--context-embed", help="Embed variant to query.")
     ] = False,
@@ -595,7 +598,7 @@ def eval_generation(
 @evaluate.command("refusal")
 def eval_refusal(
     k: Annotated[int, typer.Option("-k", help="Passages retrieved per question.")] = 5,
-    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = "fixed",
+    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = DEFAULT_CHUNK_STRATEGY,
     raw: Annotated[bool, typer.Option("--raw/--context-embed")] = False,
     min_score: Annotated[
         float | None, typer.Option(help="Override MIN_RETRIEVAL_SCORE for this run.")
@@ -735,7 +738,7 @@ def eval_check() -> None:
 def ask(
     question: Annotated[str, typer.Argument(help="A question about the filings.")],
     k: Annotated[int, typer.Option("-k", help="Passages to retrieve.")] = 5,
-    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = "fixed",
+    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = DEFAULT_CHUNK_STRATEGY,
     raw: Annotated[bool, typer.Option("--raw/--context-embed")] = False,
     ticker: Annotated[str | None, typer.Option("--ticker", "-t")] = None,
     min_score: Annotated[

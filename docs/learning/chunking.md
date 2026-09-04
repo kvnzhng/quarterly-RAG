@@ -21,20 +21,26 @@ Chunkers implement one `Chunker` protocol. The first chunker (RAG-005) is delibe
 
 ## Measured
 
-The v1 fixed-window chunker (RAG-005) over the 16-filing corpus, target 350 words, overlap 60:
+Four strategies over the 16-filing corpus, scored with the same eval labels and the same retriever (RAG-020):
 
-| Chunks | Median | p90 | Largest | Under 50 words | Over target | Holding a table |
+| Strategy | Chunks | Median words | recall@1 | recall@5 | MRR | Half tables |
 |---|---|---|---|---|---|---|
-| 1,391 | 304 | 347 | 809 | 78 | 61 | 473 |
+| fixed | 1,391 | 304 | 21.2% | 48.5% | 0.314 | 0 |
+| recursive | 1,213 | 321 | 15.2% | 27.3% | 0.243 | 221 |
+| **section-aware** | 2,891 | 96 | **39.4%** | 48.5% | **0.449** | 0 |
+| parent-child | 4,704 | 69 | 27.3% | 45.5% | 0.348 | 0 |
 
-Every chunk resolves back into the filing text it came from, none crosses an Item boundary, and none holds half a table. The 61 oversized chunks are all a single table kept whole. Overlap is applied by whole lines, and filings write long paragraphs as single lines, so a third of chunk boundaries get no overlap at all. Full numbers and what they say about the corpus: `docs/tradeoffs/chunking.md`. The strategy comparison is RAG-020.
+Cutting on the filing's own sub-headings nearly doubles recall@1 and leaves recall@5 unchanged, which says chunking decides *where* the evidence lands rather than *whether* it is found. End to end that mattered more than the recall number suggested: the share of answers stating the labelled figure rose from 75% to 93%.
+
+Every chunk resolves back into the filing text it came from and none crosses an Item boundary. Only the structure-blind recursive splitter holds half a table, 221 times, which is what ignoring the document costs. The 61 oversized chunks are all a single table kept whole. Overlap is applied by whole lines, and filings write long paragraphs as single lines, so a third of chunk boundaries get no overlap at all. Full numbers and what they say about the corpus: `docs/tradeoffs/chunking.md`. The strategy comparison is RAG-020.
 
 ## Talking points
 
 - Chunking is a retrieval decision and an evidence decision at the same time.
 - Overlap is a band-aid for boundary problems; structure-aware splitting is the real fix when structure exists.
 - Why financial tables need different treatment than prose.
-- Small-to-big (parent-child) as the usual production answer, and its cost.
+- Small-to-big (parent-child) as the usual production answer, and why it came second here: its children are the smallest and its embeddings the most focused, and a 69-word child cut by word count still crosses topics while a titled block does not. The gain comes from where the cut falls, not from how small the piece is.
+- Why a ceiling that no reranker could lift turned out to be a chunking problem, and how the eval set made that visible.
 - Chunk sizes here are counted in whitespace words, not model tokens. A word averages 6.4 characters on this corpus and a subword tokenizer splits a figure like `$109,417` into several tokens, so the two numbers are not interchangeable and the code does not pretend otherwise.
 - Every chunk's offsets point into the same filing text the gold evidence spans do, so re-chunking re-scores against the same labels instead of invalidating them.
 
