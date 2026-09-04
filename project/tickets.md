@@ -13,13 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-027: Derive the CLAUDE.md file tree from git
-- **Type:** chore
-- **Created:** 2026-09-04
-- **Competency:** foundation
-- **Description:** The file tree in `CLAUDE.md` was hand-edited after each ticket and had drifted: four test files were missing and the ordering was inconsistent. Regenerate it from `git ls-files` so it cannot drift again.
-- **Done when:** every tracked path outside `reports/` and `notebooks/` appears exactly once, in a stable order.
-
 ## Backlog
 
 
@@ -267,3 +260,11 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Result:** all three stores give identical retrieval quality (recall@1 39.4%, recall@5 48.5%, MRR 0.440). FAISS HNSW is 16x faster per lookup and uses a fifth of the memory, which is invisible: the store is 3% of a retrieval against 31.4 ms to embed the question. ChromaDB stays the default on operational grounds (upsert, native filtering, one directory of state).
 - **Dependencies added:** `faiss-cpu` (~30 MB, imported only when a FAISS store is built; worth carrying because the comparison is part of the project's purpose and the decision reverses at scale).
 - **Commits:** `e15d165`
+
+### RAG-027: Derive the CLAUDE.md file tree from git
+- **Type:** chore
+- **Created:** 2026-09-04 | **Completed:** 2026-09-04
+- **Competency:** foundation
+- **Description:** The file tree in `CLAUDE.md` was hand-edited after each ticket and had drifted: four test files were missing and the ordering was inconsistent. Regenerate it from `git ls-files` so it cannot drift again.
+- **Done when:** every tracked path outside `reports/` and `notebooks/` appears exactly once, in a stable order.
+- **Commits:** `b7c68d3`
