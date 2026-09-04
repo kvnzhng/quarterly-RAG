@@ -40,6 +40,9 @@ data/indexes/*
 !data/processed/.gitkeep
 !data/indexes/.gitkeep
 
+# Eval sets are committed (they are the labels); only the corpus is reproducible
+!data/eval/*.jsonl
+
 # Reports and notebooks
 reports/
 notebooks/.ipynb_checkpoints/

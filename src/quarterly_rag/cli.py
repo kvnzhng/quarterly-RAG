@@ -13,6 +13,13 @@ from rich.table import Table
 from quarterly_rag import __version__
 from quarterly_rag.config import get_settings
 from quarterly_rag.doctor import failed, run_doctor
+from quarterly_rag.evaluation.questions import (
+    check_gold_answers,
+    check_spans,
+    counts_by_type,
+    load_questions,
+    questions_path,
+)
 from quarterly_rag.ingestion.download import DEFAULT_FORMS, download_filings
 from quarterly_rag.ingestion.edgar import EdgarClient, EdgarError
 from quarterly_rag.ingestion.records import parse_ticker
@@ -20,6 +27,8 @@ from quarterly_rag.ingestion.records import parse_ticker
 app = typer.Typer(help="Local RAG over SEC 10-Q/10-K filings.", no_args_is_help=True)
 ingest = typer.Typer(help="Fetch and parse SEC filings.", no_args_is_help=True)
 app.add_typer(ingest, name="ingest")
+evaluate = typer.Typer(help="Evaluation sets and metrics.", no_args_is_help=True)
+app.add_typer(evaluate, name="eval")
 console = Console()
 
 
@@ -198,8 +207,50 @@ def ingest_parse(
         raise typer.Exit(code=1)
 
 
+@evaluate.command("check")
+def eval_check() -> None:
+    """Verify every gold evidence span still resolves in the parsed filings."""
+    settings = get_settings()
+    path = questions_path(settings)
+    if not path.exists():
+        console.print(f"[red]no eval set at {path}[/red]")
+        raise typer.Exit(code=2)
+    questions = load_questions(path)
+    checks = check_spans(settings, questions)
+    answer_problems = check_gold_answers(questions)
+
+    counts = counts_by_type(questions)
+    console.print(
+        f"{len(questions)} questions: "
+        + ", ".join(f"{n} {kind}" for kind, n in sorted(counts.items()))
+    )
+    failures = [c for c in checks if not c.ok]
+    if failures:
+        table = Table(title="spans that no longer resolve")
+        table.add_column("question")
+        table.add_column("accession")
+        table.add_column("section")
+        table.add_column("offsets")
+        table.add_column("problem")
+        for check in failures:
+            table.add_row(
+                check.question_id,
+                check.span.accession,
+                check.span.section,
+                f"{check.span.char_start}:{check.span.char_end}",
+                escape(check.detail),
+            )
+        console.print(table)
+    for question_id, problem in answer_problems:
+        console.print(f"[red]{question_id}: {escape(problem)}[/red]")
+
+    console.print(f"{len(checks) - len(failures)}/{len(checks)} spans resolve")
+    if failures or answer_problems:
+        raise typer.Exit(code=1)
+    console.print("[green]every span resolves and every lookup answer is in its evidence[/green]")
+
+
 # Planned subcommands (see project/tickets.md):
-#   rag eval check        RAG-019  every gold evidence span resolves into the parsed filings
 #   rag index build       RAG-006  chunk + embed + store
 #   rag ask "..."         RAG-010  grounded answer or refusal
 #   rag eval retrieval    RAG-008  recall@k / MRR / nDCG
