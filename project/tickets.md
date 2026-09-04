@@ -248,4 +248,4 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Description:** RAG-009 concluded that inferred metadata filtering buys nothing. That was measured on the **ticker** only, and it generalised too far. Filtering on the exact period label when a question names a specific quarter lifts recall@5 from 45.5% to 48.5% and unblocks the 10-Q questions that every strategy had scored at zero, because eight near-identical income statements stop competing. A bare fiscal year must not be filtered: a filing quotes prior years for comparison. Also fixes a Chroma adapter bug found while measuring, where a filter with more than one condition raised instead of filtering.
 - **Done when:** the period filter is on by default, `docs/tradeoffs/retrieval-strategies.md` and ADR-008 no longer claim filtering buys nothing, and the multi-condition filter has a test.
 - **Verified:** default `hybrid` reaches recall@5 48.5% and recall@10 51.5%, against 45.5% and 45.5% unfiltered; quarterly questions move from 0.0% to 14.3%. ADR-008 amended, tradeoff page corrected.
-- **Commits:** `f8fe2dd`
+- **Commits:** `e9a13fb`
