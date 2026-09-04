@@ -45,14 +45,16 @@ git clone https://github.com/kvnzhng/quarterly-RAG.git && cd quarterly-RAG
 # 1. Python env (uv installs Python 3.12 if needed)
 make setup
 
-# 2. Model provider, pick one (see "Choosing a model provider" below)
+# 2. Config
+cp .env.example .env   # set EDGAR_USER_AGENT (SEC requires a contact), and LLM_*/EMBED_* if not using local Ollama
+
+# 3. Model provider, pick one (see "Choosing a model provider" below)
 #    a) Ollama on this machine:
 brew install ollama && ollama serve &
-make models
-#    b) a model server on your network, or a hosted API: nothing to install, edit .env in step 3
-
-# 3. Config
-cp .env.example .env   # set EDGAR_USER_AGENT (SEC requires a contact), and LLM_*/EMBED_* if not using local Ollama
+make models            # pulls the models named in .env through Ollama's HTTP API
+#    b) Ollama on another machine: point LLM_BASE_URL / EMBED_BASE_URL at http://<host>:11434/v1 in .env, then
+make models            # same command; the host is read from .env (or set OLLAMA_HOST)
+#    c) a hosted API: nothing to install, just the token in .env
 
 # 4. Sanity
 uv run rag version
@@ -70,7 +72,7 @@ The pipeline reaches models through two small interfaces, `LLM` and `Embedder`, 
 | Setup | `LLM_PROVIDER` | `LLM_BASE_URL` | `LLM_API_KEY` | Notes |
 |---|---|---|---|---|
 | Ollama on this machine (default) | `openai_compatible` | `http://localhost:11434/v1` | `ollama` (ignored) | `make models` pulls the weights |
-| Ollama, vLLM, LM Studio, llama.cpp on another machine | `openai_compatible` | `http://<host>:<port>/v1` | whatever that server expects | nothing to install locally |
+| Ollama, vLLM, LM Studio, llama.cpp on another machine | `openai_compatible` | `http://<host>:<port>/v1` (the `/v1` matters) | whatever that server expects | nothing to install locally; for Ollama, `make models` pulls onto that host |
 | Hosted OpenAI-compatible API (OpenAI, OpenRouter, Groq, ...) | `openai_compatible` | the provider's URL | your token | costs money, so evals stop being free |
 | Anthropic API | `anthropic` | unused | your token | `LLM_MODEL=claude-opus-5`; no embeddings endpoint, keep `EMBED_*` local |
 

@@ -1,5 +1,14 @@
 .PHONY: setup lint fmt test test-all doctor models langfuse-up langfuse-down eval
 
+# Ollama helpers talk to the server's HTTP API, so no local `ollama` CLI is needed.
+# OLLAMA_HOST wins if set; otherwise it is derived from LLM_BASE_URL in .env (minus /v1).
+OLLAMA_HOST ?= $(shell sed -n 's|^LLM_BASE_URL=||p' .env 2>/dev/null | tr -d '"' | sed 's|/v1/*$$||;s|/$$||')
+ifeq ($(OLLAMA_HOST),)
+OLLAMA_HOST := http://localhost:11434
+endif
+LLM_MODEL ?= $(shell sed -n 's|^LLM_MODEL=||p' .env 2>/dev/null | tr -d '"')
+EMBED_MODEL ?= $(shell sed -n 's|^EMBED_MODEL=||p' .env 2>/dev/null | tr -d '"')
+
 setup:          ## Create venv, install deps, install git hooks (pre-commit + commit-msg)
 	uv sync
 	uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
@@ -21,9 +30,11 @@ test-all:       ## Unit + integration tests
 doctor:         ## Check the configured model endpoints and data dirs
 	uv run rag doctor
 
-models:         ## Pull default Ollama models; OLLAMA_HOST=http://<server>:11434 targets a remote Ollama
-	ollama pull $${LLM_MODEL:-llama3.1:8b}
-	ollama pull $${EMBED_MODEL:-nomic-embed-text}
+models:         ## Pull the configured chat + embedding models onto the Ollama at OLLAMA_HOST (from .env by default)
+	@for m in $(or $(LLM_MODEL),llama3.1:8b) $(or $(EMBED_MODEL),nomic-embed-text); do \
+	  printf 'pulling %s on %s ... ' "$$m" "$(OLLAMA_HOST)"; \
+	  curl -sS --fail -X POST "$(OLLAMA_HOST)/api/pull" -d "{\"name\":\"$$m\",\"stream\":false}" || exit 1; echo; \
+	done
 
 langfuse-up:    ## Start self-hosted Langfuse (RAG-013)
 	docker compose -f infra/docker-compose.langfuse.yml up -d
