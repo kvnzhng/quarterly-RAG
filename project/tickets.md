@@ -65,7 +65,7 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Two defects in the RAG-010 verifier, found by measuring this one.** A unit word on the next line was read as this number's unit, so Apple's `$29,915` followed by `Percentage of total net sales` parsed as 29,915 percent and every answer quoting that figure had been scored ungrounded since RAG-010 (`242cd5c`). The first fix was then too tight: `gpt-oss:20b` writes a narrow no-break space between a figure and its unit, and restricting the gap to a space or a tab dropped the unit from every figure it wrote (`fdbb7ef`).
 - **Known limits, each with an example in the learning doc:** the wrong two real figures still verify; a calculation cannot use another calculation's result; a unitless operand does not match a percentage; a scale constant written into prose is flagged. The last three are RAG-029. The gate scores `lookup` only, so calculation provenance is measured but ungated.
 - **Not done:** no ADR, because this is not a tooling tradeoff. `rag eval refusal` and the refusal eval inside `rag eval baseline` disagree on the same measurement; recorded in `docs/notes.md`, not chased.
-- **Commits:** `f4183b8`, `242cd5c`, `fdbb7ef`
+- **Commits:** `f4183b8`, `242cd5c`, `fdbb7ef`, `d7f5305`
 
 
 ### RAG-001: Project initialization
