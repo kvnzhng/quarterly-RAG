@@ -13,6 +13,13 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
+### RAG-009: Hybrid retrieval, metadata filtering, and reranking
+- **Type:** feat
+- **Created:** 2026-09-03
+- **Competency:** retrieval quality
+- **Description:** Add BM25 (rank_bm25) alongside dense retrieval with reciprocal rank fusion. Add metadata filters inferred from the question (ticker, fiscal period, section). Add a cross-encoder reranker (`bge-reranker-base`). Compare dense / BM25 / hybrid / hybrid+rerank on the RAG-008 eval.
+- **Done when:** the comparison table is in `docs/tradeoffs/retrieval-strategies.md` and the best configuration becomes the default.
+
 ## Backlog
 
 ### Phase 1: one thin end-to-end path, measured
@@ -32,13 +39,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Competency:** retrieval quality
 - **Description:** Implement a FAISS adapter (flat and HNSW) behind the same protocol. Benchmark both on the same corpus: build time, query p50/p95 latency, memory, metadata filtering support, persistence story, operational complexity.
 - **Done when:** `docs/tradeoffs/vector-stores.md` is filled with measured numbers and ADR-007 records the default choice and when to pick the other.
-
-### RAG-009: Hybrid retrieval, metadata filtering, and reranking
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** retrieval quality
-- **Description:** Add BM25 (rank_bm25) alongside dense retrieval with reciprocal rank fusion. Add metadata filters inferred from the question (ticker, fiscal period, section). Add a cross-encoder reranker (`bge-reranker-base`). Compare dense / BM25 / hybrid / hybrid+rerank on the RAG-008 eval.
-- **Done when:** the comparison table is in `docs/tradeoffs/retrieval-strategies.md` and the best configuration becomes the default.
 
 ### RAG-012: Faithfulness and end-to-end evaluation
 - **Type:** feat

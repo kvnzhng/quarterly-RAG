@@ -29,6 +29,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./docs/adr/005-model-provider-configurable.md
 ./docs/adr/006-model-selection.md
 ./docs/adr/007-custom-filing-parser.md
+./docs/adr/008-hybrid-retrieval-default.md
 ./docs/architecture.md
 ./docs/learning/chunking.md
 ./docs/learning/grounding.md
@@ -102,7 +103,13 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./src/quarterly_rag/pipeline.py
 ./src/quarterly_rag/retrieval/__init__.py
 ./src/quarterly_rag/retrieval/base.py
+./src/quarterly_rag/retrieval/bm25.py
+./src/quarterly_rag/retrieval/build.py
 ./src/quarterly_rag/retrieval/dense.py
+./src/quarterly_rag/retrieval/filtered.py
+./src/quarterly_rag/retrieval/hybrid.py
+./src/quarterly_rag/retrieval/query.py
+./src/quarterly_rag/retrieval/rerank.py
 ./tests/conftest.py
 ./tests/generation/test_answer.py
 ./tests/generation/test_refusal.py
@@ -112,6 +119,10 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./tests/generation/test_openai_compatible_llm.py
 ./tests/indexing/test_embedder_factory.py
 ./tests/indexing/test_openai_compatible_embedder.py
+./tests/retrieval/test_bm25.py
+./tests/retrieval/test_dense.py
+./tests/retrieval/test_hybrid.py
+./tests/retrieval/test_query.py
 ./tests/ingestion/edgar_fixtures.py
 ./tests/ingestion/fixtures/tenk.htm
 ./tests/ingestion/fixtures/tenq.htm
@@ -149,7 +160,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 - **Ask:** `uv run rag ask "..."` (retrieve, answer, verify every sentence against its source)
 - **Generation eval:** `uv run rag eval generation --context gold|retrieved`
 - **Refusal eval:** `uv run rag eval refusal` (abstention precision/recall, threshold sweep)
-- **Retrieval eval:** `uv run rag eval retrieval -k 5 --context` (recall@k, MRR, nDCG, run record)
+- **Retrieval eval:** `uv run rag eval retrieval -k 5 --context --retrieval hybrid` (recall@k, MRR, nDCG, run record)
 - **Eval set:** `uv run rag eval check` (every gold evidence span still resolves)
 - **Corpus:** `uv run rag ingest download --ticker AAPL --ticker NVDA` then `rag ingest parse --ticker AAPL --ticker NVDA` (EDGAR into `data/raw/`, sections into `data/processed/`, both idempotent)
 - **Models:** `make models` (pulls Ollama models, RAG-002)

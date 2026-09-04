@@ -36,7 +36,7 @@ from quarterly_rag.ingestion.download import DEFAULT_FORMS, download_filings
 from quarterly_rag.ingestion.edgar import EdgarClient, EdgarError
 from quarterly_rag.ingestion.records import parse_ticker
 from quarterly_rag.pipeline import Pipeline
-from quarterly_rag.retrieval.dense import DenseRetriever
+from quarterly_rag.retrieval.build import DEFAULT_STRATEGY, STRATEGIES, build_retriever
 
 app = typer.Typer(help="Local RAG over SEC 10-Q/10-K filings.", no_args_is_help=True)
 ingest = typer.Typer(help="Fetch and parse SEC filings.", no_args_is_help=True)
@@ -48,6 +48,28 @@ app.add_typer(index, name="index")
 evaluate = typer.Typer(help="Evaluation sets and metrics.", no_args_is_help=True)
 app.add_typer(evaluate, name="eval")
 console = Console()
+
+
+RetrievalOption = Annotated[
+    str, typer.Option("--retrieval", help=f"Retrieval strategy: {', '.join(STRATEGIES)}.")
+]
+
+
+def _retriever(settings, store, chunk_strategy: str, variant: str, strategy: str, llm=None):
+    """One place that turns a strategy name into a retriever, so every command agrees."""
+    try:
+        return build_retriever(
+            settings,
+            strategy,
+            embedder=build_embedder(settings),
+            store=store,
+            chunk_strategy=chunk_strategy,
+            variant=variant,
+            llm=llm or (build_llm(settings) if strategy == "hybrid-rerank" else None),
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from None
 
 
 @app.command()
@@ -357,6 +379,7 @@ def index_query(
     ticker: Annotated[
         str | None, typer.Option("--ticker", "-t", help="Restrict to one company.")
     ] = None,
+    retrieval: RetrievalOption = DEFAULT_STRATEGY,
 ) -> None:
     """Search the index and show the matching chunks with their provenance."""
     settings = get_settings()
@@ -370,7 +393,7 @@ def index_query(
         console.print("[red]index is empty; run `rag index build` first[/red]")
         raise typer.Exit(code=1)
 
-    retriever = DenseRetriever(build_embedder(settings), vector_store)
+    retriever = _retriever(settings, vector_store, strategy, variant, retrieval)
     where = {"ticker": ticker.upper()} if ticker else None
     try:
         results = retriever.retrieve(question, k=k, where=where)
@@ -413,6 +436,7 @@ def eval_retrieval(
     min_overlap_fraction: Annotated[
         float, typer.Option(help="Fraction of a gold span a chunk must cover, 0 to 1.")
     ] = 0.0,
+    retrieval: RetrievalOption = DEFAULT_STRATEGY,
 ) -> None:
     """Score retrieval against the gold evidence spans and write a report."""
     settings = get_settings()
@@ -426,7 +450,7 @@ def eval_retrieval(
         console.print("[red]index is empty; run `rag index build` first[/red]")
         raise typer.Exit(code=1)
 
-    retriever = DenseRetriever(build_embedder(settings), vector_store)
+    retriever = _retriever(settings, vector_store, strategy, variant, retrieval)
     rule = OverlapRule(min_chars=min_overlap_chars, min_fraction=min_overlap_fraction)
     ks = tuple(sorted({*DEFAULT_KS, k}))
     with console.status("retrieving"):
@@ -506,6 +530,7 @@ def eval_generation(
         bool, typer.Option("--raw/--context-embed", help="Embed variant to query.")
     ] = False,
     types: Annotated[str, typer.Option(help="Comma-separated question types to score.")] = "lookup",
+    retrieval: RetrievalOption = DEFAULT_STRATEGY,
 ) -> None:
     """Score citation resolution and figure verification on grounded answers."""
     settings = get_settings()
@@ -517,7 +542,7 @@ def eval_generation(
         if vector_store.count() == 0:
             console.print("[red]index is empty; run `rag index build` first[/red]")
             raise typer.Exit(code=1)
-        retriever = DenseRetriever(build_embedder(settings), vector_store)
+        retriever = _retriever(settings, vector_store, strategy, variant, retrieval)
 
     llm = build_llm(settings)
     console.print(
@@ -575,6 +600,7 @@ def eval_refusal(
     min_score: Annotated[
         float | None, typer.Option(help="Override MIN_RETRIEVAL_SCORE for this run.")
     ] = None,
+    retrieval: RetrievalOption = DEFAULT_STRATEGY,
 ) -> None:
     """Measure whether the system refuses the questions it should, and only those."""
     settings = get_settings()
@@ -587,7 +613,7 @@ def eval_refusal(
     llm = build_llm(settings)
     pipeline = Pipeline.build(
         settings,
-        DenseRetriever(build_embedder(settings), vector_store),
+        _retriever(settings, vector_store, strategy, variant, retrieval, llm=llm),
         llm,
         gate=gate_settings(settings, min_score),
         strategy=strategy,
@@ -715,6 +741,7 @@ def ask(
     min_score: Annotated[
         float | None, typer.Option(help="Override MIN_RETRIEVAL_SCORE for this question.")
     ] = None,
+    retrieval: RetrievalOption = DEFAULT_STRATEGY,
 ) -> None:
     """Answer from the filings with every sentence checked, or refuse and say why."""
     settings = get_settings()
@@ -727,7 +754,7 @@ def ask(
     llm = build_llm(settings)
     pipeline = Pipeline.build(
         settings,
-        DenseRetriever(build_embedder(settings), vector_store),
+        _retriever(settings, vector_store, strategy, variant, retrieval, llm=llm),
         llm,
         gate=gate_settings(settings, min_score),
         strategy=strategy,

@@ -56,6 +56,19 @@ class Settings(BaseSettings):
         description="Cap on a grounded answer. Thinking-mode models need room before they write.",
     )
 
+    # --- Retrieval --------------------------------------------------------------
+    retrieval_strategy: str = Field(
+        default="hybrid",
+        description="dense | bm25 | hybrid | hybrid-filter | hybrid-rerank (see ADR-008).",
+    )
+    retrieval_pool: int = Field(
+        default=50, description="Candidates each retriever contributes before fusion."
+    )
+    fusion_k: int = Field(default=60, description="Reciprocal rank fusion constant.")
+    rerank_pool: int = Field(
+        default=20, description="Candidates the reranker scores; one model call each."
+    )
+
     # --- Refusal gate -----------------------------------------------------------
     min_retrieval_score: float = Field(
         default=0.0,
