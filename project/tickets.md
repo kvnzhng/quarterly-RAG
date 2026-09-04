@@ -13,14 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-006: Embeddings, VectorStore interface, ChromaDB adapter, dense retrieval
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** retrieval quality
-- **Description:** Define a `VectorStore` protocol (add, query with metadata filter, persist, load, stats). Implement the ChromaDB adapter with persistence under `data/indexes/`. Embeddings come from the configured embed endpoint (ADR-005; `nomic-embed-text` on Ollama by default) behind the `Embedder` protocol so sentence-transformers models can be swapped in. Add `retrieve(question, k)` returning `RetrievedChunk`s from dense search only; BM25, filters, and reranking are RAG-009.
-- **Done when:** `rag index build --ticker AAPL --store chroma` builds and reloads an index, and a query returns chunks with provenance.
-- **Artifacts:** `docs/tradeoffs/embeddings.md` first pass.
-
 ## Backlog
 
 ### Phase 1: one thin end-to-end path, measured
@@ -205,3 +197,16 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Verified:** 1,391 chunks over the 16-filing corpus, median 304 words, p90 347, largest 809. `filing_text[char_start:char_end] == chunk.text` holds for every chunk, none crosses a section boundary, none holds half a table, ids are unique, and all 35 gold evidence spans overlap at least one chunk. 61 chunks exceed the target, every one of them a single table kept whole. `make test-all`: 128 passed.
 - **Observations for RAG-020:** Nvidia's Part IV Item 15 yields 61 chunks in the FY2026 10-K alone, all sharing one section label, so a section filter buys nothing there; one gold span (q003) already straddles two chunks, which is the case parent-child chunking exists to fix; and overlap is whole-line, so 398 of 1,179 boundaries get none (325 because the preceding line exceeds the 60-word budget, 73 because a table is never carried forward).
 - **Commits:** `6ec7cd3`, `b89bff6`
+
+### RAG-006: Embeddings, VectorStore interface, ChromaDB adapter, dense retrieval
+- **Type:** feat
+- **Created:** 2026-09-03 | **Completed:** 2026-09-04
+- **Competency:** retrieval quality
+- **Description:** Define a `VectorStore` protocol (add, query with metadata filter, persist, load, stats). Implement the ChromaDB adapter with persistence under `data/indexes/`. Embeddings come from the configured embed endpoint (ADR-005; `nomic-embed-text` on Ollama by default) behind the `Embedder` protocol so sentence-transformers models can be swapped in. Add `retrieve(question, k)` returning `RetrievedChunk`s from dense search only; BM25, filters, and reranking are RAG-009.
+- **Done when:** `rag index build --ticker AAPL --store chroma` builds and reloads an index, and a query returns chunks with provenance.
+- **Artifacts:** `docs/tradeoffs/embeddings.md` first pass.
+- **Verified:** `rag index build --ticker AAPL --ticker NVDA` embeds 1,391 chunks into ChromaDB in 13 s per variant (768 dims, unit-normalised, cosine); reopening the directory finds them; `rag index query` returns ranked chunks whose text still resolves against the filing offsets. `make test-all`: 155 passed.
+- **Found by measuring:** `nomic-embed-text` needs `search_query:` / `search_document:` prefixes and was getting neither, costing a third of recall with no error. The `Embedder` protocol is now `embed_documents` / `embed_query` so the mistake is not expressible. Prepending a company/period/section header before embedding roughly doubles recall; both variants are built and kept for RAG-008.
+- **Baseline:** dense-only recall@5 is 18.2% raw and 36.4% with context headers, over 33 answerable questions. That is the floor RAG-009's BM25, fusion and reranking are measured against.
+- **Dependencies added:** `chromadb` (embedded vector store with metadata filtering and directory persistence; FAISS goes behind the same protocol in RAG-007).
+- **Commits:** `3435fc9`
