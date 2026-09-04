@@ -43,19 +43,31 @@ _Not yet measured. `rag doctor` at RAG-002 only proves the configured endpoint a
 
 ### Citation discipline, measured at RAG-010
 
-23 `lookup` questions with the evidence handed to the model, prompt v1, so this measures the generator alone.
+23 `lookup` questions, prompt v1. **Gold passages** hands the model the chunks holding the evidence, which isolates the generator.
 
 | Model | Size | Citations resolve | Every sentence cited | Figures verified | Fully grounded | States the gold figure |
 |---|---|---|---|---|---|---|
 | `llama3.1:8b` | 4.9 GB | 50% | 50% | 86% | 41% | 95% |
 | `gpt-oss:20b` | 13.8 GB | 100% | 91% | 100% | 91% | 77% |
 | `qwen3.6:27b` | 17.4 GB | 100% | 100% | 100% | 100% | 64% |
+| **`qwen3.8-27b-64k`** | 17.7 GB | 100% | 96% | 91% | 91% | **91%** |
 
-The first real tradeoff in this project, and not the one expected. **The 8B model is the best of the three at finding the right figure and by far the worst at saying where it found it**, inventing passage labels it was never given in half its answers. Neither larger model does that once.
+**Retrieved passages** runs the whole pipeline, so retrieval's misses are inside these numbers.
 
-A caveat found while measuring: `qwen3.6:27b` scored 43% on the gold figure until the answer budget rose from 400 to 1024 tokens. A thinking-mode model spends tokens before it writes, and a truncated answer scores as ungrounded, which blames the model for the budget. `ANSWER_MAX_TOKENS` is now a setting.
+| Model | Refused | Citations resolve | Every sentence cited | Figures verified | Fully grounded | States the gold figure | Seconds per answer |
+|---|---|---|---|---|---|---|---|
+| `gpt-oss:20b` | 35% | 100% | 87% | 100% | 87% | 67% | 3.8 |
+| **`qwen3.8-27b-64k`** | 30% | 100% | 100% | 100% | **100%** | **75%** | 9.6 |
 
-Run record: commit `0ab6a44`, prompt v1, gold passages, k=5, network Ollama server.
+Two things the tables say.
+
+**The 8B model is the best of the four at finding the right figure and by far the worst at saying where it found it**, inventing passage labels it was never given in half its answers. No larger model does that once. Citation discipline is a capability rather than a prompting problem: the prompt was identical for all four.
+
+**Grounding and correctness are separate axes.** `gpt-oss:20b` and `qwen3.6:27b` both ground well and then trail badly on stating the labelled figure, at 77% and 64%. `qwen3.8-27b` is the only model measured that does both, and the only one at 100% on every grounding measure end to end. It costs 2.5x the latency of `gpt-oss:20b`, which is the reasoning it does before it writes.
+
+A caveat that applies to both qwen models: `qwen3.6:27b` scored 43% on the gold figure until the answer budget rose from 400 to 1024 tokens. A thinking-mode model spends tokens before it writes, and a truncated answer scores as ungrounded, which blames the model for the budget. `ANSWER_MAX_TOKENS` is now a setting.
+
+Run record: commit `0ab6a44` for the first three models and `974f6ac` for `qwen3.8-27b`, prompt v1, k=5, `ANSWER_MAX_TOKENS=1024`, chunker `fixed`, `context` embed variant, network Ollama server.
 
 ### Tried at RAG-002
 
@@ -69,7 +81,11 @@ Run record: commit `0ab6a44`, prompt v1, gold passages, k=5, network Ollama serv
 
 ## Decision
 
-`llama3.1:8b` stays the code default because it is the one that fits a laptop (ADR-003), but it is now known to be the weakest link in grounding: it fails citation discipline in half its answers. **On a machine with room, set `LLM_MODEL=gpt-oss:20b` in `.env`.** The final choice waits on RAG-012, which adds correctness and faithfulness judging; `qwen3.6:27b` is the one to watch there, since it grounds every sentence and currently trails on stating the labelled figure.
+`llama3.1:8b` stays the code default because it is the one that fits a laptop (ADR-003), but it is now known to be the weakest link in grounding: it fails citation discipline in half its answers.
+
+**On a machine with 18 GB to spare, set `LLM_MODEL=qwen3.8-27b-64k:latest` in `.env`.** It is the only model measured that is both fully grounded end to end and accurate on the labelled figure. Choose `gpt-oss:20b` instead when latency matters: it answers 2.5x faster and gives up 8 points of correctness to do it.
+
+Still provisional. This is 23 lookup questions scored with a proxy for correctness rather than a judge. RAG-012 adds faithfulness judging and answer correctness, and RAG-011 will test whether the model that refuses least refuses at the right times.
 
 ## Interview one-liner
 

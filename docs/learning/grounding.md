@@ -19,6 +19,8 @@ An answer is grounded when every claim in it can be traced to a specific passage
 
 | Model | Passages | Refused | Citations resolve | Every sentence cited | Figures verified | Fully grounded | States the gold figure |
 |---|---|---|---|---|---|---|---|
+| `qwen3.8-27b-64k` | gold | 0% | 100% | 96% | 91% | 91% | 91% |
+| `qwen3.8-27b-64k` | retrieved | 30% | 100% | 100% | 100% | 100% | 75% |
 | `gpt-oss:20b` | gold | 4% | 100% | 91% | 100% | 91% | 77% |
 | `gpt-oss:20b` | retrieved | 35% | 100% | 87% | 100% | 87% | 67% |
 | `llama3.1:8b` | gold | 4% | 50% | 50% | 86% | 41% | 95% |
@@ -27,9 +29,10 @@ Run record: commit `0ab6a44`, prompt v1, chunker `fixed`, `context` embed varian
 
 ### What the numbers say
 
-- **Citation discipline is a model capability, not a prompting problem.** The same prompt gets 100% resolvable citations from a 20B model and 50% from an 8B one. `llama3.1:8b` invents passage labels it was never given, in half its answers. It is the better model at finding the right figure (95% against 77%) and the worse one at saying where it found it.
+- **Citation discipline is a model capability, not a prompting problem.** The same prompt gets 100% resolvable citations from every model at 20B or above and 50% from the 8B one. `llama3.1:8b` invents passage labels it was never given, in half its answers. It is the better model at finding the right figure (95% against 77%) and the worse one at saying where it found it.
 - **Grounding holds when retrieval degrades; correctness does not.** Moving from gold passages to retrieved ones leaves citation resolution at 100% and fully-grounded at 87%, while refusals rise from 4% to 35%. The system does not start making things up when the evidence thins out. It says it cannot answer.
-- **Refusal is doing real work already.** 35% of end-to-end questions get `INSUFFICIENT_EVIDENCE`, which tracks retrieval's 36% recall@5. Turning that signal into a policy with reasons is RAG-011.
+- **Grounding and correctness are separate axes.** Two models ground well and then state the labelled figure only 64% and 77% of the time. `qwen3.8-27b` is the only one measured that does both, and the only one at 100% on every grounding measure end to end. Full table with latency: `docs/tradeoffs/llm-serving.md`.
+- **Refusal is doing real work already.** 30% to 35% of end-to-end questions get `INSUFFICIENT_EVIDENCE`, which tracks retrieval's 36% recall@5. Turning that signal into a policy with reasons is RAG-011.
 
 ### What the verifier cannot do
 

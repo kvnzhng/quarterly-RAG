@@ -1,6 +1,6 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-025
+> Next ID: RAG-026
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
@@ -219,3 +219,12 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Finding:** citation discipline is a model capability. The 8B default invents passage labels in half its answers while being the best of three at finding the right figure. ADR-006 amended; `docs/tradeoffs/llm-serving.md` has the table. Set `LLM_MODEL=gpt-oss:20b` on hardware with room.
 - **Known limit:** the verifier checks whether a figure is *present* in the cited passage, not whether the claim about it is true, so a wrong-column figure passes. RAG-021 recomputes derived numbers from their operands.
 - **Commits:** `5c11778`
+
+### RAG-025: Extend the citation-discipline comparison to qwen3.8-27b
+- **Type:** docs
+- **Created:** 2026-09-04 | **Completed:** 2026-09-04
+- **Competency:** hallucination control, production readiness
+- **Description:** RAG-010 measured three models and found citation discipline to be the largest single lever on grounding. The server also holds `qwen3.8-27b`, which was not in that run. Score it on the same 23 lookup questions in both contexts, add per-model answer latency, and update `docs/tradeoffs/llm-serving.md`, `docs/learning/grounding.md`, ADR-006 and the README recommendation with whatever the numbers say.
+- **Done when:** the llm-serving table covers four models with a latency column and the recommended `LLM_MODEL` follows the measurement rather than a guess.
+- **Verified:** four models scored on gold passages, two on retrieved, with latency. `qwen3.8-27b-64k` is 100% on every grounding measure end to end and 75% on the labelled figure, against 87% and 67% for `gpt-oss:20b`, at 9.6 s versus 3.8 s per answer. Recommendation and ADR-006 updated to match.
+- **Commits:** `e041a64`

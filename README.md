@@ -82,7 +82,7 @@ The pipeline reaches models through two small interfaces, `LLM` and `Embedder`, 
 |---|---|---|---|---|
 | Ollama on this machine (default) | `openai_compatible` | `http://localhost:11434/v1` | `ollama` (ignored) | `make models` pulls the weights |
 | Ollama, vLLM, LM Studio, llama.cpp on another machine | `openai_compatible` | `http://<host>:<port>/v1` (the `/v1` matters) | whatever that server expects | nothing to install locally; for Ollama, `make models` pulls onto that host |
-| Ollama on a machine with 16 GB+ (recommended) | `openai_compatible` | as above | as above | `LLM_MODEL=gpt-oss:20b`; the 8B default fails citation discipline (`docs/tradeoffs/llm-serving.md`) |
+| Ollama on a machine with 18 GB+ (recommended) | `openai_compatible` | as above | as above | `LLM_MODEL=qwen3.8-27b-64k:latest`, the only model measured that is both fully grounded and accurate; `gpt-oss:20b` is 2.5x faster and less accurate. The 8B default fails citation discipline (`docs/tradeoffs/llm-serving.md`) |
 | Hosted OpenAI-compatible API (OpenAI, OpenRouter, Groq, ...) | `openai_compatible` | the provider's URL | your token | costs money, so evals stop being free |
 | Anthropic API | `anthropic` | unused | your token | `LLM_MODEL=claude-opus-5`; no embeddings endpoint, keep `EMBED_*` local |
 
