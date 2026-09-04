@@ -103,11 +103,25 @@ def _is_date_day(text: str, match: re.Match[str]) -> bool:
     return bool(_DATE_DAY_BEFORE.search(before) or _DATE_DAY_AFTER.match(after))
 
 
-def _close(left: float, right: float) -> bool:
+def values_close(
+    left: float, right: float, *, tolerance: float = TOLERANCE, absolute: float = 0.0
+) -> bool:
+    """Whether two amounts are the same figure written differently.
+
+    `absolute` admits the rounding a written figure already did: "about 106%" is half a
+    percentage point wide on its own, whatever the relative tolerance says (RAG-021).
+    """
     if left == right:
         return True
+    gap = abs(left - right)
+    if absolute > 0 and gap <= absolute:
+        return True
     largest = max(abs(left), abs(right))
-    return largest > 0 and abs(left - right) / largest <= TOLERANCE
+    return largest > 0 and gap / largest <= tolerance
+
+
+def _close(left: float, right: float) -> bool:
+    return values_close(left, right)
 
 
 def figure_supported(figure: Figure, passage: str) -> bool:

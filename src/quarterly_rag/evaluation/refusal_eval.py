@@ -20,7 +20,6 @@ from pathlib import Path
 from quarterly_rag.config import Settings
 from quarterly_rag.evaluation.questions import load_questions, questions_path
 from quarterly_rag.evaluation.retrieval_eval import REPORTS_DIRNAME, RunRecord, build_run_record
-from quarterly_rag.generation.answer import PROMPT_VERSION
 from quarterly_rag.generation.refusal import GateSettings
 from quarterly_rag.pipeline import Pipeline
 
@@ -191,7 +190,7 @@ def run_refusal_eval(
         ).DEFAULT_RULE,
         question_count=len(questions),
     )
-    run.prompt_version = PROMPT_VERSION
+    run.prompt_version = pipeline.prompt_version
     report = RefusalReport(run=run)
 
     for question in questions:

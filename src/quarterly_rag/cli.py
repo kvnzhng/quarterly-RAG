@@ -31,7 +31,6 @@ from quarterly_rag.evaluation.questions import (
 from quarterly_rag.evaluation.refusal_eval import gate_settings, run_refusal_eval, score
 from quarterly_rag.evaluation.relevance import OverlapRule
 from quarterly_rag.evaluation.retrieval_eval import run_retrieval_eval
-from quarterly_rag.generation.answer import PROMPT_VERSION
 from quarterly_rag.generation.llm import build_llm
 from quarterly_rag.indexing.build import build_index, build_store, load_manifest
 from quarterly_rag.indexing.embed_text import CONTEXT, RAW
@@ -525,6 +524,11 @@ def eval_retrieval(
     console.print(f"report written to {path}")
 
 
+def _rate(stats: dict[str, float], name: str) -> str:
+    """A rate, or a dash when nothing of that kind happened. Zero would be a claim."""
+    return f"{stats[name]:.0%}" if name in stats else "-"
+
+
 @evaluate.command("generation")
 def eval_generation(
     context: Annotated[
@@ -544,11 +548,19 @@ def eval_generation(
             "different one from the generator by default.",
         ),
     ] = None,
+    prompt_version: Annotated[
+        str | None,
+        typer.Option(
+            "--prompt-version",
+            help="Answer prompt. v1 forbids arithmetic; v2 asks for it with its operands.",
+        ),
+    ] = None,
     retrieval: RetrievalOption = DEFAULT_STRATEGY,
 ) -> None:
     """Score citation resolution and figure verification on grounded answers."""
     settings = get_settings()
     variant = RAW if raw else CONTEXT
+    prompt_version = prompt_version or settings.answer_prompt_version
     question_types = tuple(t.strip() for t in types.split(",") if t.strip())
     retriever = None
     if context == RETRIEVED:
@@ -563,7 +575,7 @@ def eval_generation(
     if judge_model:
         judge = Judge(build_llm(settings.model_copy(update={"llm_model": judge_model})))
     console.print(
-        f"{llm.label} | prompt v{PROMPT_VERSION} | {context} passages | k={k} | "
+        f"{llm.label} | prompt v{prompt_version} | {context} passages | k={k} | "
         f"types: {', '.join(question_types)}"
         + (f" | judge {judge.label}" if judge else " | no judge")
     )
@@ -579,6 +591,7 @@ def eval_generation(
                 variant=variant,
                 question_types=question_types,
                 judge=judge,
+                prompt_version=prompt_version,
             )
         except (FileNotFoundError, ValueError, ModelServerError) as exc:
             console.print(f"[red]{escape(str(exc))}[/red]")
@@ -591,6 +604,8 @@ def eval_generation(
     table.add_column("citations resolve", justify="right")
     table.add_column("every sentence cited", justify="right")
     table.add_column("figures verified", justify="right")
+    table.add_column("figures accounted", justify="right")
+    table.add_column("derived verified", justify="right")
     table.add_column("fully grounded", justify="right")
     table.add_column("gold figure present", justify="right")
     if report.judged():
@@ -607,6 +622,8 @@ def eval_generation(
             f"{stats.get('citation_resolution', 0):.0%}",
             f"{stats.get('all_sentences_cited', 0):.0%}",
             f"{stats.get('figures_verified', 0):.0%}",
+            f"{stats.get('figures_accounted', 0):.0%}",
+            _rate(stats, "derived_verified"),
             f"{stats.get('fully_grounded', 0):.0%}",
             f"{stats.get('gold_figures_present', 0):.0%}",
         ]
@@ -614,6 +631,21 @@ def eval_generation(
             row += [f"{stats.get('faithfulness', 0):.0%}", f"{stats.get('correct', 0):.0%}"]
         table.add_row(*row)
     console.print(table)
+
+    failures = report.calculation_failures()
+    if failures:
+        reasons = Table(title="calculations that did not verify")
+        reasons.add_column("reason")
+        reasons.add_column("n", justify="right")
+        for reason, count in failures.items():
+            reasons.add_row(reason, str(count))
+        console.print(reasons)
+    truncated = [r.question_id for r in report.results if r.truncated]
+    if truncated:
+        console.print(
+            f"[yellow]{len(truncated)} answer(s) hit the token budget "
+            f"({', '.join(truncated)}); raise ANSWER_MAX_TOKENS before reading these[/yellow]"
+        )
 
     if report.claims:
         cal = report.calibration()
@@ -663,7 +695,7 @@ def eval_refusal(
         strategy=strategy,
     )
     console.print(
-        f"{llm.label} | prompt v{PROMPT_VERSION} | k={k} | "
+        f"{llm.label} | prompt v{settings.answer_prompt_version} | k={k} | "
         f"min score {pipeline.gate.min_retrieval_score:.2f}"
     )
     with console.status("asking"):
@@ -930,7 +962,7 @@ def ask(
                     f"{hit.score:.3f}", f"{c.ticker} {c.form} {c.period_label}", c.section
                 )
             console.print(table)
-        console.print(f"[dim]{llm.label} | prompt v{PROMPT_VERSION}[/dim]")
+        console.print(f"[dim]{llm.label} | prompt v{settings.answer_prompt_version}[/dim]")
         return
 
     answer = outcome.answer
@@ -952,9 +984,26 @@ def ask(
         console.print(
             f"[red]{len(answer.unsupported_sentences)} sentence(s) without usable citations[/red]"
         )
-    if answer.derived_numbers:
-        listed = ", ".join(d.text for d in answer.derived_numbers)
+    if answer.calculations:
+        working = Table(title="calculations")
+        working.add_column("shown")
+        working.add_column("checked")
+        for calculation in answer.calculations:
+            verdict = (
+                "[green]verified[/green]"
+                if calculation.verified
+                else f"[yellow]{escape(calculation.reason)}[/yellow]"
+            )
+            working.add_row(escape(calculation.raw), verdict)
+        console.print(working)
+    if answer.verified_derived:
+        listed = ", ".join(d.text for d in answer.verified_derived)
+        console.print(f"[green]recomputed from the cited passages: {listed}[/green]")
+    if answer.unverified_derived:
+        listed = ", ".join(d.text for d in answer.unverified_derived)
         console.print(f"[yellow]figures not found in the cited passage: {listed}[/yellow]")
+    if answer.truncated:
+        console.print("[yellow]the answer hit the token budget; raise ANSWER_MAX_TOKENS[/yellow]")
     console.print(f"[dim]{llm.label} | prompt v{answer.prompt_version}[/dim]")
 
 

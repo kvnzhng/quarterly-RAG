@@ -2,6 +2,10 @@
 
 Two judgements, deliberately separate.
 
+Calculation lines are not judged: they are arithmetic, checked deterministically by
+`calculations.py` (RAG-021), and asking a model to entail one only adds noise to the
+calibration this judge is measured by.
+
 **Faithfulness** asks whether each sentence is supported by *the passage it cited*, not by
 the retrieved context as a whole. That is the distinction from RAGAS and from most
 published faithfulness metrics: an answer that states a true fact while citing the wrong
@@ -128,7 +132,7 @@ class Judge:
         from quarterly_rag.generation.answer import parse_tags
 
         claims: list[ClaimJudgement] = []
-        for sentence in split_sentences(answer.raw_text.strip() or answer.text):
+        for sentence in split_sentences(answer.prose.strip() or answer.text):
             tags = [t for t in parse_tags(sentence) if t in passages]
             if not tags:
                 continue

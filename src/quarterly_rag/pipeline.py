@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 from quarterly_rag.chunking.build import iter_chunks
 from quarterly_rag.config import Settings
-from quarterly_rag.generation.answer import answer_question
+from quarterly_rag.generation.answer import DEFAULT_PROMPT_VERSION, answer_question
 from quarterly_rag.generation.base import LLM
 from quarterly_rag.generation.refusal import (
     CorpusScope,
@@ -32,6 +32,7 @@ class Pipeline:
     scope: CorpusScope
     gate: GateSettings
     max_tokens: int = 1024
+    prompt_version: str = DEFAULT_PROMPT_VERSION
 
     @classmethod
     def build(
@@ -52,6 +53,7 @@ class Pipeline:
             scope=scope,
             gate=gate or GateSettings(min_retrieval_score=settings.min_retrieval_score),
             max_tokens=settings.answer_max_tokens,
+            prompt_version=settings.answer_prompt_version,
         )
 
     def ask(self, question: str, k: int = 5, where: dict | None = None) -> GateOutcome:
@@ -64,7 +66,11 @@ class Pipeline:
             return GateOutcome(refusal=refusal, results=list(results))
 
         answer = answer_question(
-            self.llm, question, [r.chunk for r in results], max_tokens=self.max_tokens
+            self.llm,
+            question,
+            [r.chunk for r in results],
+            max_tokens=self.max_tokens,
+            prompt_version=self.prompt_version,
         )
         # Stage 2: the model has read the passages, and the verifier has read the model.
         if refusal := check_answer(answer, results):

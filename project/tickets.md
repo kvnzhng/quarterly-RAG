@@ -13,6 +13,13 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
+### RAG-021: Calculation provenance for derived numbers
+- **Type:** feat
+- **Created:** 2026-09-04
+- **Competency:** hallucination control
+- **Description:** `derived` and `cross_period` questions need arithmetic (growth rates, differences, ratios, unit conversions), and a verbatim number check passes a wrong relationship between two correct numbers. Extend the answer format so the generator emits each derived number as a calculation: operands with citations, the operation, and the result. A deterministic verifier recomputes it from the cited operands and marks the result `verified` only when the recomputation matches within rounding; a growth rate built from the wrong two periods then fails instead of passing.
+- **Done when:** the RAG-019 `derived` and `cross_period` questions are scored separately, and `docs/learning/hallucination-control.md` reports the verified rate before and after.
+
 ## Backlog
 
 
@@ -21,13 +28,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 ### Phase 2: compare alternatives against the baseline
 
 
-
-### RAG-021: Calculation provenance for derived numbers
-- **Type:** feat
-- **Created:** 2026-09-04
-- **Competency:** hallucination control
-- **Description:** `derived` and `cross_period` questions need arithmetic (growth rates, differences, ratios, unit conversions), and a verbatim number check passes a wrong relationship between two correct numbers. Extend the answer format so the generator emits each derived number as a calculation: operands with citations, the operation, and the result. A deterministic verifier recomputes it from the cited operands and marks the result `verified` only when the recomputation matches within rounding; a growth rate built from the wrong two periods then fails instead of passing.
-- **Done when:** the RAG-019 `derived` and `cross_period` questions are scored separately, and `docs/learning/hallucination-control.md` reports the verified rate before and after.
 
 ### Phase 3: production readiness and writeup
 

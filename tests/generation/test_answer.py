@@ -5,8 +5,8 @@ from collections.abc import Sequence
 import pytest
 
 from quarterly_rag.generation.answer import (
+    DEFAULT_PROMPT_VERSION,
     INSUFFICIENT,
-    PROMPT_VERSION,
     Answer,
     answer_question,
     load_prompt,
@@ -86,7 +86,7 @@ def test_a_cited_verified_sentence_passes_clean(passages) -> None:
     assert answer.citations[0].chunk_id == "a:1-2"
     assert answer.citations[0].period_label == "FY2026 Q3"
     assert answer.model == "m"
-    assert answer.prompt_version == PROMPT_VERSION
+    assert answer.prompt_version == DEFAULT_PROMPT_VERSION
 
 
 def test_an_uncited_sentence_is_unsupported(passages) -> None:
@@ -165,3 +165,87 @@ def test_passages_are_tagged_from_one(passages) -> None:
 def test_answer_round_trips_through_json(passages) -> None:
     answer = verify("Sales rose by $15,381 million [c9]. Net sales were 109,417 [c1].", passages)
     assert Answer.model_validate_json(answer.model_dump_json()) == answer
+
+
+# --- calculation provenance (RAG-021) ----------------------------------------------
+
+
+def test_a_derived_number_backed_by_a_calculation_is_verified(passages) -> None:
+    """The presence check cannot confirm 15,381: no passage prints it. The arithmetic can."""
+    answer = verify(
+        "Net sales rose $15,381 million [c1].\nCALC: 109,417 [c1] - 94,036 [c1] = 15,381",
+        passages,
+    )
+    assert answer.fully_grounded
+    assert [d.text for d in answer.verified_derived] == ["$15,381 million"]
+    assert answer.unverified_derived == []
+    assert "[derived, verified: $15,381 million]" in answer.text
+    assert answer.calculations[0].verified
+
+
+def test_a_derived_number_with_no_calculation_stays_unverified(passages) -> None:
+    answer = verify("Net sales rose $15,381 million [c1].", passages)
+    assert not answer.fully_grounded
+    assert [d.text for d in answer.unverified_derived] == ["$15,381 million"]
+    assert "[derived, unverified: $15,381 million]" in answer.text
+
+
+def test_a_wrong_calculation_leaves_its_figure_unverified(passages) -> None:
+    """Two real operands, the wrong subtraction: exactly what a presence check waves through."""
+    answer = verify(
+        "Net sales rose $20,000 million [c1].\nCALC: 109,417 [c1] - 94,036 [c1] = 20,000",
+        passages,
+    )
+    assert not answer.fully_grounded
+    assert [d.text for d in answer.unverified_derived] == ["$20,000 million"]
+    assert answer.derived_numbers[0].calculation is not None
+    assert not answer.derived_numbers[0].calculation.verified
+
+
+def test_calculation_lines_are_not_sentences(passages) -> None:
+    """A CALC line is working, not a claim; judging it as one would distort faithfulness."""
+    answer = verify(
+        "Net sales rose $15,381 million [c1].\nCALC: 109,417 [c1] - 94,036 [c1] = 15,381",
+        passages,
+    )
+    assert answer.prose == "Net sales rose $15,381 million [c1]."
+    assert answer.unsupported_sentences == []
+
+
+def test_a_calculation_citing_a_missing_passage_is_a_resolution_failure(passages) -> None:
+    answer = verify(
+        "Net sales rose $15,381 million [c1].\nCALC: 109,417 [c1] - 94,036 [c9] = 15,381",
+        passages,
+    )
+    assert answer.invalid_tags == ["c9"]
+    assert not answer.fully_grounded
+
+
+def test_a_calculation_adds_the_passages_it_cites_to_the_citations(passages) -> None:
+    answer = verify(
+        "Employees grew [c2].\nCALC: 109,417 [c1] - 94,036 [c1] = 15,381",
+        passages,
+    )
+    assert [c.tag for c in answer.citations] == ["c2", "c1"]
+
+
+def test_the_prompt_version_is_chosen_and_recorded(passages) -> None:
+    llm = FakeLLM("Net sales were $109,417 million [c1].")
+    answer = answer_question(llm, "What were net sales?", passages, prompt_version="1")
+    system, _ = llm.messages
+    assert system.content == load_prompt("1")
+    assert "CALC:" not in system.content
+    assert "CALC:" in load_prompt("2")
+    assert answer.prompt_version == "1"
+
+
+def test_an_unknown_prompt_version_fails_loudly() -> None:
+    with pytest.raises(FileNotFoundError):
+        load_prompt("99")
+
+
+def test_a_truncated_answer_is_flagged_rather_than_blamed(passages) -> None:
+    """A calculation cut off by the budget parses as unparsed; the budget did that."""
+    answer = verify("Net sales were $109,417 million [c1].", passages, stop_reason="length")
+    assert answer.truncated
+    assert not verify("Net sales were $109,417 million [c1].", passages).truncated

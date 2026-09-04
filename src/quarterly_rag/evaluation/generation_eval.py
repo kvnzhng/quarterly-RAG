@@ -23,7 +23,7 @@ from quarterly_rag.evaluation.questions import EvalQuestion, load_questions, que
 from quarterly_rag.evaluation.relevance import DEFAULT_RULE, OverlapRule, is_relevant
 from quarterly_rag.evaluation.retrieval_eval import REPORTS_DIRNAME, RunRecord, build_run_record
 from quarterly_rag.generation.answer import (
-    PROMPT_VERSION,
+    DEFAULT_PROMPT_VERSION,
     Answer,
     answer_question,
     parse_tags,
@@ -50,6 +50,14 @@ class AnswerResult:
     invalid_tags: int
     unsupported_sentences: int
     derived_numbers: int
+    derived_verified: int
+    """Derived figures a `CALC:` line recomputed from operands their passages state."""
+    calculations: int
+    calculations_verified: int
+    calculation_reasons: list[str]
+    """Why each calculation failed, empty string for one that passed (RAG-021)."""
+    truncated: bool
+    """The budget cut the answer off, so an unparsed calculation is the budget's doing."""
     fully_grounded: bool
     gold_answer_figures_present: bool
     """Whether the answer states the figures the gold answer states. A weak proxy kept
@@ -66,10 +74,10 @@ def _verified_sentences(answer: Answer) -> set[str]:
 
     This is the partial ground truth the judge is calibrated against.
     """
-    flagged = {d.sentence for d in answer.derived_numbers} | set(answer.unsupported_sentences)
+    flagged = {d.sentence for d in answer.unverified_derived} | set(answer.unsupported_sentences)
     return {
         sentence
-        for sentence in split_sentences(answer.raw_text.strip() or answer.text)
+        for sentence in split_sentences(answer.prose.strip() or answer.text)
         if parse_tags(sentence) and sentence not in flagged
     }
 
@@ -102,6 +110,7 @@ class GenerationReport:
             "citation_resolution": sum(r.invalid_tags == 0 for r in answered) / divisor,
             "all_sentences_cited": sum(r.unsupported_sentences == 0 for r in answered) / divisor,
             "figures_verified": sum(r.derived_numbers == 0 for r in answered) / divisor,
+            **_calculation_rates(answered),
             "fully_grounded": sum(r.fully_grounded for r in answered) / divisor,
             "gold_figures_present": sum(r.gold_answer_figures_present for r in answered) / divisor,
         }
@@ -118,12 +127,22 @@ class GenerationReport:
             for name, rows in sorted(buckets.items())
         }
 
+    def calculation_failures(self) -> dict[str, int]:
+        """Why calculations failed, counted. A rate alone hides which check did the work."""
+        reasons: dict[str, int] = {}
+        for result in self.results:
+            for reason in result.calculation_reasons:
+                if reason:
+                    reasons[reason] = reasons.get(reason, 0) + 1
+        return dict(sorted(reasons.items(), key=lambda item: -item[1]))
+
     def as_dict(self) -> dict[str, object]:
         return {
             "run_record": asdict(self.run),
             "context": self.context,
             "overall": {"questions": len(self.results), **self.rates()},
             "by_type": self.by_type(),
+            "calculation_failures": self.calculation_failures(),
             "judge_calibration": self.calibration().as_dict() if self.claims else None,
             "per_question": [asdict(r) for r in self.results],
         }
@@ -163,6 +182,7 @@ def run_generation_eval(
     rule: OverlapRule = DEFAULT_RULE,
     question_types: Sequence[str] = ("lookup",),
     judge: Judge | None = None,
+    prompt_version: str | None = None,
 ) -> GenerationReport:
     if context not in CONTEXTS:
         raise ValueError(f"unknown context {context!r}; expected one of {CONTEXTS}")
@@ -184,7 +204,8 @@ def run_generation_eval(
         rule=rule,
         question_count=len(questions),
     )
-    run.prompt_version = PROMPT_VERSION
+    prompt_version = prompt_version or settings.answer_prompt_version or DEFAULT_PROMPT_VERSION
+    run.prompt_version = prompt_version
     report = GenerationReport(run=run, context=context)
 
     for question in questions:
@@ -193,7 +214,11 @@ def run_generation_eval(
         else:
             chunks = [r.chunk for r in retriever.retrieve(question.question, k=k)]
         answer = answer_question(
-            llm, question.question, chunks, max_tokens=settings.answer_max_tokens
+            llm,
+            question.question,
+            chunks,
+            max_tokens=settings.answer_max_tokens,
+            prompt_version=prompt_version,
         )
         faithfulness = correctness = None
         if judge is not None and not answer.insufficient_evidence:
@@ -214,6 +239,11 @@ def run_generation_eval(
                 invalid_tags=len(answer.invalid_tags),
                 unsupported_sentences=len(answer.unsupported_sentences),
                 derived_numbers=len(answer.derived_numbers),
+                derived_verified=len(answer.verified_derived),
+                calculations=len(answer.calculations),
+                calculations_verified=sum(c.verified for c in answer.calculations),
+                calculation_reasons=[c.reason for c in answer.calculations],
+                truncated=answer.truncated,
                 fully_grounded=answer.fully_grounded,
                 gold_answer_figures_present=_gold_figures_present(question, answer),
                 faithfulness=faithfulness,
@@ -222,6 +252,31 @@ def run_generation_eval(
             )
         )
     return report
+
+
+def _calculation_rates(answered: Sequence[AnswerResult]) -> dict[str, float]:
+    """Rates that exist only once the model shows its arithmetic (RAG-021).
+
+    `figures_accounted` is the honest headline: every figure in the answer is either printed
+    in a passage it cites or recomputed from figures that are. The two component rates are
+    absent rather than zero when nothing was derived, so an answer set with no arithmetic in
+    it does not read as a set that failed at arithmetic.
+    """
+    if not answered:
+        return {}
+    rates = {
+        "figures_accounted": sum(r.derived_numbers == r.derived_verified for r in answered)
+        / len(answered),
+    }
+    derived = sum(r.derived_numbers for r in answered)
+    if derived:
+        rates["derived_verified"] = sum(r.derived_verified for r in answered) / derived
+    calculations = sum(r.calculations for r in answered)
+    if calculations:
+        rates["calculations_verified"] = (
+            sum(r.calculations_verified for r in answered) / calculations
+        )
+    return rates
 
 
 def _judged_rates(answered: Sequence[AnswerResult]) -> dict[str, float]:
