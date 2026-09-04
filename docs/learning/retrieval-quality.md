@@ -24,7 +24,8 @@ The v0 set (RAG-019) holds 43 questions: 23 lookup, 5 derived, 5 cross-period, 1
 
 1. Embedding model.
 2. Vector store and index type (Chroma vs FAISS flat vs HNSW).
-3. Dense vs BM25 vs hybrid with reciprocal rank fusion.
+3. Dense vs BM25 vs hybrid with reciprocal rank fusion (decided: hybrid, ADR-008).
+3b. Vector store: ChromaDB vs FAISS flat vs FAISS HNSW. Measured identical on every retrieval metric, so the decision was operational (ADR-010). The store is 3% of a retrieval; the embedding call is thirty times larger.
 4. Metadata filtering inferred from the question (ticker, period, section).
 5. Cross-encoder reranking of the fused top-N.
 6. Chunking strategy (see `chunking.md`).

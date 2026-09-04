@@ -31,6 +31,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./docs/adr/007-custom-filing-parser.md
 ./docs/adr/008-hybrid-retrieval-default.md
 ./docs/adr/009-section-aware-chunking.md
+./docs/adr/010-chromadb-default-store.md
 ./docs/architecture.md
 ./docs/learning/chunking.md
 ./docs/learning/grounding.md
@@ -92,6 +93,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 ./src/quarterly_rag/indexing/build.py
 ./src/quarterly_rag/indexing/chroma.py
 ./src/quarterly_rag/indexing/embed_text.py
+./src/quarterly_rag/indexing/faiss_store.py
 ./src/quarterly_rag/indexing/embedder.py
 ./src/quarterly_rag/indexing/openai_compatible.py
 ./src/quarterly_rag/ingestion/__init__.py

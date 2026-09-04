@@ -13,6 +13,13 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
+### RAG-007: FAISS adapter and Chroma vs FAISS benchmark
+- **Type:** feat
+- **Created:** 2026-09-03
+- **Competency:** retrieval quality
+- **Description:** Implement a FAISS adapter (flat and HNSW) behind the same protocol. Benchmark both on the same corpus: build time, query p50/p95 latency, memory, metadata filtering support, persistence story, operational complexity.
+- **Done when:** `docs/tradeoffs/vector-stores.md` is filled with measured numbers and ADR-007 records the default choice and when to pick the other.
+
 ## Backlog
 
 
@@ -20,12 +27,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ### Phase 2: compare alternatives against the baseline
 
-### RAG-007: FAISS adapter and Chroma vs FAISS benchmark
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** retrieval quality
-- **Description:** Implement a FAISS adapter (flat and HNSW) behind the same protocol. Benchmark both on the same corpus: build time, query p50/p95 latency, memory, metadata filtering support, persistence story, operational complexity.
-- **Done when:** `docs/tradeoffs/vector-stores.md` is filled with measured numbers and ADR-007 records the default choice and when to pick the other.
 
 ### RAG-012: Faithfulness and end-to-end evaluation
 - **Type:** feat

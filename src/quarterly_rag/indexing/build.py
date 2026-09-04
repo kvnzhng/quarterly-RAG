@@ -19,6 +19,7 @@ from quarterly_rag.config import Settings
 from quarterly_rag.indexing.base import Embedder, VectorStore
 from quarterly_rag.indexing.chroma import ChromaStore
 from quarterly_rag.indexing.embed_text import RAW, VARIANTS, embed_text
+from quarterly_rag.indexing.faiss_store import FaissStore
 
 MANIFEST = "index.json"
 DEFAULT_BATCH = 32
@@ -31,8 +32,13 @@ def index_path(settings: Settings, store: str, strategy: str, variant: str) -> P
 def build_store(settings: Settings, store: str, strategy: str, variant: str) -> VectorStore:
     if store == "chroma":
         return ChromaStore(index_path(settings, store, strategy, variant))
-    if store == "faiss":
-        raise NotImplementedError("the FAISS adapter and the benchmark are RAG-007")
+    if store in {"faiss", "faiss-flat", "faiss-hnsw"}:
+        index_type = "hnsw" if store.endswith("hnsw") else "flat"
+        return FaissStore(
+            index_path(settings, store, strategy, variant),
+            index_type=index_type,
+            dimensions=settings.embed_dimensions,
+        )
     raise ValueError(f"unknown vector store {store!r}")
 
 

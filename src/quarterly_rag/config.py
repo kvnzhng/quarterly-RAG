@@ -97,7 +97,10 @@ class Settings(BaseSettings):
     )
 
     # --- Vector store -----------------------------------------------------------
-    vector_store: Literal["chroma", "faiss"] = "chroma"
+    vector_store: Literal["chroma", "faiss-flat", "faiss-hnsw"] = "chroma"
+    embed_dimensions: int = Field(
+        default=768, description="Vector width; FAISS needs it before the first vector arrives."
+    )
 
     # --- SEC EDGAR requires a descriptive User-Agent with a contact address ---------
     edgar_user_agent: str = Field(

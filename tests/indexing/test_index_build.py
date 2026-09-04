@@ -107,7 +107,5 @@ def test_missing_chunks_and_bad_arguments_are_clear_errors(settings: Settings) -
         build_index(settings, ["AAPL"], embedder=CountingEmbedder())
     with pytest.raises(ValueError, match="unknown embed variant"):
         build_index(settings, ["AAPL"], embedder=CountingEmbedder(), variant="semantic")
-    with pytest.raises(NotImplementedError, match="RAG-007"):
-        build_store(settings, "faiss", "fixed", RAW)
     with pytest.raises(ValueError, match="unknown vector store"):
         build_store(settings, "pinecone", "fixed", RAW)
