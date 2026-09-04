@@ -13,13 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-028: Document the state of the project and write the handoff
-- **Type:** docs
-- **Created:** 2026-09-04
-- **Competency:** all
-- **Description:** Phases one and two are complete except RAG-021. Bring every top-level document up to what was actually built and measured: `CLAUDE.md` (stack, current state, lessons about working in this repo), `README.md` (results so far, no more "the plan"), `docs/architecture.md` (decided rows, real request flow), the learning pages' stale placeholders, and `docs/notes.md`. Record the process lessons in `project/conventions.md`. Write `project/handoff.md`: a prompt that lets a fresh session continue from here with the user's preferences and the project's rules intact.
-- **Done when:** no top-level doc describes planned work in the present tense, every tradeoff status matches its ADR, and the handoff prompt names the next ticket, the setup facts, and the working rules.
-
 ## Backlog
 
 
@@ -281,3 +274,12 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **RAGAS rejected on measurement:** 45 packages, uninstallable alongside langchain-community 0.4, and after pinning it back it scores faithful answers 0.0 and an unfaithful derived claim 1.0 with two different local judges. Removed rather than carried.
 - **CI caveat:** the ticket asked for `make eval` as an optional CI job. It calls a model, which a project principle forbids in CI, and GitHub's runners cannot reach the endpoint or the corpus. The job exists behind `workflow_dispatch`; in practice the gate is a local command.
 - **Commits:** `16ca8a7`, `b740d66`
+
+### RAG-028: Document the state of the project and write the handoff
+- **Type:** docs
+- **Created:** 2026-09-04 | **Completed:** 2026-09-04
+- **Competency:** all
+- **Description:** Phases one and two are complete except RAG-021. Bring every top-level document up to what was actually built and measured: `CLAUDE.md` (stack, current state, lessons about working in this repo), `README.md` (results so far, no more "the plan"), `docs/architecture.md` (decided rows, real request flow), the learning pages' stale placeholders, and `docs/notes.md`. Record the process lessons in `project/conventions.md`. Write `project/handoff.md`: a prompt that lets a fresh session continue from here with the user's preferences and the project's rules intact.
+- **Done when:** no top-level doc describes planned work in the present tense, every tradeoff status matches its ADR, and the handoff prompt names the next ticket, the setup facts, and the working rules.
+- **Verified:** a grep for the old planning phrases across README, CLAUDE.md, architecture and the learning and tradeoff pages finds none; every tradeoff status names its ADR or says what is undecided; `project/handoff.md` names RAG-021, the server facts, the working rules and the open threads; no server address appears in any tracked file. `make test`: 331 passed.
+- **Commits:** `2344195`
