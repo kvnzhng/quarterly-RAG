@@ -13,20 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-022: Ticket enforcement portable across clones and CI
-- **Type:** chore
-- **Created:** 2026-09-04
-- **Competency:** foundation
-- **Description:** The commit-msg hook lives only in this checkout's `.git/hooks`, `make setup` installs only the pre-commit stage, CI does not check messages, and the Claude edit hook needs `jq`. Track the check as `scripts/check-commit-msg.sh`, wire it as a pre-commit `commit-msg` stage hook, install both stages from `make setup`, run the same script over the commit range in CI, and let `enforce-ticket.sh` fall back to `python3` when `jq` is missing. Commit `AGENTS.md` as a symlink to `CLAUDE.md` so Codex reads the same instructions.
-- **Done when:** a fresh clone gets the commit-msg hook from `make setup`, a commit without a ticket id is rejected locally and in CI, and the existing history passes the CI check.
-
-### RAG-023: README, docs, and conventions match the reviewed plan
-- **Type:** docs
-- **Created:** 2026-09-04
-- **Competency:** all
-- **Description:** The review found the README describing planned work in the present tense, a duplicated clone command, a layout line naming "RAG-001 ... RAG-015", and a status list missing RAG-016 to RAG-018; `project/conventions.md` still says the provider is "Ollama today". Fix these, add the run-record requirement to conventions, and update ticket references in `docs/`, `README.md`, and package docstrings for the RAG-005/RAG-020 split and the new RAG-019 and RAG-021.
-- **Done when:** every ticket reference in `docs/` and `README.md` resolves to the right ticket and the README status list matches this file.
-
 ## Backlog
 
 ### Phase 1: one thin end-to-end path, measured
@@ -181,3 +167,19 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Created:** 2026-09-03 | **Completed:** 2026-09-03
 - **Description:** The model provider is the user's choice: a local server (Ollama or any OpenAI-compatible endpoint, on this machine or on the network), or a hosted API with a token (OpenAI-compatible or Anthropic). Replace the Ollama-only settings with `LLM_PROVIDER` / `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` and matching `EMBED_*` settings, keep local as the default, update `.env.example`, README, Makefile, RAG-002, and record the decision in ADR-005.
 - **Commits:** `a7c6d72`
+
+### RAG-022: Ticket enforcement portable across clones and CI
+- **Type:** chore
+- **Created:** 2026-09-04 | **Completed:** 2026-09-04
+- **Competency:** foundation
+- **Description:** The commit-msg hook lives only in this checkout's `.git/hooks`, `make setup` installs only the pre-commit stage, CI does not check messages, and the Claude edit hook needs `jq`. Track the check as `scripts/check-commit-msg.sh`, wire it as a pre-commit `commit-msg` stage hook, install both stages from `make setup`, run the same script over the commit range in CI, and let `enforce-ticket.sh` fall back to `python3` when `jq` is missing. Commit `AGENTS.md` as a symlink to `CLAUDE.md` so Codex reads the same instructions.
+- **Done when:** a fresh clone gets the commit-msg hook from `make setup`, a commit without a ticket id is rejected locally and in CI, and the existing history passes the CI check.
+- **Commits:** `bdd176a`
+
+### RAG-023: README, docs, and conventions match the reviewed plan
+- **Type:** docs
+- **Created:** 2026-09-04 | **Completed:** 2026-09-04
+- **Competency:** all
+- **Description:** The review found the README describing planned work in the present tense, a duplicated clone command, a layout line naming "RAG-001 ... RAG-015", and a status list missing RAG-016 to RAG-018; `project/conventions.md` still says the provider is "Ollama today". Fix these, add the run-record requirement to conventions, and update ticket references in `docs/`, `README.md`, and package docstrings for the RAG-005/RAG-020 split and the new RAG-019 and RAG-021.
+- **Done when:** every ticket reference in `docs/` and `README.md` resolves to the right ticket and the README status list matches this file.
+- **Commits:** `8e81db6`
