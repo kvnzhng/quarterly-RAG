@@ -14,7 +14,7 @@ RAG-008 measured dense retrieval at 36.4% recall@5 and found it answering **zero
 | `dense` | Embedding similarity alone, the RAG-006 baseline |
 | `bm25` | Okapi BM25 over the chunk plus its provenance header, with the question expanded into the corpus's own spelling of any period or company it names |
 | `hybrid` | Reciprocal rank fusion of both, pool 50, fusion constant 60 |
-| `hybrid-filter` | Hybrid, plus a ticker filter inferred from the question |
+| `hybrid-nofilter` | Hybrid with the inferred filter switched off |
 | `hybrid-rerank` | Hybrid, then the configured chat model scores each of 10 candidates 0 to 10 |
 
 ## Criteria
@@ -35,20 +35,26 @@ RAG-008 measured dense retrieval at 36.4% recall@5 and found it answering **zero
 |---|---|---|---|---|---|---|---|
 | `dense` | 18.2% | 30.3% | 36.4% | 45.5% | 0.266 | 0.0% | ~0.3 |
 | `bm25` | 3.0% | 21.2% | 30.3% | 45.5% | 0.146 | **14.3%** | ~0.1 |
-| **`hybrid`** | 21.2% | 33.3% | **45.5%** | 45.5% | 0.300 | 0.0% | ~0.4 |
-| `hybrid-filter` | 21.2% | 33.3% | 45.5% | 45.5% | 0.295 | 0.0% | ~0.4 |
+| `hybrid-nofilter` | 21.2% | 33.3% | 45.5% | 45.5% | 0.300 | 0.0% | ~0.4 |
+| **`hybrid`** (company and quarter filtered) | 21.2% | 33.3% | **48.5%** | **51.5%** | 0.306 | **14.3%** | ~0.4 |
 | `hybrid-rerank` (8B judge) | 27.3% | 33.3% | 39.4% | 45.5% | 0.325 | 0.0% | 3.0 |
 | `hybrid-rerank` (20B judge) | **30.3%** | **36.4%** | 39.4% | 45.5% | **0.348** | 0.0% | 14.0 |
 
-Run record: commit `7a9ee6e`, chunker `fixed` (350 words, 60 overlap), `nomic-embed-text` with task prefixes, `context` embed variant, ChromaDB, pool 50, fusion constant 60, rerank pool 10, relevance = any overlap with a gold span.
+Run record: commit `0dc76b3`, chunker `fixed` (350 words, 60 overlap), `nomic-embed-text` with task prefixes, `context` embed variant, ChromaDB, pool 50, fusion constant 60, rerank pool 10, relevance = any overlap with a gold span.
 
 ### Fusion is the win, and it is not the sum of its parts
 
 Hybrid beats dense by 9 points at k=5 while BM25 alone is 6 points *worse* than dense. Neither retriever is better than the other; they fail on different questions, and reciprocal rank fusion keeps what they agree on. Widening the candidate pool from 20 to 50 moved recall@5 from 39.4% to 45.5%, because a passage both retrievers rank mid-list beats one only the leader ranks highly.
 
-### The inferred filter buys nothing, as predicted
+### Filtering: the company buys nothing, the quarter buys a lot
 
-RAG-008's near-miss ladder showed retrieval already reaching the right filing 91% of the time, so there was little for a company filter to remove. It changes recall not at all and costs a little MRR. It stays available and off by default; it would matter on a corpus of fifty companies rather than two.
+Filtering on the **company** changes recall not at all, exactly as RAG-008's near-miss ladder predicted: retrieval already reaches the right filing 91% of the time, so there is little for it to remove.
+
+Filtering on the **fiscal quarter** is a different matter, and the first version of this page got it wrong by generalising from the company result. Eight near-identical income statements compete with each other, and the period is the only thing that separates them: recall@5 rises from 45.5% to 48.5%, recall@10 from 45.5% to 51.5%, and the quarterly questions move off zero for the first time (RAG-026).
+
+A **bare fiscal year is deliberately not filtered.** A filing quotes prior years for comparison, so "fiscal 2025" is answered by the 2026 annual report as often as by the 2025 one. Filtering on it raises recall@1 to 27.3% and MRR to 0.352 while leaving recall@5 at 45.5%, which is the wrong trade when the generator receives five passages.
+
+A filter that empties the result falls back to no filter, because an empty result would reach the refusal gate as low confidence for a question the corpus can answer.
 
 ### Reranking trades recall for precision, and is not worth it here
 
@@ -56,9 +62,9 @@ Both judges move recall@1 up (18.2% to 30.3% with the 20B model) and recall@5 **
 
 A dedicated cross-encoder such as `bge-reranker-base` would be faster and probably better, and it would mean sentence-transformers and PyTorch, roughly two gigabytes, against ADR-003's promise that the defaults fit a laptop. These numbers say the gain would have to be large to justify that, and reranking's shape here suggests it would show up at k=1, not k=5. Revisit if the pipeline ever passes fewer passages to the generator.
 
-### BM25 fixes the 10-Q failure and fusion loses it again
+### BM25 fixes the 10-Q failure, fusion loses it, and the period filter recovers it
 
-BM25 alone answers one of seven quarterly questions; dense and every fusion answer none. The lexical index is doing exactly what it was added for, and RRF dilutes it because the dense ranking outvotes it. That is the honest reading of a 14.3% against 0.0%: on seven questions the difference is one question, and the mechanism is real even if the sample is not.
+BM25 alone answers one of seven quarterly questions; dense and unfiltered fusion answer none. The lexical index is doing exactly what it was added for, and RRF dilutes it because the dense ranking outvotes it. Adding the period filter brings it back, so the default reaches 14.3% on quarterly questions. On seven questions that difference is one question, so the mechanism is real even though the sample is not.
 
 ### The ceiling is chunking, not ranking
 
@@ -72,7 +78,7 @@ Every strategy plateaus at 45.5% by k=10. Pushing hybrid deeper:
 
 ## Decision
 
-**`hybrid` is the default** (ADR-008): the best recall@5, which is what bounds the answers, at negligible cost and with no new heavyweight dependency. `hybrid-rerank` stays in the repo for when top-1 matters more than top-5.
+**`hybrid` with inferred filtering is the default** (ADR-008, amended by RAG-026): the best recall@5, which is what bounds the answers, at negligible cost and with no new heavyweight dependency. `hybrid-rerank` stays in the repo for when top-1 matters more than top-5.
 
 ## Interview one-liner
 

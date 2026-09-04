@@ -28,6 +28,17 @@ def _metadata(chunk: Chunk) -> dict[str, Any]:
     return fields
 
 
+def _where(where: dict[str, object] | None) -> dict[str, Any] | None:
+    """Chroma takes exactly one operator at the top level, so several conditions must be
+    wrapped in `$and`. Passing two keys raises instead of filtering, which is the kind of
+    error that looks like a retrieval result."""
+    if not where:
+        return None
+    if len(where) == 1:
+        return dict(where)
+    return {"$and": [{field: value} for field, value in where.items()]}
+
+
 def _chunk(document: str, metadata: dict[str, Any]) -> Chunk:
     fields = dict(metadata)
     if fields.get("fiscal_quarter") == NO_QUARTER:
@@ -73,7 +84,7 @@ class ChromaStore:
         result = self._collection.query(
             query_embeddings=[list(vector)],
             n_results=min(k, self.count()),
-            where=where or None,
+            where=_where(where),
         )
         documents = result["documents"][0]
         metadatas = result["metadatas"][0]

@@ -56,6 +56,25 @@ def test_metadata_filter_restricts_the_search(store: ChromaStore, make_chunk, un
     assert len(hits) == 2
 
 
+def test_several_filter_conditions_are_combined(
+    store: ChromaStore, make_chunk, unit_vector
+) -> None:
+    # Chroma takes one top-level operator, so two conditions must be wrapped in $and.
+    # Passing them raw raises, which would surface as a retrieval failure.
+    store.add(
+        [
+            make_chunk("a:1-2", "q3", period_label="FY2026 Q3"),
+            make_chunk("b:1-2", "q2", period_label="FY2026 Q2"),
+            make_chunk("n:1-2", "nv", ticker="NVDA", period_label="FY2026 Q3"),
+        ],
+        [unit_vector(1, 0), unit_vector(1, 0.01), unit_vector(1, 0.02)],
+    )
+    hits = store.query(
+        unit_vector(1, 0), k=5, where={"ticker": "AAPL", "period_label": "FY2026 Q3"}
+    )
+    assert [h.chunk.chunk_id for h in hits] == ["a:1-2"]
+
+
 def test_re_adding_the_same_id_replaces_it(store: ChromaStore, make_chunk, unit_vector) -> None:
     store.add([make_chunk("a:1-2", "first")], [unit_vector(1, 0)])
     store.add([make_chunk("a:1-2", "second")], [unit_vector(1, 0)])

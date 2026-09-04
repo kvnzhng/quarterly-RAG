@@ -1,7 +1,7 @@
 # ADR-008: Hybrid retrieval is the default; reranking is available and off
 
 **Date:** 2026-09-04
-**Status:** accepted
+**Status:** accepted, amended 2026-09-04 by RAG-026 (filtering)
 **Ticket:** RAG-009
 
 ## Context
@@ -13,7 +13,7 @@ Dense retrieval alone reached 36.4% recall@5 and answered none of the seven quar
 - **`hybrid` is the default retrieval strategy**: reciprocal rank fusion of dense and BM25, candidate pool 50, fusion constant 60. It reaches 45.5% recall@5 against dense's 36.4%.
 - **BM25 indexes the chunk plus its provenance header**, and the question is expanded with the corpus's own spelling of any period or company it names. A chunk says "June 27, 2026" and never "FY2026 Q3"; without expansion the two share no token.
 - **The tokenizer keeps figures and period labels whole.** A dollar amount, the same amount in parentheses, and the bare digits all become one token, and `FY2026` and `Q3` survive as single tokens rather than splitting into letters and digits. This is the whole result: a tokenizer that splits them makes BM25 pointless on financial text.
-- **Metadata filtering is implemented and off by default.** It changes recall not at all on a two-company corpus, because retrieval already reaches the right filing 91% of the time. It would matter at fifty companies.
+- **Metadata filtering is on by default, on the company and on the quarter.** Amended by RAG-026. Filtering on the company alone changes recall not at all, because retrieval already reaches the right filing 91% of the time. Filtering on the exact period when a question names a specific quarter is what separates eight near-identical income statements: recall@5 rises from 45.5% to 48.5% and quarterly questions move off zero. A bare fiscal year is never filtered, because a filing quotes prior years for comparison. A filter that empties the result falls back to no filter.
 - **Reranking uses the configured chat model rather than a cross-encoder, and is off by default.** It raises recall@1 from 18% to 30% and lowers recall@5 from 46% to 39%, and the generator receives five passages. A dedicated cross-encoder means PyTorch, about two gigabytes, against ADR-003's promise that the defaults fit a laptop; these numbers do not justify that yet.
 - **Fusion happens on rank, never on score.** Cosine similarity and BM25 are not commensurable, and reciprocal rank fusion needs no per-retriever tuning.
 

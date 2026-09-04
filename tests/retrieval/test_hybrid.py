@@ -105,6 +105,19 @@ def test_an_explicit_filter_wins_over_the_inferred_one(two_company_corpus) -> No
     assert {r.chunk.ticker for r in results} == {"AAPL"}
 
 
+def test_an_empty_filtered_result_falls_back_to_no_filter(two_company_corpus) -> None:
+    # A filter that removes everything is worse than no filter: the refusal gate would
+    # report low confidence for a question the corpus can answer.
+    filtered = FilteredRetriever(BM25Retriever(two_company_corpus))
+    results = filtered.retrieve("Nvidia net sales in the first quarter of fiscal 1999", k=5)
+    assert results  # nothing matches that period, so the unfiltered ranking is used
+
+
+def test_the_fallback_can_be_switched_off(two_company_corpus) -> None:
+    strict = FilteredRetriever(BM25Retriever(two_company_corpus), fall_back=False)
+    assert strict.retrieve("Nvidia net sales in the first quarter of fiscal 1999", k=5) == []
+
+
 def test_filtering_can_be_disabled(two_company_corpus) -> None:
     off = FilteredRetriever(BM25Retriever(two_company_corpus), enabled=False)
     assert off.name == "bm25"

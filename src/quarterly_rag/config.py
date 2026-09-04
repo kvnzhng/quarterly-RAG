@@ -65,6 +65,10 @@ class Settings(BaseSettings):
         default=50, description="Candidates each retriever contributes before fusion."
     )
     fusion_k: int = Field(default=60, description="Reciprocal rank fusion constant.")
+    infer_filters: bool = Field(
+        default=True,
+        description="Filter on the company and, when a quarter is named, the exact period.",
+    )
     rerank_pool: int = Field(
         default=20, description="Candidates the reranker scores; one model call each."
     )

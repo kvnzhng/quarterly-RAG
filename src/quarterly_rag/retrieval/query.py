@@ -50,15 +50,24 @@ class QueryFacets:
         return f"FY{self.fiscal_year} Q{self.fiscal_quarter}"
 
     def as_filter(self) -> dict[str, object] | None:
-        """A store filter, but only when it is safe.
+        """A store filter, but only where it is safe.
 
-        Only the ticker is used, and only when exactly one company is named. A period
-        filter would exclude a filing that quotes the asked-for year for comparison, and a
-        question naming two companies is answered from both.
+        The ticker is used when exactly one company is named; a question naming two is
+        answered from both. The period is used only when a specific **quarter** is named,
+        because eight near-identical income statements otherwise compete and the right one
+        cannot be picked out (measured: recall@5 45.5% to 48.5%, and the quarterly
+        questions move off zero).
+
+        A bare fiscal year is deliberately not filtered. A filing quotes prior years for
+        comparison, so "fiscal 2025" is answered by the fiscal 2026 annual report as often
+        as by the 2025 one, and filtering would discard it.
         """
-        if len(self.tickers) != 1:
-            return None
-        return {"ticker": self.tickers[0]}
+        conditions: dict[str, object] = {}
+        if len(self.tickers) == 1:
+            conditions["ticker"] = self.tickers[0]
+        if self.fiscal_quarter is not None and self.period_label:
+            conditions["period_label"] = self.period_label
+        return conditions or None
 
     def lexical_terms(self) -> list[str]:
         """Extra tokens for a keyword index, spelled the way chunk metadata spells them.

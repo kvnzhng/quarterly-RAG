@@ -14,7 +14,7 @@ from quarterly_rag.retrieval.hybrid import HybridRetriever
 from quarterly_rag.retrieval.rerank import LLMReranker
 
 TICKERS = ("AAPL", "NVDA")
-STRATEGIES = ("dense", "bm25", "hybrid", "hybrid-filter", "hybrid-rerank")
+STRATEGIES = ("dense", "bm25", "hybrid", "hybrid-nofilter", "hybrid-rerank")
 DEFAULT_STRATEGY = "hybrid"
 
 
@@ -47,12 +47,18 @@ def build_retriever(
     hybrid = HybridRetriever(
         [dense, bm25], pool=settings.retrieval_pool, fusion_k=settings.fusion_k
     )
+    # Filtering is part of the default: a question naming one company and one quarter
+    # should not compete with seven near-identical filings (RAG-026).
     if strategy == "hybrid":
+        return FilteredRetriever(hybrid, enabled=settings.infer_filters)
+    if strategy == "hybrid-nofilter":
         return hybrid
-    if strategy == "hybrid-filter":
-        return FilteredRetriever(hybrid)
     if strategy == "hybrid-rerank":
         if llm is None:
             raise ValueError("hybrid-rerank needs an LLM; pass one in")
-        return LLMReranker(hybrid, llm, pool=settings.rerank_pool)
+        return LLMReranker(
+            FilteredRetriever(hybrid, enabled=settings.infer_filters),
+            llm,
+            pool=settings.rerank_pool,
+        )
     raise AssertionError(f"unreachable: {strategy}")  # pragma: no cover

@@ -36,12 +36,20 @@ def test_a_filter_is_only_offered_for_one_named_company() -> None:
     assert parse_facets("total revenue?").as_filter() is None
 
 
-def test_a_period_never_becomes_a_filter() -> None:
-    # A filing quotes prior years for comparison, so filtering on the period would
-    # discard the passage that answers a cross-period question.
-    facets = parse_facets("Apple's net sales in fiscal 2025?")
-    assert facets.fiscal_year == 2025
-    assert facets.as_filter() == {"ticker": "AAPL"}
+def test_a_named_quarter_becomes_a_filter_and_a_bare_year_does_not() -> None:
+    # Eight near-identical income statements compete, so pinning the quarter matters.
+    quarterly = parse_facets("Apple's net sales in the third quarter of fiscal 2026?")
+    assert quarterly.as_filter() == {"ticker": "AAPL", "period_label": "FY2026 Q3"}
+
+    # A filing quotes prior years for comparison, so filtering a bare year would discard
+    # the annual report that answers it.
+    annual = parse_facets("Apple's net sales in fiscal 2025?")
+    assert annual.fiscal_year == 2025
+    assert annual.as_filter() == {"ticker": "AAPL"}
+
+    # Two companies means no ticker filter, but a named quarter still applies.
+    both = parse_facets("Apple and Nvidia in the second quarter of fiscal 2027")
+    assert both.as_filter() == {"period_label": "FY2027 Q2"}
 
 
 def test_expansion_adds_the_corpus_spelling_to_the_question() -> None:

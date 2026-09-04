@@ -20,6 +20,10 @@ class FilteredRetriever:
 
     inner: Retriever
     enabled: bool = True
+    fall_back: bool = True
+    """Retry unfiltered when the filter leaves nothing. A filter that empties the result
+    is worse than no filter: the refusal gate would report low confidence for a question
+    the corpus can answer."""
 
     @property
     def name(self) -> str:
@@ -33,4 +37,6 @@ class FilteredRetriever:
             # An explicit caller filter wins; the inference only fills a gap.
             combined = {**inferred, **combined}
         results = self.inner.retrieve(question, k=k, where=combined or None)
+        if not results and self.fall_back and combined != (where or {}):
+            results = self.inner.retrieve(question, k=k, where=where)
         return [r.model_copy(update={"retriever": self.name}) for r in results]

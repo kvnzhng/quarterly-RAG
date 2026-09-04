@@ -1,6 +1,6 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-026
+> Next ID: RAG-027
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
@@ -15,16 +15,16 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## Backlog
 
-### Phase 1: one thin end-to-end path, measured
-
-### Phase 2: compare alternatives against the baseline
-
 ### RAG-020: Chunking strategy comparison
 - **Type:** feat
 - **Created:** 2026-09-04
 - **Competency:** chunking
 - **Description:** Split from RAG-005. Add recursive character, section-aware with sub-splitting, and parent-child (small chunks for retrieval, parent section returned for generation) chunkers behind the `Chunker` protocol, each keeping full provenance. Extend the harness to report chunk count, size distribution, and boundary violations per strategy, and score every strategy with RAG-008 on the same RAG-019 labels.
 - **Done when:** `docs/tradeoffs/chunking.md` contains a filled comparison table with run records and a recommendation, and an ADR records the default chunker.
+
+### Phase 1: one thin end-to-end path, measured
+
+### Phase 2: compare alternatives against the baseline
 
 ### RAG-007: FAISS adapter and Chroma vs FAISS benchmark
 - **Type:** feat
@@ -240,3 +240,12 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Finding for RAG-020:** every strategy plateaus at 45.5% by k=10, and hybrid at depth 100 reaches only 69.7%. Ten of 33 questions have their gold chunk nowhere in the top 100 of 1,391, mostly financial-statement tables. The ceiling is chunking, not ranking.
 - **Dependencies added:** `rank_bm25` (small, pure Python; the index is built in memory at start-up, which is the scaling boundary to watch).
 - **Commits:** `984bdb9`
+
+### RAG-026: Filter on the fiscal period, not just the company
+- **Type:** feat
+- **Created:** 2026-09-04 | **Completed:** 2026-09-04
+- **Competency:** retrieval quality
+- **Description:** RAG-009 concluded that inferred metadata filtering buys nothing. That was measured on the **ticker** only, and it generalised too far. Filtering on the exact period label when a question names a specific quarter lifts recall@5 from 45.5% to 48.5% and unblocks the 10-Q questions that every strategy had scored at zero, because eight near-identical income statements stop competing. A bare fiscal year must not be filtered: a filing quotes prior years for comparison. Also fixes a Chroma adapter bug found while measuring, where a filter with more than one condition raised instead of filtering.
+- **Done when:** the period filter is on by default, `docs/tradeoffs/retrieval-strategies.md` and ADR-008 no longer claim filtering buys nothing, and the multi-condition filter has a test.
+- **Verified:** default `hybrid` reaches recall@5 48.5% and recall@10 51.5%, against 45.5% and 45.5% unfiltered; quarterly questions move from 0.0% to 14.3%. ADR-008 amended, tradeoff page corrected.
+- **Commits:** `f8fe2dd`
