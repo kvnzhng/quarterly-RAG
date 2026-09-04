@@ -43,6 +43,7 @@ data/chunks/*
 
 # Eval sets are committed (they are the labels); only the corpus is reproducible
 !data/eval/*.jsonl
+!data/eval/baseline.json
 
 # Reports and notebooks
 reports/

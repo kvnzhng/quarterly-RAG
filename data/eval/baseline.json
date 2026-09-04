@@ -1,0 +1,42 @@
+{
+  "tolerance": 0.05,
+  "metrics": {
+    "abstention_f1": 0.8116,
+    "answerable_coverage": 0.6667,
+    "citation_resolution": 1.0,
+    "correct": 0.9375,
+    "faithfulness": 0.75,
+    "fully_grounded": 0.875,
+    "mrr": 0.4398,
+    "ndcg@5": 0.4061,
+    "recall@5": 0.4848
+  },
+  "run_record": {
+    "timestamp": "2026-09-04T17:37:25+00:00",
+    "git_commit": "e71c561",
+    "git_dirty": true,
+    "corpus_hash": "ab54dafa27ee5fe1",
+    "eval_set_hash": "57ba5e0dfdb94790",
+    "parser_version": "1",
+    "chunk_strategy": "section-aware",
+    "chunk_words": 350,
+    "chunk_overlap_words": 60,
+    "embed_variant": "context",
+    "embedder": "openai_compatible/nomic-embed-text",
+    "embed_query_prefix": "search_query: ",
+    "embed_document_prefix": "search_document: ",
+    "vector_store": "chroma",
+    "indexed_chunks": 2891,
+    "retriever": "hybrid+filter",
+    "k_values": [
+      1,
+      3,
+      5,
+      10
+    ],
+    "overlap_rule": "any overlap (min_chars=1)",
+    "filters": null,
+    "question_count": 33,
+    "prompt_version": null
+  }
+}

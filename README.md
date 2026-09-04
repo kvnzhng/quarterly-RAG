@@ -131,7 +131,8 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 - [x] RAG-009 hybrid retrieval (dense + BM25 fusion), the new default
 - [x] RAG-020 chunking comparison, section-aware is the new default
 - [x] RAG-007 vector store comparison, ChromaDB stays the default
-- [ ] RAG-012 / 021 faithfulness eval, calculation provenance
+- [x] RAG-012 faithfulness judge and the regression gate
+- [ ] RAG-021 calculation provenance
 - [ ] RAG-013 Langfuse
 - [ ] RAG-014 API + UI
 - [ ] RAG-015 writeup

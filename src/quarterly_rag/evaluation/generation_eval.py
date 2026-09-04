@@ -17,10 +17,19 @@ from pathlib import Path
 from quarterly_rag.chunking.base import Chunk
 from quarterly_rag.chunking.build import iter_chunks
 from quarterly_rag.config import Settings
+from quarterly_rag.evaluation.calibration import Calibration, calibrate
+from quarterly_rag.evaluation.judge import ClaimJudgement, Judge
 from quarterly_rag.evaluation.questions import EvalQuestion, load_questions, questions_path
 from quarterly_rag.evaluation.relevance import DEFAULT_RULE, OverlapRule, is_relevant
 from quarterly_rag.evaluation.retrieval_eval import REPORTS_DIRNAME, RunRecord, build_run_record
-from quarterly_rag.generation.answer import PROMPT_VERSION, Answer, answer_question
+from quarterly_rag.generation.answer import (
+    PROMPT_VERSION,
+    Answer,
+    answer_question,
+    parse_tags,
+    split_sentences,
+    tag_for,
+)
 from quarterly_rag.generation.base import LLM
 from quarterly_rag.retrieval.base import Retriever
 
@@ -43,9 +52,26 @@ class AnswerResult:
     derived_numbers: int
     fully_grounded: bool
     gold_answer_figures_present: bool
-    """Whether the answer states the figures the gold answer states. A weak correctness
-    proxy; RAG-012 adds a judge."""
+    """Whether the answer states the figures the gold answer states. A weak proxy kept
+    alongside the judge so the two can be compared (RAG-012)."""
     answer: str
+    faithfulness: float | None = None
+    """Share of cited sentences a judge found supported by the passage they cited."""
+    correctness: str | None = None
+    """correct | partial | incorrect, from the judge (RAG-012)."""
+
+
+def _verified_sentences(answer: Answer) -> set[str]:
+    """Sentences the deterministic verifier passed: cited, and every figure found.
+
+    This is the partial ground truth the judge is calibrated against.
+    """
+    flagged = {d.sentence for d in answer.derived_numbers} | set(answer.unsupported_sentences)
+    return {
+        sentence
+        for sentence in split_sentences(answer.raw_text.strip() or answer.text)
+        if parse_tags(sentence) and sentence not in flagged
+    }
 
 
 @dataclass
@@ -53,6 +79,12 @@ class GenerationReport:
     run: RunRecord
     context: str
     results: list[AnswerResult] = field(default_factory=list)
+    claims: list[ClaimJudgement] = field(default_factory=list)
+    verified_sentences: set[str] = field(default_factory=set)
+
+    def calibration(self) -> Calibration:
+        """How the judge compares with the deterministic verifier."""
+        return calibrate(self.claims, self.verified_sentences)
 
     @property
     def answered(self) -> list[AnswerResult]:
@@ -66,12 +98,16 @@ class GenerationReport:
         divisor = len(answered) or 1
         return {
             "insufficient_evidence": sum(r.insufficient_evidence for r in rows) / len(rows),
+            **_judged_rates(answered),
             "citation_resolution": sum(r.invalid_tags == 0 for r in answered) / divisor,
             "all_sentences_cited": sum(r.unsupported_sentences == 0 for r in answered) / divisor,
             "figures_verified": sum(r.derived_numbers == 0 for r in answered) / divisor,
             "fully_grounded": sum(r.fully_grounded for r in answered) / divisor,
             "gold_figures_present": sum(r.gold_answer_figures_present for r in answered) / divisor,
         }
+
+    def judged(self) -> bool:
+        return any(r.faithfulness is not None for r in self.results)
 
     def by_type(self) -> dict[str, dict[str, float]]:
         buckets: dict[str, list[AnswerResult]] = {}
@@ -88,6 +124,7 @@ class GenerationReport:
             "context": self.context,
             "overall": {"questions": len(self.results), **self.rates()},
             "by_type": self.by_type(),
+            "judge_calibration": self.calibration().as_dict() if self.claims else None,
             "per_question": [asdict(r) for r in self.results],
         }
 
@@ -125,6 +162,7 @@ def run_generation_eval(
     store: str = "chroma",
     rule: OverlapRule = DEFAULT_RULE,
     question_types: Sequence[str] = ("lookup",),
+    judge: Judge | None = None,
 ) -> GenerationReport:
     if context not in CONTEXTS:
         raise ValueError(f"unknown context {context!r}; expected one of {CONTEXTS}")
@@ -157,6 +195,14 @@ def run_generation_eval(
         answer = answer_question(
             llm, question.question, chunks, max_tokens=settings.answer_max_tokens
         )
+        faithfulness = correctness = None
+        if judge is not None and not answer.insufficient_evidence:
+            passages = {tag_for(i): c.text for i, c in enumerate(chunks, start=1)}
+            judged = judge.faithfulness(answer, passages)
+            faithfulness = judged.score if judged.claims else None
+            correctness = judge.correctness(question.question, question.gold_answer, answer.text)
+            report.claims.extend(judged.claims)
+            report.verified_sentences.update(_verified_sentences(answer))
         report.results.append(
             AnswerResult(
                 question_id=question.id,
@@ -170,7 +216,26 @@ def run_generation_eval(
                 derived_numbers=len(answer.derived_numbers),
                 fully_grounded=answer.fully_grounded,
                 gold_answer_figures_present=_gold_figures_present(question, answer),
+                faithfulness=faithfulness,
+                correctness=correctness,
                 answer=answer.text,
             )
         )
     return report
+
+
+def _judged_rates(answered: Sequence[AnswerResult]) -> dict[str, float]:
+    """Judge-derived rates, absent when no judge ran rather than reported as zero."""
+    judged = [r for r in answered if r.faithfulness is not None]
+    if not judged:
+        return {}
+    scored = [r for r in answered if r.correctness is not None]
+    rates: dict[str, float] = {
+        "faithfulness": sum(r.faithfulness or 0.0 for r in judged) / len(judged),
+    }
+    if scored:
+        rates["correct"] = sum(r.correctness == "correct" for r in scored) / len(scored)
+        rates["correct_or_partial"] = sum(
+            r.correctness in {"correct", "partial"} for r in scored
+        ) / len(scored)
+    return rates

@@ -1,4 +1,4 @@
-.PHONY: setup lint fmt test test-all doctor models langfuse-up langfuse-down eval
+.PHONY: setup lint fmt test test-all doctor models langfuse-up langfuse-down eval eval-accept
 
 # Ollama helpers talk to the server's HTTP API, so no local `ollama` CLI is needed.
 # OLLAMA_HOST wins if set; otherwise it is derived from LLM_BASE_URL in .env (minus /v1).
@@ -42,8 +42,11 @@ langfuse-up:    ## Start self-hosted Langfuse (RAG-013)
 langfuse-down:
 	docker compose -f infra/docker-compose.langfuse.yml down
 
-eval:           ## Run retrieval + generation evals (RAG-008+)
-	uv run rag eval all
+eval:           ## Retrieval + generation + refusal evals against the committed baseline (~5 min, calls a model)
+	uv run rag eval baseline
+
+eval-accept:    ## Overwrite the baseline with the current numbers; the deliberate "I accept this" action
+	uv run rag eval baseline --accept
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'

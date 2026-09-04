@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from datetime import date, timedelta
 from typing import Annotated
 
@@ -16,7 +17,9 @@ from quarterly_rag.chunking.build import SMALL_CHUNK_WORDS, build_ticker
 from quarterly_rag.config import get_settings
 from quarterly_rag.doctor import failed, run_doctor
 from quarterly_rag.errors import ModelServerError
+from quarterly_rag.evaluation.baseline import compare, load_baseline, save_baseline
 from quarterly_rag.evaluation.generation_eval import GOLD, RETRIEVED, run_generation_eval
+from quarterly_rag.evaluation.judge import Judge
 from quarterly_rag.evaluation.metrics import DEFAULT_KS, group_by, near_miss_rates, summarise
 from quarterly_rag.evaluation.questions import (
     check_gold_answers,
@@ -533,6 +536,14 @@ def eval_generation(
         bool, typer.Option("--raw/--context-embed", help="Embed variant to query.")
     ] = False,
     types: Annotated[str, typer.Option(help="Comma-separated question types to score.")] = "lookup",
+    judge_model: Annotated[
+        str | None,
+        typer.Option(
+            "--judge",
+            help="Model that judges faithfulness and correctness; a "
+            "different one from the generator by default.",
+        ),
+    ] = None,
     retrieval: RetrievalOption = DEFAULT_STRATEGY,
 ) -> None:
     """Score citation resolution and figure verification on grounded answers."""
@@ -548,9 +559,13 @@ def eval_generation(
         retriever = _retriever(settings, vector_store, strategy, variant, retrieval)
 
     llm = build_llm(settings)
+    judge = None
+    if judge_model:
+        judge = Judge(build_llm(settings.model_copy(update={"llm_model": judge_model})))
     console.print(
         f"{llm.label} | prompt v{PROMPT_VERSION} | {context} passages | k={k} | "
         f"types: {', '.join(question_types)}"
+        + (f" | judge {judge.label}" if judge else " | no judge")
     )
     with console.status("answering"):
         try:
@@ -563,6 +578,7 @@ def eval_generation(
                 strategy=strategy,
                 variant=variant,
                 question_types=question_types,
+                judge=judge,
             )
         except (FileNotFoundError, ValueError, ModelServerError) as exc:
             console.print(f"[red]{escape(str(exc))}[/red]")
@@ -577,11 +593,14 @@ def eval_generation(
     table.add_column("figures verified", justify="right")
     table.add_column("fully grounded", justify="right")
     table.add_column("gold figure present", justify="right")
+    if report.judged():
+        table.add_column("faithfulness", justify="right")
+        table.add_column("correct", justify="right")
     rows = {**report.by_type(), "all": {"questions": len(report.results), **report.rates()}}
     for name, stats in rows.items():
         if not stats.get("questions"):
             continue
-        table.add_row(
+        row = [
             name,
             str(stats["questions"]),
             f"{stats.get('insufficient_evidence', 0):.0%}",
@@ -590,8 +609,30 @@ def eval_generation(
             f"{stats.get('figures_verified', 0):.0%}",
             f"{stats.get('fully_grounded', 0):.0%}",
             f"{stats.get('gold_figures_present', 0):.0%}",
-        )
+        ]
+        if report.judged():
+            row += [f"{stats.get('faithfulness', 0):.0%}", f"{stats.get('correct', 0):.0%}"]
+        table.add_row(*row)
     console.print(table)
+
+    if report.claims:
+        cal = report.calibration()
+        check = Table(title="the judge against the deterministic verifier")
+        check.add_column("sentences", justify="right")
+        check.add_column("both say supported", justify="right")
+        check.add_column("both say not", justify="right")
+        check.add_column("judge stricter", justify="right")
+        check.add_column("judge looser", justify="right")
+        check.add_column("agreement", justify="right")
+        check.add_row(
+            str(len(cal.cases)),
+            str(cal.agrees_supported),
+            str(cal.agrees_unsupported),
+            str(cal.judge_stricter),
+            f"[red]{cal.judge_looser}[/red]" if cal.judge_looser else "0",
+            f"{cal.agreement:.0%}",
+        )
+        console.print(check)
     console.print(f"report written to {report.write(settings)}")
 
 
@@ -689,6 +730,110 @@ def eval_refusal(
             f"{', '.join(r.question_id for r in leaked)}[/yellow]"
         )
     console.print(f"report written to {report.write(settings)}")
+
+
+@evaluate.command("baseline")
+def eval_baseline(
+    accept: Annotated[
+        bool, typer.Option("--accept", help="Overwrite the baseline with the current numbers.")
+    ] = False,
+    k: Annotated[int, typer.Option("-k")] = 5,
+    strategy: Annotated[str, typer.Option(help="Chunking strategy.")] = DEFAULT_CHUNK_STRATEGY,
+    raw: Annotated[bool, typer.Option("--raw/--context-embed")] = False,
+    retrieval: RetrievalOption = DEFAULT_STRATEGY,
+    judge_model: Annotated[str | None, typer.Option("--judge")] = None,
+) -> None:
+    """Run the evals and fail if a number dropped more than the baseline's tolerance."""
+    settings = get_settings()
+    variant = RAW if raw else CONTEXT
+    vector_store = build_store(settings, "chroma", strategy, variant)
+    if vector_store.count() == 0:
+        console.print("[red]index is empty; run `rag index build` first[/red]")
+        raise typer.Exit(code=1)
+
+    llm = build_llm(settings)
+    retriever = _retriever(settings, vector_store, strategy, variant, retrieval, llm=llm)
+    judge = (
+        Judge(build_llm(settings.model_copy(update={"llm_model": judge_model})))
+        if judge_model
+        else None
+    )
+    console.print(
+        f"{llm.label} | {retrieval} | {strategy} chunks"
+        + (f" | judge {judge.label}" if judge else "")
+    )
+
+    metrics: dict[str, float] = {}
+    with console.status("retrieval eval"):
+        retrieval_report = run_retrieval_eval(
+            settings, retriever, strategy=strategy, variant=variant, ks=(1, 3, 5, 10)
+        )
+    overall = summarise(retrieval_report.results, retrieval_report.all_ranks, retrieval_report.ks)
+    metrics["recall@5"] = overall.recall[5]
+    metrics["mrr"] = overall.mrr
+    metrics["ndcg@5"] = overall.ndcg[5]
+
+    with console.status("generation eval"):
+        generation_report = run_generation_eval(
+            settings,
+            llm,
+            context=RETRIEVED,
+            retriever=retriever,
+            k=k,
+            strategy=strategy,
+            variant=variant,
+            judge=judge,
+        )
+    rates = generation_report.rates()
+    for name in ("citation_resolution", "fully_grounded", "faithfulness", "correct"):
+        if name in rates:
+            metrics[name] = rates[name]
+
+    with console.status("refusal eval"):
+        pipeline = Pipeline.build(
+            settings, retriever, llm, gate=gate_settings(settings), strategy=strategy
+        )
+        refusal_report = run_refusal_eval(
+            settings, pipeline, k=k, strategy=strategy, variant=variant
+        )
+    abstention = score(refusal_report.results)
+    metrics["abstention_f1"] = abstention.f1
+    metrics["answerable_coverage"] = abstention.answerable_coverage
+
+    if accept:
+        path = save_baseline(settings, metrics, asdict(retrieval_report.run))
+        console.print(f"[green]baseline written to {path}[/green]")
+        for name, value in sorted(metrics.items()):
+            console.print(f"  {name:22} {value:.3f}")
+        return
+
+    baseline = load_baseline(settings)
+    if baseline is None:
+        console.print("[red]no baseline; run `rag eval baseline --accept` to record one[/red]")
+        raise typer.Exit(code=2)
+    check = compare(baseline, metrics)
+
+    table = Table(title=f"against the baseline (tolerance {baseline.get('tolerance', 0.05):.0%})")
+    table.add_column("metric")
+    table.add_column("baseline", justify="right")
+    table.add_column("now", justify="right")
+    table.add_column("change", justify="right")
+    for c in check.comparisons:
+        colour = "red" if c.regressed else ("green" if c.improved else "dim")
+        table.add_row(
+            c.metric,
+            f"{c.baseline:.3f}",
+            f"{c.current:.3f}",
+            f"[{colour}]{c.delta:+.3f}[/{colour}]",
+        )
+    console.print(table)
+    for name in check.missing:
+        console.print(f"[red]{name}: the baseline expects it and this run did not produce it[/red]")
+    if check.passed:
+        console.print("[green]no regression[/green]")
+        return
+    console.print(f"[red]{len(check.regressions)} metric(s) regressed beyond tolerance[/red]")
+    raise typer.Exit(code=1)
 
 
 @evaluate.command("check")

@@ -13,5 +13,5 @@ Use `_template.md` for new pages.
 | `retrieval-strategies.md` | dense vs BM25 vs hybrid vs hybrid+rerank | **decided** (ADR-008) | RAG-009 |
 | `llm-serving.md` | which local model; local vs hosted | draft (candidates + criteria set) | RAG-002, RAG-012 |
 | `orchestration.md` | plain Python vs LangChain vs LlamaIndex vs LangGraph | draft | RAG-010 |
-| `evaluation.md` | custom judge vs RAGAS vs DeepEval | draft | RAG-012 |
+| `evaluation.md` | custom judge vs RAGAS | **decided** | RAG-012 |
 | `observability.md` | Langfuse vs Phoenix vs MLflow | draft | RAG-013 |

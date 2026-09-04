@@ -13,6 +13,13 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
+### RAG-012: Faithfulness and end-to-end evaluation
+- **Type:** feat
+- **Created:** 2026-09-03
+- **Competency:** hallucination control
+- **Description:** Add an LLM-as-judge faithfulness check (claims in answer entailed by cited context) using a local model, and compare against RAGAS. Add answer correctness against gold answers. `make eval` runs retrieval + generation evals and fails if scores regress below a stored baseline.
+- **Done when:** `docs/tradeoffs/evaluation.md` compares RAGAS vs custom judge, and `make eval` is wired into CI as an optional job.
+
 ## Backlog
 
 
@@ -21,12 +28,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 ### Phase 2: compare alternatives against the baseline
 
 
-### RAG-012: Faithfulness and end-to-end evaluation
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** hallucination control
-- **Description:** Add an LLM-as-judge faithfulness check (claims in answer entailed by cited context) using a local model, and compare against RAGAS. Add answer correctness against gold answers. `make eval` runs retrieval + generation evals and fails if scores regress below a stored baseline.
-- **Done when:** `docs/tradeoffs/evaluation.md` compares RAGAS vs custom judge, and `make eval` is wired into CI as an optional job.
 
 ### RAG-021: Calculation provenance for derived numbers
 - **Type:** feat
