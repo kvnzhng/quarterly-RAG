@@ -162,7 +162,7 @@ Most of what this project learned is a negative result. Each is recorded with th
 - **A quarter of the questions are out of reach.** recall@20 is 72.7%, so 9 of 33 answerable questions have their evidence below rank 20 after every lever above. The per-company phrasing instability is the first candidate explanation and needs labelled paraphrase pairs before anything is built (RAG-039 lists the nine, RAG-041 labels the pairs, RAG-032 carries the fix).
 - **The eval set concentrates its evidence in 6 of 16 filings, is 70% tables, and has no comparison or paraphrase questions.** A second labelling round would sharpen every retrieval number. The gate also scores the 23 `lookup` questions only, so calculation provenance is measured but ungated (RAG-041, RAG-043).
 - **One question leaks past every model**: `q052`, which customers account for Nvidia's largest sales (RAG-044).
-- **No hosted model has been measured, and the embedding model comparison was never run.** `nomic-embed-text` stays by default rather than by measurement. Both are a `.env` change and one eval run away (RAG-040, RAG-045).
+- **No hosted model has been measured, and the embedding model comparison was never run.** `nomic-embed-text` stays by default rather than by measurement. Both are a `.env` change and one eval run away (RAG-045).
 
 ## Quickstart
 
@@ -292,7 +292,6 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 - [x] RAG-031 a question naming two companies asks each of them
 - [x] RAG-015 writeup
 - [ ] RAG-039 which nine questions sit below rank 20, and why
-- [ ] RAG-040 `gpt-5.6-sol` on the same eval set, with dollars and seconds per question
 - [ ] RAG-041 eval set v1, the second labelling round
 - [ ] RAG-032 retrieval is unstable to phrasing, per company
 - [ ] RAG-042 the gate writes per-question results and takes a tolerance per metric

@@ -26,7 +26,7 @@ All three phases are built. The pipeline answers questions from the filings or r
 
 The binding constraint moved twice: retrieval was the ceiling until hybrid fusion (RAG-009), then chunking was (RAG-020). It is now roughly a quarter of questions whose evidence neither ranking nor chunking reaches (recall@20 72.7%).
 
-**Next:** RAG-039, which nine questions sit below rank 20 and why; then RAG-040 (`gpt-5.6-sol` on the same eval set) and RAG-041 (the second labelling round) ahead of RAG-032. The backlog is ordered under "Phase 4" in `project/tickets.md` (RAG-038). See `project/handoff.md` to resume.
+**Next:** RAG-039, which nine questions sit below rank 20 and why; then RAG-041 (the second labelling round) ahead of RAG-032. The backlog is ordered under "Phase 4" in `project/tickets.md` (RAG-038). See `project/handoff.md` to resume.
 
 ## File Structure
 
