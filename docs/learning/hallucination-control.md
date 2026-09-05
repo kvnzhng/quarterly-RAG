@@ -75,14 +75,26 @@ Both failing runs are recorded here, not only the control that passed. Note also
 
 **A defect in the older verifier, found by measuring this one.** The calculation checker reported "an operand is not in the passage it cites" for q034, whose two operands are both printed in the passage it cites. Apple's operating expenses table ends the research and development row with `$29,915`, and the next line begins `Percentage of total net sales`; the figure pattern allowed any whitespace between a number and its unit, so it crossed the line break and read 29,915 percent. Every answer quoting that figure had been reported as stating a figure the passage does not contain, since RAG-010. Fixed in `242cd5c`, with the opposite mistake, restricting the gap to a space or a tab, fixed in `fdbb7ef`: `gpt-oss:20b` writes a narrow no-break space there and lost its units entirely.
 
+### Three of these were fixed (RAG-029)
+
+Each was a correct answer the check refused, and each fix is narrower than it first looks.
+
+- **A unitless operand may match a percentage the passage prints.** Both models wrote q032 as `CALC: 15.6 [c1] - 24.1 [c1]` against a passage printing `15.6%` and `24.1%`. A number with no unit is ambiguous and the passage is the authority on what it means, so quoting a table cell sloppily is not a different claim. This applies to calculation operands only: in prose, "the rate was 46.9" against a passage's `46.9%` is still unsupported, which was a deliberate decision in RAG-010 and stands. An operand carrying a currency or a scale word still does not match a percentage, because dollars are not percentages.
+- **A calculation may use an earlier calculation's result.** Working out a difference and then expressing it as a share is ordinary arithmetic, and refusing it forced the model to either restate a figure no passage prints or not show the second step. The chain is only as good as its first link, and that link is checked the same way: an operand taken from a line that did *not* verify is still refused.
+- **A scale constant belonging to the answer's own working is not a missing figure.** `llama3.1:8b` writes its arithmetic into the sentence as well as onto the `CALC:` line, and the 100 in "multiply by 100" is not a claim about the filing. The exemption needs both conditions: the figure is a bare scale constant *and* an operand of a calculation this answer actually wrote. "Apple had 100 stores" is still a figure that has to be in a passage.
+
+Measured the same way as the table above, commit `fdbb7ef` before and this ticket's code after:
+
+| Generator | Calculations verified | Every figure accounted for | Judged correct |
+|---|---|---|---|
+| `qwen3.8-27b-64k` | 7 of 8 → **8 of 8** | 8/10 → 8/10 | 10/10 → 10/10 |
+| `llama3.1:8b` | 6 of 10 → **7 of 10** | 6/10 → **7/10** | 8/10 → 8/10 |
+
+No answer that failed before now passes for the wrong reason: every remaining failure, three of them and all `llama3.1:8b`, is an operand cited to a passage that does not contain it, which is the check doing its job. `qwen3.8-27b-64k` now has no calculation failures at all.
+
 ### What this check still cannot do
 
-- **The wrong real figures**, as q030 above. Both operands present, arithmetic sound, question unanswered.
-- **A unitless operand does not match a percentage.** Both models wrote q032 as `CALC: 15.6 [c1] - 24.1 [c1]` against a passage printing `15.6%` and `24.1%`, and the check refused it. Their answers were correct and judged correct.
-- **A scale constant written into prose is flagged.** `llama3.1:8b` wrote its working into a sentence on q008, "we need to calculate (54,770 / 109,417) * 100 = 50%", and the 100 in that sentence is a figure the passage does not state, so an otherwise clean answer loses its accounted mark for it.
-- **A calculation cannot use another calculation's result.** Under the earlier v2 wording (`generation-gold-20260904T184449`) `llama3.1:8b` wrote `CALC: 8.5% [c1] / 24.1% [c1] * 100 = 35.3%` where its own previous line produced the 8.5%, so the operand cites a passage for a figure no passage prints.
-
-The last three are RAG-029. The first is what the judge is for.
+- **The wrong real figures**, as q030 above. Both operands present, arithmetic sound, question unanswered. That is what the judge is for, and it is why the two are never merged.
 
 **The gate does not cover any of this.** `make eval` scores the 23 `lookup` questions; the 10 that need arithmetic are not in it, so calculation provenance has no regression gate yet.
 

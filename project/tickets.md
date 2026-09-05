@@ -16,6 +16,7 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 
 
+
 ## Backlog
 
 
@@ -25,12 +26,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 
 
-### RAG-029: Three named limits of the calculation verifier
-- **Type:** fix
-- **Created:** 2026-09-04
-- **Competency:** hallucination control
-- **Description:** RAG-021 left three cases where a correct answer fails the operand check. (1) A unitless operand does not match a percentage: on q032 both models wrote `CALC: 15.6 [c1] - 24.1 [c1]` against a passage that prints `15.6%` and `24.1%`, and the check refused it because a plain number is not a percentage; both answers were judged correct (`generation-gold-20260904T192200`, `T192915`). (2) A scale constant written into a prose sentence is flagged as a figure the passage does not state: `llama3.1:8b` on q008 wrote "we need to calculate (54,770 / 109,417) * 100 = 50%" and lost its `figures accounted` mark for the 100 alone (`T192200`). (3) A calculation cannot consume another calculation's result: under the earlier v2 wording `llama3.1:8b` wrote `CALC: 8.5% [c1] / 24.1% [c1]` where the 8.5% came from its own previous line, so it cites a passage for a figure no passage prints (`generation-gold-20260904T184449`); it has not been seen under the shipped wording, so confirm it still happens before fixing it. Decide for each whether to widen the check or to tighten the prompt, and say which in the ticket.
-- **Done when:** each of the three has a decision with a measurement behind it, and `docs/learning/hallucination-control.md` carries the new numbers.
 
 ### Phase 3: production readiness and writeup
 
@@ -44,6 +39,19 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Done when:** a reader can understand the tradeoffs from the README alone.
 
 ## Done
+
+### RAG-029: Three named limits of the calculation verifier
+- **Type:** fix
+- **Created:** 2026-09-04 | **Completed:** 2026-09-05
+- **Competency:** hallucination control
+- **Description:** RAG-021 left three cases where a correct answer fails the operand check. A unitless operand did not match a percentage; a scale constant written into a prose sentence was flagged as a figure the passage does not state; and a calculation could not use another calculation's result.
+- **Done when:** each of the three has a decision with a measurement behind it, and `docs/learning/hallucination-control.md` carries the new numbers.
+- **All three reproduced first**, including the chained one the ticket said to confirm.
+- **Decision: widen the check, three times, each narrowly.** (1) A unitless operand may match a percentage the passage prints, *for calculation operands only*. In prose, "the rate was 46.9" against a passage's `46.9%` is still unsupported: that was a deliberate decision in RAG-010 with a test asserting it, and the test failed when the first attempt widened the check everywhere. An operand carrying a currency or a scale word still does not match a percentage. (2) An operand may be the result of an earlier *verified* calculation in the same answer; one taken from a line that did not verify is still refused, so the chain is only as good as its first link. (3) A bare scale constant is exempt in prose only when it is also an operand of a calculation the answer actually wrote, so "Apple had 100 stores" is still a figure that has to be in a passage.
+- **Not chosen: tightening the prompt.** All three were the model doing something reasonable that the checker read too strictly, and the prompt already asks for what it does. Making the prompt longer to work around a checker is how the RAG-021 wording trap happened.
+- **Verified:** gold passages, the 5 `derived` and 5 `cross_period` questions, commit `fdbb7ef` before and this ticket's code after. `qwen3.8-27b-64k` calculations verified 7 of 8 to 8 of 8, with no calculation failures left at all. `llama3.1:8b` 6 of 10 to 7 of 10, and every figure accounted for 6/10 to 7/10. Judged correct unchanged for both, at 10/10 and 8/10, so nothing started passing for the wrong reason. The three failures that remain are all one thing, an operand cited to a passage that does not contain it, which is the check working. Reports `generation-gold-20260905T074351` and `T074808`. `make test` 422 passed, 15 deselected, up from 413; `make lint` clean.
+- **Not run:** the regression gate. It scores `lookup` questions, where prompt v1 is the default and no calculation is written, so none of this can reach it.
+
 
 ### RAG-030: Enter does not submit a question in the page
 - **Type:** fix

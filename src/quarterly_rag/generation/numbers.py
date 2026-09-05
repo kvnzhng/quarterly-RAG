@@ -51,6 +51,7 @@ _NUMBER = re.compile(
     rf"{_HORIZONTAL}*(?P<suffix>{_UNIT_SUFFIX})?",
     re.I,
 )
+_CURRENCY = re.compile(r"[$€£]")
 _CAPTION_UNIT = re.compile(r"\(\s*(?:dollars |\$ )?in (thousand|million|billion)s?", re.I)
 # Years and the day part of a date are prose, not amounts. Without this, "June 27, 2026"
 # contributes the figure 27 and gets flagged as an unverified number.
@@ -136,8 +137,16 @@ def _close(left: float, right: float) -> bool:
     return values_close(left, right)
 
 
-def figure_supported(figure: Figure, passage: str) -> bool:
-    """True when the passage states this figure, allowing for how the unit is written."""
+def figure_supported(
+    figure: Figure, passage: str, *, unitless_matches_percent: bool = False
+) -> bool:
+    """True when the passage states this figure, allowing for how the unit is written.
+
+    `unitless_matches_percent` is off for prose, where "the rate was 46.9" is not the same
+    claim as "46.9%", and on for a calculation operand, where the model is quoting a cell of
+    a table to do arithmetic with and writing `24.1` for `24.1%` is sloppy quoting rather
+    than a different claim. The arithmetic then has to come out right anyway (RAG-029).
+    """
     passage_figures = parse_figures(passage)
     if figure.is_percent:
         # A percentage is written the same way everywhere; no scaling to reconcile.
@@ -145,8 +154,15 @@ def figure_supported(figure: Figure, passage: str) -> bool:
 
     declared = caption_scale(passage)
     candidates = [declared] if declared else list(FALLBACK_SCALES)
+    bare = unitless_matches_percent and _is_bare(figure)
     for passage_figure in passage_figures:
         if passage_figure.is_percent:
+            # A number written with no unit at all is ambiguous, and the passage is the
+            # authority on what it means: an answer that writes `15.6` against a table
+            # printing `15.6%` quoted the figure, badly. A figure carrying a currency or a
+            # scale word is not ambiguous, and dollars are never percentages (RAG-029).
+            if bare and _close(passage_figure.value, figure.value):
+                return True
             continue
         # Quoting the digits as the passage prints them is what the prompt asks for, so
         # `109,417` against a table of millions is a match, not a unit error.
@@ -157,6 +173,11 @@ def figure_supported(figure: Figure, passage: str) -> bool:
         if any(_close(passage_figure.value * scale, figure.absolute) for scale in scales):
             return True
     return False
+
+
+def _is_bare(figure: Figure) -> bool:
+    """No currency symbol, no scale word, not itself a percentage."""
+    return not figure.is_percent and figure.scale == 1.0 and not _CURRENCY.search(figure.raw)
 
 
 def unsupported_figures(sentence: str, passages: list[str]) -> list[Figure]:

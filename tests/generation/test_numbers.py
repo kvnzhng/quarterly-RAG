@@ -129,3 +129,16 @@ def test_a_narrow_no_break_space_still_attaches_the_unit() -> None:
     assert figure_supported(figure, "(In millions)\nTotal net sales | 109,417")
     (non_breaking,) = parse_figures("$109,417\u00a0million")
     assert non_breaking.absolute == 109_417_000_000.0
+
+
+def test_a_unitless_figure_matches_a_percentage_only_where_it_is_asked_to() -> None:
+    """Prose and a calculation operand are held to different standards, on purpose.
+
+    "The rate was 46.9" is not the claim the passage makes; `24.1` inside a `CALC:` line is
+    a cell of the table quoted sloppily, and the arithmetic still has to come out (RAG-029).
+    """
+    (plain,) = parse_figures("46.9")
+    assert not figure_supported(plain, PERCENTS)
+    assert figure_supported(plain, PERCENTS, unitless_matches_percent=True)
+    (dollars,) = parse_figures("$46.9 million")
+    assert not figure_supported(dollars, PERCENTS, unitless_matches_percent=True)

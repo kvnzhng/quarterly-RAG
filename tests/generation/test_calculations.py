@@ -173,3 +173,60 @@ def test_only_a_verified_calculation_is_matched_when_asked_for_one() -> None:
     (two,) = parse_figures("2 units")
     assert matching_calculation(calculations, two) is calculations[0]
     assert matching_calculation(calculations, two, verified_only=True) is None
+
+
+# --- what RAG-029 widened, and what it deliberately did not ------------------------
+
+
+def test_a_unitless_operand_matches_a_percentage_the_passage_prints() -> None:
+    """Both models wrote q032 this way and both answers were correct.
+
+    A number with no unit is ambiguous and the passage is the authority on what it means.
+    """
+    assert check("CALC: 24.1 [c1] - 15.6 [c1] = 8.5", {"c1": RATES}).verified
+
+
+def test_a_currency_operand_still_does_not_match_a_percentage() -> None:
+    """Dollars are never percentages, however they are rounded."""
+    calculation = check(
+        "CALC: $24.1 million [c1] - $15.6 million [c1] = $8.5 million", {"c1": RATES}
+    )
+    assert not calculation.verified
+    assert calculation.reason == OPERAND_NOT_IN_PASSAGE
+
+
+def test_a_calculation_may_use_an_earlier_verified_result() -> None:
+    """Working out a difference and then expressing it as a share is ordinary arithmetic."""
+    first = verify_calculation(
+        parse_calculation("CALC: 24.1 [c1] - 15.6 [c1] = 8.5"), {"c1": RATES}
+    )
+    assert first.verified
+    second = verify_calculation(
+        parse_calculation("CALC: 8.5 [c1] / 24.1 [c1] * 100 = 35.3%"), {"c1": RATES}, [first]
+    )
+    assert second.verified
+
+
+def test_it_may_not_use_a_result_that_did_not_verify() -> None:
+    """The chain is only as good as its first link, so a broken link breaks the chain."""
+    wrong = verify_calculation(
+        parse_calculation("CALC: 24.1 [c1] - 15.6 [c1] = 9.9"), {"c1": RATES}
+    )
+    assert not wrong.verified
+    second = verify_calculation(
+        parse_calculation("CALC: 9.9 [c1] / 24.1 [c1] * 100 = 41.1%"), {"c1": RATES}, [wrong]
+    )
+    assert not second.verified
+    assert second.reason == OPERAND_NOT_IN_PASSAGE
+
+
+def test_an_invented_operand_is_still_caught_when_earlier_lines_exist() -> None:
+    """The widening must not become "anything the answer said earlier"."""
+    first = verify_calculation(
+        parse_calculation("CALC: 24.1 [c1] - 15.6 [c1] = 8.5"), {"c1": RATES}
+    )
+    second = verify_calculation(
+        parse_calculation("CALC: 7,331 [c1] + 1 [c1] = 7,332"), {"c1": RATES}, [first]
+    )
+    assert not second.verified
+    assert second.reason == OPERAND_NOT_IN_PASSAGE

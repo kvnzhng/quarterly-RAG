@@ -259,3 +259,31 @@ def test_a_calculation_alone_does_not_ground_an_uncited_claim(passages) -> None:
     )
     assert answer.citations and answer.cited_sentences == 0
     assert answer.unsupported_sentences == ["Net sales rose a lot."]
+
+
+def test_a_constant_from_the_answers_own_working_is_not_a_missing_figure(make_chunk) -> None:
+    """`multiply by 100` in a sentence is working, not a claim about the filing (RAG-029)."""
+    margin = [
+        make_chunk("a:1-2", "(In millions)\nGross margin | 54,770\nTotal net sales | 109,417")
+    ]
+    answer = verify(
+        "Gross margin was $54,770 million [c1]. Dividing by net sales and multiplying by "
+        "100 gives 50% [c1].\nCALC: (54,770 [c1] / 109,417 [c1]) * 100 = 50%",
+        margin,
+    )
+    assert [d.text for d in answer.unverified_derived] == []
+    assert answer.fully_grounded
+
+
+def test_a_bare_number_that_is_not_from_the_working_is_still_flagged(passages) -> None:
+    """The exemption is narrow on purpose: no calculation, no exemption."""
+    answer = verify("Apple had 100 stores [c1].", passages)
+    assert [d.text for d in answer.unverified_derived] == ["100"]
+
+
+def test_a_constant_the_answer_never_calculated_with_is_still_flagged(passages) -> None:
+    answer = verify(
+        "Apple had 1,000 suppliers [c1].\nCALC: 109,417 [c1] - 94,036 [c1] = 15,381",
+        passages,
+    )
+    assert [d.text for d in answer.unverified_derived] == ["1,000"]

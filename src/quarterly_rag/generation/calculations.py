@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import ast
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 from pydantic import BaseModel, Field
 
@@ -190,14 +190,29 @@ def parse_calculation(line: str) -> Calculation:
     return calculation
 
 
-def verify_calculation(calculation: Calculation, passages: Mapping[str, str]) -> Calculation:
-    """Check the operands against their passages, then the arithmetic against the result."""
+def verify_calculation(
+    calculation: Calculation,
+    passages: Mapping[str, str],
+    earlier: Sequence[Calculation] = (),
+) -> Calculation:
+    """Check the operands against their passages, then the arithmetic against the result.
+
+    `earlier` is the calculations already verified in the same answer. An operand may be one
+    of their results: working out a difference and then expressing it as a share of something
+    is ordinary arithmetic, and refusing it forced a model to either restate a figure no
+    passage prints or not show the second step at all. The chain is only as good as its first
+    link, which is checked the same way (RAG-029).
+    """
     if calculation.reason == UNPARSED:
         return calculation
 
+    derived = [c.result_value for c in earlier if c.verified and c.result_value is not None]
     checked: list[Operand] = []
     reason = VERIFIED
     for operand in calculation.operands:
+        if _is_earlier_result(operand, derived):
+            checked.append(operand.model_copy(update={"in_passage": True}))
+            continue
         if not operand.tag:
             if not _is_constant(operand.value):
                 reason = reason or UNCITED_OPERAND
@@ -213,7 +228,7 @@ def verify_calculation(calculation: Calculation, passages: Mapping[str, str]) ->
             is_percent=operand.is_percent,
             scale=1.0,
         )
-        found = figure_supported(figure, passages[operand.tag])
+        found = figure_supported(figure, passages[operand.tag], unitless_matches_percent=True)
         if not found:
             reason = reason or OPERAND_NOT_IN_PASSAGE
         checked.append(operand.model_copy(update={"in_passage": found}))
@@ -246,6 +261,13 @@ def matching_calculation(
         if calculation.result_value is not None and _same_figure(calculation, figure):
             return calculation
     return None
+
+
+def _is_earlier_result(operand: Operand, derived: Sequence[float]) -> bool:
+    """Whether this operand is a figure one of the answer's own earlier lines produced."""
+    return any(
+        values_close(operand.value, value, tolerance=TOLERANCE) for value in derived if value
+    )
 
 
 def _same_figure(calculation: Calculation, figure: Figure) -> bool:

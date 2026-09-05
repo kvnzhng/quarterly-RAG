@@ -30,6 +30,7 @@ from pydantic import BaseModel, Field
 from quarterly_rag.chunking.base import Chunk
 from quarterly_rag.generation.base import LLM, ChatMessage, ChatResponse
 from quarterly_rag.generation.calculations import (
+    UNCITED_CONSTANTS,
     Calculation,
     matching_calculation,
     parse_calculation,
@@ -37,7 +38,7 @@ from quarterly_rag.generation.calculations import (
     verify_calculation,
 )
 from quarterly_rag.generation.citations import CLOSE, OPEN, TAG, parse_tags, tag_for
-from quarterly_rag.generation.numbers import Figure, unsupported_figures
+from quarterly_rag.generation.numbers import Figure, unsupported_figures, values_close
 
 __all__ = [
     "DEFAULT_MAX_TOKENS",
@@ -211,7 +212,9 @@ def verify(
 
     prose, calc_lines = split_calculations(stripped)
     passages = {tag: chunk.text for tag, chunk in by_tag.items()}
-    calculations = [verify_calculation(parse_calculation(line), passages) for line in calc_lines]
+    calculations: list[Calculation] = []
+    for line in calc_lines:
+        calculations.append(verify_calculation(parse_calculation(line), passages, calculations))
 
     rendered: list[str] = []
     cited_sentences = 0
@@ -240,7 +243,8 @@ def verify(
                 used.append(tag)
         # Strip the citation labels first: `[c1]` would otherwise contribute the figure 1.
         claim = TAG.sub(" ", sentence)
-        missing: list[Figure] = unsupported_figures(claim, [by_tag[t].text for t in known])
+        found: list[Figure] = unsupported_figures(claim, [by_tag[t].text for t in known])
+        missing = [f for f in found if not _is_shown_working(f, calculations)]
         if not missing:
             rendered.append(sentence)
             continue
@@ -272,6 +276,24 @@ def verify(
         stop_reason=stop_reason,
         input_tokens=usage[0],
         output_tokens=usage[1],
+    )
+
+
+def _is_shown_working(figure: Figure, calculations: list[Calculation]) -> bool:
+    """Whether this figure is a scale constant from the answer's own arithmetic (RAG-029).
+
+    A model told to show its working sometimes writes it into the sentence as well: "we
+    divide the gross margin by total net sales and multiply by 100". No passage states that
+    100 and none should, so flagging it made an otherwise clean answer look ungrounded. The
+    exemption is deliberately narrow: the figure has to be a bare scale constant *and* an
+    operand of a calculation this answer actually wrote, so "Apple had 100 stores" is still
+    a figure that has to be in a passage.
+    """
+    if figure.is_percent or figure.scale != 1.0 or figure.value not in UNCITED_CONSTANTS:
+        return False
+    return any(
+        any(values_close(operand.value, figure.value, tolerance=0.0) for operand in c.operands)
+        for c in calculations
     )
 
 
