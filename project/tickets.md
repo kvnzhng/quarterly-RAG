@@ -55,6 +55,7 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Two bugs the screenshots found, both fixed:** Streamlit reads `$...$` as LaTeX, so an answer with two dollar amounts rendered everything between them as an equation; and the highlighter marked the footnote markers in Apple's product table, because `[c1]` parses as the figure 1 and every filing contains a 1. The verifier strips citation tags before checking figures for the same reason, and now so does the page.
 - **Dependencies added:** `fastapi` 0.141.1, `uvicorn`, `streamlit` 1.63.0. Fifteen packages, nearly all of them Streamlit's data stack: pandas, pyarrow, altair, pydeck, pillow. That is the heaviest addition in the project and it buys one page.
 - **Not done:** no authentication, and both servers bind to the loopback address only. This is a laptop tool; putting it on a network needs a decision that is not this ticket's.
+- **Commits:** `d259a7b`
 
 
 ### RAG-013: Langfuse tracing (self-hosted)
