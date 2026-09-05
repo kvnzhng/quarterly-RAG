@@ -46,6 +46,7 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Description:** "The course" was the second-to-last section of the README, below the reading list's neighbours. Kevin wants it higher and referenced in the intro. Move the section to just after "Why filings?", ahead of the architecture and the results, and add one sentence to the current-state paragraph pointing at it.
 - **Done when:** a reader meets the course link before the architecture, and the intro names it.
 - **Verified:** the README's section order is now intro, Why filings?, The course, Architecture, Results; the current-state paragraph links to the course; `scripts/edit_docs.py` reported all three edits applied; `make lint` clean. No code changed, so the tests were not re-run.
+- **Commits:** `8dda18d`
 
 ### RAG-036: `make course` opens the notebook as an app, not the editor
 - **Type:** docs
