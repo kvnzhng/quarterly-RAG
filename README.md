@@ -151,7 +151,7 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 - [x] RAG-007 vector store comparison, ChromaDB stays the default
 - [x] RAG-012 faithfulness judge and the regression gate
 - [x] RAG-021 calculation provenance for derived numbers
-- [ ] RAG-013 Langfuse
+- [x] RAG-013 Langfuse tracing, optional and off by default
 - [ ] RAG-014 API + UI
 - [ ] RAG-015 writeup
 

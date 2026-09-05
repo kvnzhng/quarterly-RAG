@@ -13,12 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-013: Langfuse tracing (self-hosted)
-- **Type:** chore
-- **Created:** 2026-09-03
-- **Competency:** production readiness
-- **Description:** Run Langfuse locally via docker compose (`infra/`). Trace every `rag ask` as ingestion -> retrieval -> rerank -> generation -> verification spans with token counts and latency. Push eval scores to Langfuse as scores on traces.
-- **Done when:** a trace for a refused question and an answered question are visible in the local Langfuse UI. `docs/tradeoffs/observability.md` compares Langfuse vs Phoenix vs MLflow.
 
 ## Backlog
 
@@ -54,6 +48,21 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Done when:** a reader can understand the tradeoffs from the README alone.
 
 ## Done
+
+### RAG-013: Langfuse tracing (self-hosted)
+- **Type:** chore
+- **Created:** 2026-09-03 | **Completed:** 2026-09-05
+- **Competency:** production readiness
+- **Description:** Run Langfuse locally via docker compose (`infra/`). Trace every `rag ask` as its pipeline stages with token counts and latency. Push eval scores to Langfuse as scores on traces.
+- **Done when:** a trace for a refused question and an answered question are visible in the local Langfuse UI. `docs/tradeoffs/observability.md` compares Langfuse vs Phoenix vs MLflow.
+- **Verified:** `make langfuse-up` brings 6 containers healthy and creates the project and API keys on first boot, so nothing is clicked. Both traces exist and were read back through the API: the answered question is 7 spans, 9,577 ms total, generation 8,423 ms, retrieval 1,147 ms, verification 4 ms; the refused question is 2 spans, 1 ms, root level WARNING, no model call. The generation span carries the model name `openai_compatible/qwen3.8-27b-64k:latest` and 1,149 tokens, confirmed through the metrics API. `make test` 380 passed, 15 deselected, up from 365; two live tests against a real Langfuse pass and skip when it is absent; `make lint` clean.
+- **Not verified by me:** the Langfuse UI itself. Reading a trace in the browser needs a sign-in, and entering a password is something I do not do. The credentials are the `LANGFUSE_INIT_USER_*` values in `.env`; the API round trip above is the reproducible half of the same evidence.
+- **Deviation from the ticket text:** the spans are the stages `rag ask` actually has, which are `scope-gate`, `retrieval`, `retrieval-gate`, `generation`, `verification` and `answer-gate`. Ingestion is offline and has no trace; reranking is off by default and would appear inside the retrieval span when enabled.
+- **Measured (`docs/tradeoffs/observability.md`, ADR-011):** tracing costs about 150 ms a question, 3.18 s against 3.03 s median over five runs each way. Langfuse is 6 containers, 2,579 MB at idle and 5.6 GB of images, against Arize Phoenix at 453 MB and one command, and MLflow at 77 MB. Langfuse was chosen for its scores API and is off by default because of the footprint; only Langfuse was integrated, so the scores row for the other two is read from their documentation and says so.
+- **Dependencies added:** `langfuse` 4.15.1, which brings `backoff`, `wrapt` and one OpenTelemetry exporter. Four packages only, because `chromadb` already brings most of OpenTelemetry. Imported lazily so `rag --help` and the tests never pay for it.
+- **Surprise worth keeping:** Langfuse v4 defaults to `events_only` mode, where the legacy trace API is gone and the SDK's own `trace.get` returns 404. Recorded in `docs/notes.md` with the endpoints that do work.
+- **Commits:** `f832879`
+
 
 ### RAG-021: Calculation provenance for derived numbers
 - **Type:** feat

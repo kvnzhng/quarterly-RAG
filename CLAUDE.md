@@ -21,10 +21,11 @@ Phases one and two are done. The pipeline answers questions from the filings or 
 | Judge | custom, cross-model, calibrated against the figure check | 86% agreement, 25% miss rate on unverified figures |
 | Calculations | derived numbers written as `CALC:` lines and recomputed from cited operands; opt-in via `ANSWER_PROMPT_VERSION=2` (RAG-021) | qwen answers 10/10 derived questions where the default prompt refused 4; 8B model's arithmetic fails 4 of 10; costs 2 of the 33 answerable questions on the gate with `gpt-oss:20b` |
 | Gate | `make eval` against `data/eval/baseline.json`, 5-point tolerance | nine metrics, committed; covers `lookup` only |
+| Tracing | self-hosted Langfuse 4.30.0, off unless configured (ADR-011) | 150 ms a question; generation 8,423 ms against verification 4 ms |
 
 The binding constraint moved twice: retrieval was the ceiling until hybrid fusion (RAG-009), then chunking was (RAG-020). It is now roughly a quarter of questions whose evidence neither ranking nor chunking reaches (recall@20 72.7%).
 
-**Next:** phase three: RAG-013 Langfuse, RAG-014 API and UI, RAG-015 writeup. RAG-029 holds three named limits of the calculation verifier. See `project/handoff.md` to resume.
+**Next:** phase three: RAG-014 API and UI, RAG-015 writeup. RAG-029 holds three named limits of the calculation verifier. See `project/handoff.md` to resume.
 
 ## File Structure
 
