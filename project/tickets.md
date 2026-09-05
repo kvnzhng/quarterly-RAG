@@ -65,7 +65,7 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **A dead tracer cost eleven seconds.** `rag ask` against a closed Langfuse port still answered but took 13.9 s against a 3.0 s baseline, because the OpenTelemetry exporter retries with backoff inside `flush()`. `build_tracer` now probes the health endpoint once with a two-second timeout: 3.14 s. Wrong keys were never expensive at 3.89 s.
 - **Refusals are scored as refusals.** `fully_grounded` is trivially true of an answer that made no claims, and the report computes its rate over answered questions only, so scoring it on a refusal would make Langfuse disagree with the report.
 - **A test that passed while the feature did not.** The first integration test asserted the spans and called `tracer.score`, but never read the score back, so it was green while nothing proved scores landed at all. They do, on the right trace: filtering `v3/scores` by the trace id returns the score and a bogus id returns none. The test now asserts that, which is the half of "scores on traces" it was letting through.
-- **Commits:** `f832879`, `b14ec8f`, `3fbda5c`
+- **Commits:** `f832879`, `b14ec8f`, `3fbda5c`, `842800c`
 
 
 ### RAG-021: Calculation provenance for derived numbers
