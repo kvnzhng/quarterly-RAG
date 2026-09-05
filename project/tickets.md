@@ -1,6 +1,6 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-035
+> Next ID: RAG-036
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
@@ -38,6 +38,15 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Done when:** the eval set has a handful of paraphrase pairs and multi-company questions, human-verified, and the chosen approach is measured against them with a before and after. The labels come first, as they did in RAG-019.
 
 ## Done
+
+### RAG-035: Publish the course link and document how to run the notebook
+- **Type:** docs
+- **Created:** 2026-09-05 | **Completed:** 2026-09-05
+- **Competency:** all
+- **Description:** Kevin published the Notion course to the web. Point the README, the notebook's own links, `CLAUDE.md`, the notes and the handoff at the public address instead of the private workspace URL; add a `make course` target; say in the README what runs on open, what waits for a button, and how to run the notebook as an app or as a script; and put a code pointer at the top of the Notion page and in every chapter's notebook callout so the two halves refer to each other.
+- **Done when:** a reader with no Notion account can open every course link in the repo, and the Notion pages link to the repository and the notebook.
+- **Verified:** the public address and a chapter fetched by bare id both answer HTTP 200 with no Notion session (`curl`). The notebook holds 13 public links and no workspace URL; `ruff check`, `ruff format --check` and `marimo check` clean; `uv run python notebooks/course.py` exits 0; `make -n course` resolves to the marimo command; `make lint` clean; `make test` 432 passed. `scripts/edit_docs.py` reported every README, Makefile, CLAUDE.md, notes and handoff edit applied. On the Notion side the parent page carries a code callout at the top, and all twelve chapter callouts now link to the notebook on GitHub.
+- **Not run:** the notebook in a browser; `make course` itself was not started, because it is a long-running server.
 
 ### RAG-015: Results writeup and interview talking points
 - **Type:** docs

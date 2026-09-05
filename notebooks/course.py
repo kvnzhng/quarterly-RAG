@@ -42,20 +42,20 @@ def imports():
 
 @app.cell
 def course_links(mo):
-    COURSE = "https://app.notion.com/p/3d21f11d4bc881a6b753c2c819817428"
+    COURSE = "https://flashy-fur-afc.notion.site/quarterly-RAG-a-course-on-production-RAG-3d21f11d4bc881a6b753c2c819817428"
     CHAPTERS = {
-        1: "https://app.notion.com/p/3d21f11d4bc881849f99de6e4ddde25e",
-        2: "https://app.notion.com/p/3d21f11d4bc8813bb70fc957c2c58c05",
-        3: "https://app.notion.com/p/3d21f11d4bc881879d91e359d4939a71",
-        4: "https://app.notion.com/p/3d21f11d4bc881679471c1afef55e4dd",
-        5: "https://app.notion.com/p/3d21f11d4bc881309825fd86c6b10f80",
-        6: "https://app.notion.com/p/3d21f11d4bc881a6abd4f7d614bc9ad5",
-        7: "https://app.notion.com/p/3d21f11d4bc881629c53f9d530662d6b",
-        8: "https://app.notion.com/p/3d21f11d4bc88151948dc86f98e66a64",
-        9: "https://app.notion.com/p/3d21f11d4bc881b08f9cc3b664a0dde7",
-        10: "https://app.notion.com/p/3d21f11d4bc8818381dcf185de154a7f",
-        11: "https://app.notion.com/p/3d21f11d4bc8818fa463f42eb1526d95",
-        12: "https://app.notion.com/p/3d21f11d4bc881dbbabfcfe01f34e7a5",
+        1: "https://flashy-fur-afc.notion.site/3d21f11d4bc881849f99de6e4ddde25e",
+        2: "https://flashy-fur-afc.notion.site/3d21f11d4bc8813bb70fc957c2c58c05",
+        3: "https://flashy-fur-afc.notion.site/3d21f11d4bc881879d91e359d4939a71",
+        4: "https://flashy-fur-afc.notion.site/3d21f11d4bc881679471c1afef55e4dd",
+        5: "https://flashy-fur-afc.notion.site/3d21f11d4bc881309825fd86c6b10f80",
+        6: "https://flashy-fur-afc.notion.site/3d21f11d4bc881a6abd4f7d614bc9ad5",
+        7: "https://flashy-fur-afc.notion.site/3d21f11d4bc881629c53f9d530662d6b",
+        8: "https://flashy-fur-afc.notion.site/3d21f11d4bc88151948dc86f98e66a64",
+        9: "https://flashy-fur-afc.notion.site/3d21f11d4bc881b08f9cc3b664a0dde7",
+        10: "https://flashy-fur-afc.notion.site/3d21f11d4bc8818381dcf185de154a7f",
+        11: "https://flashy-fur-afc.notion.site/3d21f11d4bc8818fa463f42eb1526d95",
+        12: "https://flashy-fur-afc.notion.site/3d21f11d4bc881dbbabfcfe01f34e7a5",
     }
     REPO = "https://github.com/kvnzhng/quarterly-RAG"
 
@@ -66,25 +66,27 @@ def course_links(mo):
 
     mo.md(
         f"""
-# quarterly-RAG: the course notebook
+    # quarterly-RAG: the course notebook
 
-This notebook drives the real pipeline of [quarterly-RAG]({REPO}), a local RAG system over
-Apple's and Nvidia's SEC filings. It pairs with the [Notion course]({COURSE}): each section
-below names the chapter that explains what you are looking at, and each chapter names the
-section here where you can change the parameters and watch the numbers move.
+    This notebook drives the real pipeline of [quarterly-RAG]({REPO}), a local RAG system over
+    Apple's and Nvidia's SEC filings. It pairs with the [Notion course]({COURSE}): each section
+    below names the chapter that explains what you are looking at, and each chapter names the
+    section here where you can change the parameters and watch the numbers move.
 
-**Before you start**, from the repository root: `make setup`, copy `.env.example` to `.env`,
-then build the corpus, chunks and indexes with the commands in the README (download, parse,
-`rag chunk build` for every strategy you want to compare, `rag index build --context`).
-Sections that call a model wait for a run button.
-"""
+    **Before you start**, from the repository root: `make setup`, copy `.env.example` to `.env`,
+    then build the corpus, chunks and indexes with the commands in the README (download, parse,
+    `rag chunk build` for every strategy you want to compare, `rag index build --context`).
+    Sections that call a model wait for a run button.
+    """
     )
-    return CHAPTERS, COURSE, REPO, chapter
+    return (chapter,)
 
 
 @app.cell
 def s0_title(chapter, mo):
-    mo.md(f"## 0. Setup\n\n{chapter(1)}")
+    mo.md(f"""
+    ## 0. Setup\n\n{chapter(1)}
+    """)
     return
 
 
@@ -139,19 +141,19 @@ def s0_summary(ROOT, TICKERS, load_manifest, mo, settings):
         [
             mo.md(
                 f"""
-The settings come from `.env` in `{ROOT.name}/`, the same file the CLI reads. The server
-address is deliberately not shown; `rag doctor` is the command that checks it.
+    The settings come from `.env` in `{ROOT.name}/`, the same file the CLI reads. The server
+    address is deliberately not shown; `rag doctor` is the command that checks it.
 
-| Setting | Value |
-|---|---|
-| chat model | `{settings.llm_provider}/{settings.llm_model}` |
-| embeddings | `{settings.embed_provider}/{settings.embed_model}` |
-| vector store | `{settings.vector_store}` |
-| default chunker | `{settings.chunk_strategy}` |
-| default retrieval | `{settings.retrieval_strategy}` |
-| answer prompt | v{settings.answer_prompt_version}, {settings.answer_max_tokens} tokens |
-| filings on disk | {_filings} across {", ".join(t for t, m in manifests.items() if m)} |
-"""
+    | Setting | Value |
+    |---|---|
+    | chat model | `{settings.llm_provider}/{settings.llm_model}` |
+    | embeddings | `{settings.embed_provider}/{settings.embed_model}` |
+    | vector store | `{settings.vector_store}` |
+    | default chunker | `{settings.chunk_strategy}` |
+    | default retrieval | `{settings.retrieval_strategy}` |
+    | answer prompt | v{settings.answer_prompt_version}, {settings.answer_max_tokens} tokens |
+    | filings on disk | {_filings} across {", ".join(t for t, m in manifests.items() if m)} |
+    """
             ),
             mo.ui.table(_chunk_rows, selection=None, label="What is built, per chunker"),
         ]
@@ -185,7 +187,9 @@ def s0_endpoint_check(build_embedder, endpoint_button, mo, settings):
 
 @app.cell
 def s1_title(chapter, mo):
-    mo.md(f"## 1. Corpus and parsing\n\n{chapter(1, 2)}")
+    mo.md(f"""
+    ## 1. Corpus and parsing\n\n{chapter(1, 2)}
+    """)
     return
 
 
@@ -253,7 +257,14 @@ def s1_section_picker(mo, records):
 
 
 @app.cell
-def s1_section_text(filing_pick, filing_text, mo, records, section_pick, settings):
+def s1_section_text(
+    filing_pick,
+    filing_text,
+    mo,
+    records,
+    section_pick,
+    settings,
+):
     _ticker, _accession = filing_pick.value
     _record = records[section_pick.value]
     _canonical = filing_text(settings, _ticker, _accession)
@@ -283,7 +294,9 @@ def s1_section_text(filing_pick, filing_text, mo, records, section_pick, setting
 
 @app.cell
 def s2_title(chapter, mo):
-    mo.md(f"## 2. The eval set\n\n{chapter(3)}")
+    mo.md(f"""
+    ## 2. The eval set\n\n{chapter(3)}
+    """)
     return
 
 
@@ -339,7 +352,9 @@ def s2_evidence(filing_text, mo, question_pick, settings):
 
 @app.cell
 def s3_title(chapter, mo):
-    mo.md(f"## 3. Chunking\n\n{chapter(4)}")
+    mo.md(f"""
+    ## 3. Chunking\n\n{chapter(4)}
+    """)
     return
 
 
@@ -375,19 +390,19 @@ def s3_stats(TICKERS, chunker_pick, mo, settings):
     _table_only = sum(1 for c in corpus_chunks if c.contains_table)
     mo.md(
         f"""
-| `{chunk_strategy}` | |
-|---|---|
-| chunks | {_stats.count:,} |
-| median words | {_stats.median} |
-| p90 words | {_stats.p90} |
-| largest | {_stats.largest} (a single table kept whole when it exceeds the target) |
-| under 50 words | {_stats.small:,} |
-| holding a table | {_table_only:,} |
+    | `{chunk_strategy}` | |
+    |---|---|
+    | chunks | {_stats.count:,} |
+    | median words | {_stats.median} |
+    | p90 words | {_stats.p90} |
+    | largest | {_stats.largest} (a single table kept whole when it exceeds the target) |
+    | under 50 words | {_stats.small:,} |
+    | holding a table | {_table_only:,} |
 
-Switch the chunker and watch the count and the median move: section-aware makes twice as
-many chunks as the fixed window, a third of them under 50 words, and chapter 4 explains why
-that is the honest shape of a filing rather than a defect.
-"""
+    Switch the chunker and watch the count and the median move: section-aware makes twice as
+    many chunks as the fixed window, a third of them under 50 words, and chapter 4 explains why
+    that is the honest shape of a filing rather than a defect.
+    """
     )
     return chunk_strategy, corpus_chunks
 
@@ -427,7 +442,9 @@ def s3_evidence_chunks(chunk_strategy, corpus_chunks, is_relevant, mo, picked):
 
 @app.cell
 def s4_title(chapter, mo):
-    mo.md(f"## 4. What gets embedded\n\n{chapter(5)}")
+    mo.md(f"""
+    ## 4. What gets embedded\n\n{chapter(5)}
+    """)
     return
 
 
@@ -461,7 +478,15 @@ def s4_similarity_button(mo):
 
 
 @app.cell
-def s4_similarity(build_embedder, embed_chunk, embed_text, mo, picked, settings, similarity_button):
+def s4_similarity(
+    build_embedder,
+    embed_chunk,
+    embed_text,
+    mo,
+    picked,
+    settings,
+    similarity_button,
+):
     import math
 
     mo.stop(not similarity_button.value, mo.md("*Three embedding calls, behind the button.*"))
@@ -478,24 +503,26 @@ def s4_similarity(build_embedder, embed_chunk, embed_text, mo, picked, settings,
 
     mo.md(
         f"""
-Question: *{picked.question}*
+    Question: *{picked.question}*
 
-| Variant | cosine to the question |
-|---|---|
-| raw | {_cosine(_q, _docs[0]):.3f} |
-| context | {_cosine(_q, _docs[1]):.3f} |
+    | Variant | cosine to the question |
+    |---|---|
+    | raw | {_cosine(_q, _docs[0]):.3f} |
+    | context | {_cosine(_q, _docs[1]):.3f} |
 
-Both use the model's task prefixes (`{settings.embed_query_prefix.strip()}` and
-`{settings.embed_document_prefix.strip()}`). Sending neither raised no error and cost a
-third of recall, which is the first thing the eval set found (chapter 5).
-"""
+    Both use the model's task prefixes (`{settings.embed_query_prefix.strip()}` and
+    `{settings.embed_document_prefix.strip()}`). Sending neither raised no error and cost a
+    third of recall, which is the first thing the eval set found (chapter 5).
+    """
     )
     return
 
 
 @app.cell
 def s5_title(chapter, mo):
-    mo.md(f"## 5. Retrieval\n\n{chapter(6)}")
+    mo.md(f"""
+    ## 5. Retrieval\n\n{chapter(6)}
+    """)
     return
 
 
@@ -625,7 +652,15 @@ def s5_phrasing_button(mo):
 
 
 @app.cell
-def s5_phrasing(build_retriever, chunk_strategy, embedder, mo, phrasing_button, settings, store):
+def s5_phrasing(
+    build_retriever,
+    chunk_strategy,
+    embedder,
+    mo,
+    phrasing_button,
+    settings,
+    store,
+):
     mo.stop(
         not phrasing_button.value,
         mo.md(
@@ -685,7 +720,9 @@ def s5_phrasing(build_retriever, chunk_strategy, embedder, mo, phrasing_button, 
 
 @app.cell
 def s6_title(chapter, mo):
-    mo.md(f"## 6. Retrieval eval\n\n{chapter(3, 6, 10)}")
+    mo.md(f"""
+    ## 6. Retrieval eval\n\n{chapter(3, 6, 10)}
+    """)
     return
 
 
@@ -699,7 +736,15 @@ def s6_button(mo):
 
 
 @app.cell
-def s6_eval(ROOT, chunk_strategy, eval_button, mo, retriever, settings, variant_pick):
+def s6_eval(
+    ROOT,
+    chunk_strategy,
+    eval_button,
+    mo,
+    retriever,
+    settings,
+    variant_pick,
+):
     import json
 
     from quarterly_rag.evaluation.retrieval_eval import run_retrieval_eval
@@ -767,7 +812,9 @@ def s6_eval(ROOT, chunk_strategy, eval_button, mo, retriever, settings, variant_
 
 @app.cell
 def s7_title(chapter, mo):
-    mo.md(f"## 7. Grounded generation\n\n{chapter(7, 8, 11)}")
+    mo.md(f"""
+    ## 7. Grounded generation\n\n{chapter(7, 8, 11)}
+    """)
     return
 
 
@@ -903,7 +950,9 @@ def s7_ask(
 
 @app.cell
 def s8_title(chapter, mo):
-    mo.md(f"## 8. Refusal\n\n{chapter(9)}")
+    mo.md(f"""
+    ## 8. Refusal\n\n{chapter(9)}
+    """)
     return
 
 
@@ -976,7 +1025,14 @@ def s8_sweep_button(mo):
 
 
 @app.cell
-def s8_sweep(chunk_strategy, mo, pipeline, settings, sweep_button, variant_pick):
+def s8_sweep(
+    chunk_strategy,
+    mo,
+    pipeline,
+    settings,
+    sweep_button,
+    variant_pick,
+):
     from quarterly_rag.evaluation.refusal_eval import run_refusal_eval
 
     mo.stop(
@@ -1018,7 +1074,9 @@ def s8_sweep(chunk_strategy, mo, pipeline, settings, sweep_button, variant_pick)
 
 @app.cell
 def s9_title(chapter, mo):
-    mo.md(f"## 9. The judge\n\n{chapter(8, 10)}")
+    mo.md(f"""
+    ## 9. The judge\n\n{chapter(8, 10)}
+    """)
     return
 
 
@@ -1033,7 +1091,16 @@ def s9_controls(mo):
 
 
 @app.cell
-def s9_judge(ask_settings, build_llm, judge_button, judge_text, mo, outcome, picked, question_text):
+def s9_judge(
+    ask_settings,
+    build_llm,
+    judge_button,
+    judge_text,
+    mo,
+    outcome,
+    picked,
+    question_text,
+):
     from quarterly_rag.evaluation.judge import Judge
 
     mo.stop(
@@ -1093,7 +1160,9 @@ def s9_judge(ask_settings, build_llm, judge_button, judge_text, mo, outcome, pic
 
 @app.cell
 def s10_title(chapter, mo):
-    mo.md(f"## 10. Attacks and weird questions\n\n{chapter(12)}")
+    mo.md(f"""
+    ## 10. Attacks and weird questions\n\n{chapter(12)}
+    """)
     return
 
 
@@ -1153,7 +1222,14 @@ def s10_injection_button(mo):
 
 
 @app.cell
-def s10_injection(ask_llm, ask_settings, injection_button, mo, question_text, results):
+def s10_injection(
+    ask_llm,
+    ask_settings,
+    injection_button,
+    mo,
+    question_text,
+    results,
+):
     from quarterly_rag.generation.answer import answer_question
 
     mo.stop(

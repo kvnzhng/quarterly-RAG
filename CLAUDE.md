@@ -205,6 +205,7 @@ The binding constraint moved twice: retrieval was the ceiling until hybrid fusio
 - **Chunks:** `uv run rag chunk build --ticker AAPL --ticker NVDA` (sections into `data/chunks/<strategy>/`)
 - **Index:** `uv run rag index build --ticker AAPL --ticker NVDA [--context]` then `rag index query "..."`
 - **API and page:** `make api` (FastAPI `POST /ask` on 127.0.0.1:8000, schema at `/docs`) and `make ui` (Streamlit on 127.0.0.1:8501, talks to the API over HTTP and nothing else)
+- **Course notebook:** `make course` (marimo editor over the real pipeline; the course itself is at https://flashy-fur-afc.notion.site/quarterly-RAG-a-course-on-production-RAG-3d21f11d4bc881a6b753c2c819817428); `uv run python notebooks/course.py` runs the ungated cells as a script
 - **Ask:** `uv run rag ask "..."` (retrieve, answer, verify every sentence against its source). `ANSWER_PROMPT_VERSION=2` lets the model compute a derived number and shows the arithmetic it is checked against.
 - **Generation eval:** `uv run rag eval generation --context gold|retrieved`
 - **Refusal eval:** `uv run rag eval refusal` (abstention precision/recall, threshold sweep)

@@ -279,16 +279,19 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 
 ## The course
 
-What this repository learned is written up as a course: twelve chapters in Notion, one per
+What this repository learned is written up as a public course: twelve chapters, one per
 layer, each explaining the tooling, the alternatives that were tried and what the numbers
 said, and a marimo notebook that drives the real pipeline so a reader can change the chunker,
 the retrieval strategy, k, the filters, the prompt version and the model and watch the numbers
 move. The chapters point at notebook sections and the notebook points back at the chapters.
 
-- Course: https://app.notion.com/p/3d21f11d4bc881a6b753c2c819817428
-- Notebook: `notebooks/course.py`, opened from the repository root with
-  `uv run marimo edit notebooks/course.py` once the corpus, chunks and indexes exist. Every
-  section that calls a model waits for a run button, so opening it costs nothing.
+- **Course:** https://flashy-fur-afc.notion.site/quarterly-RAG-a-course-on-production-RAG-3d21f11d4bc881a6b753c2c819817428
+- **Notebook:** `notebooks/course.py`. Once the corpus, chunks and indexes exist, `make course`
+  (or `uv run marimo edit notebooks/course.py` from the repository root) opens the editor in
+  your browser. Sections 0 to 6 run on open and cost one embedding call per retrieval; every
+  cell that calls a chat model waits for a run button. `uv run marimo run notebooks/course.py`
+  shows the same notebook as an app without the code, and `uv run python notebooks/course.py`
+  runs the ungated cells as a script and exits.
 
 ## Reading and courses
 
