@@ -51,6 +51,7 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Competency:** production readiness
 - **Description:** Typing a question in the Streamlit page and pressing Enter did nothing; the Ask button had to be clicked. Streamlit re-runs the script when the text input changes, but the button is a separate widget that reads false on that re-run, so the keypress was swallowed. Reported by Kevin on the first real use of the page (RAG-014).
 - **Done when:** Enter in the question box asks the question, the button still works, and the model is not called twice for one question.
+- **Commits:** `ed17f86`
 - **Verified:** the input and the button are one `st.form`, which submits on either. Used the running page: typing a question and pressing Enter answered it, the page now shows its own "Press Enter to submit form" hint, and one question produced one answer. No unit test, because this is Streamlit widget behaviour and a test of it would be a test of Streamlit.
 
 
