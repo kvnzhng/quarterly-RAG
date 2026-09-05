@@ -1,6 +1,6 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-037
+> Next ID: RAG-038
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
@@ -38,6 +38,14 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Done when:** the eval set has a handful of paraphrase pairs and multi-company questions, human-verified, and the chosen approach is measured against them with a before and after. The labels come first, as they did in RAG-019.
 
 ## Done
+
+### RAG-037: The course sits near the top of the README
+- **Type:** docs
+- **Created:** 2026-09-05 | **Completed:** 2026-09-05
+- **Competency:** all
+- **Description:** "The course" was the second-to-last section of the README, below the reading list's neighbours. Kevin wants it higher and referenced in the intro. Move the section to just after "Why filings?", ahead of the architecture and the results, and add one sentence to the current-state paragraph pointing at it.
+- **Done when:** a reader meets the course link before the architecture, and the intro names it.
+- **Verified:** the README's section order is now intro, Why filings?, The course, Architecture, Results; the current-state paragraph links to the course; `scripts/edit_docs.py` reported all three edits applied; `make lint` clean. No code changed, so the tests were not re-run.
 
 ### RAG-036: `make course` opens the notebook as an app, not the editor
 - **Type:** docs

@@ -6,13 +6,29 @@
 
 Everything runs on a laptop with no paid API: Ollama for the LLM and embeddings, ChromaDB for vectors, a local model as the judge. The model provider is your choice: point it at a model server on your network or at a hosted API by editing `.env`.
 
-**Current state:** all three phases are built. The pipeline answers questions from the filings or refuses with a reason, every layer is measured against a 63-question human-verified eval set, and eleven decisions are recorded as ADRs, each backed by a tradeoff page with numbers. [Results](#results) has the tables, [the five competencies](#the-five-competencies-what-was-tried-what-was-measured-what-was-chosen) has the argument, and [what did not work](#what-did-not-work-and-what-it-taught) is the part worth reading first.
+**Current state:** all three phases are built. The pipeline answers questions from the filings or refuses with a reason, every layer is measured against a 63-question human-verified eval set, and eleven decisions are recorded as ADRs, each backed by a tradeoff page with numbers. [Results](#results) has the tables, [the five competencies](#the-five-competencies-what-was-tried-what-was-measured-what-was-chosen) has the argument, and [what did not work](#what-did-not-work-and-what-it-taught) is the part worth reading first. There is also [a course](#the-course): twelve chapters and a notebook that teach the same material, in order, with the numbers.
 
 ## Why filings?
 
 10-Q and 10-K reports are free, public, long, highly structured, and full of exact numbers. That makes them a good corpus for RAG: retrieval is non-trivial (the same sections repeat every quarter), grounding is checkable (a revenue figure is either in the filing or it is not), and refusal has a concrete meaning (the period or company is not in the corpus).
 
 Starting companies: **Apple (AAPL)** and **Nvidia (NVDA)**. Adding a ticker is a config change.
+
+## The course
+
+What this repository learned is written up as a public course: twelve chapters, one per
+layer, each explaining the tooling, the alternatives that were tried and what the numbers
+said, and a marimo notebook that drives the real pipeline so a reader can change the chunker,
+the retrieval strategy, k, the filters, the prompt version and the model and watch the numbers
+move. The chapters point at notebook sections and the notebook points back at the chapters.
+
+- **Course:** https://flashy-fur-afc.notion.site/quarterly-RAG-a-course-on-production-RAG-3d21f11d4bc881a6b753c2c819817428
+- **Notebook:** `notebooks/course.py`. Once the corpus, chunks and indexes exist, `make course`
+  opens it in your browser as an app: the controls and the outputs, without the code.
+  Sections 0 to 6 run on open and cost one embedding call per retrieval; every cell that
+  calls a chat model waits for a run button. `make course-edit` opens the same notebook in
+  marimo's editor for changing the code, and `uv run python notebooks/course.py` runs the
+  ungated cells as a script and exits.
 
 ## Architecture
 
@@ -276,22 +292,6 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 - [x] RAG-031 a question naming two companies asks each of them
 - [x] RAG-015 writeup
 - [ ] RAG-032 retrieval is unstable to phrasing, per company
-
-## The course
-
-What this repository learned is written up as a public course: twelve chapters, one per
-layer, each explaining the tooling, the alternatives that were tried and what the numbers
-said, and a marimo notebook that drives the real pipeline so a reader can change the chunker,
-the retrieval strategy, k, the filters, the prompt version and the model and watch the numbers
-move. The chapters point at notebook sections and the notebook points back at the chapters.
-
-- **Course:** https://flashy-fur-afc.notion.site/quarterly-RAG-a-course-on-production-RAG-3d21f11d4bc881a6b753c2c819817428
-- **Notebook:** `notebooks/course.py`. Once the corpus, chunks and indexes exist, `make course`
-  opens it in your browser as an app: the controls and the outputs, without the code.
-  Sections 0 to 6 run on open and cost one embedding call per retrieval; every cell that
-  calls a chat model waits for a run button. `make course-edit` opens the same notebook in
-  marimo's editor for changing the code, and `uv run python notebooks/course.py` runs the
-  ungated cells as a script and exits.
 
 ## Reading and courses
 
