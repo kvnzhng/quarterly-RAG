@@ -71,9 +71,14 @@ def main() -> None:
             st.success(f"{status['model']}\n\nprompt v{status['prompt_version']}")
             st.caption("tracing on" if status["tracing"] else "tracing off")
 
-    question = st.text_input("Question", value=EXAMPLES[0])
+    # A form, so Enter in the box asks the question. A bare `st.text_input` next to a
+    # `st.button` re-runs the script on the keypress with the button reading false, which
+    # swallows it and makes the page feel broken. A form submits on either (RAG-030).
+    with st.form("ask", clear_on_submit=False):
+        question = st.text_input("Question", value=EXAMPLES[0])
+        asked = st.form_submit_button("Ask", type="primary")
     st.caption("Try: " + " · ".join(EXAMPLES[1:]))
-    if st.button("Ask", type="primary") and question.strip():
+    if asked and question.strip():
         with st.spinner("Retrieving, answering, and checking every sentence"):
             try:
                 st.session_state["result"] = fetch(

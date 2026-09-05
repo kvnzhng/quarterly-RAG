@@ -1,6 +1,6 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-030
+> Next ID: RAG-031
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
@@ -12,6 +12,7 @@ against that baseline. Phase 3 is production readiness and the writeup.
 Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
+
 
 
 
@@ -43,6 +44,15 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Done when:** a reader can understand the tradeoffs from the README alone.
 
 ## Done
+
+### RAG-030: Enter does not submit a question in the page
+- **Type:** fix
+- **Created:** 2026-09-05 | **Completed:** 2026-09-05
+- **Competency:** production readiness
+- **Description:** Typing a question in the Streamlit page and pressing Enter did nothing; the Ask button had to be clicked. Streamlit re-runs the script when the text input changes, but the button is a separate widget that reads false on that re-run, so the keypress was swallowed. Reported by Kevin on the first real use of the page (RAG-014).
+- **Done when:** Enter in the question box asks the question, the button still works, and the model is not called twice for one question.
+- **Verified:** the input and the button are one `st.form`, which submits on either. Used the running page: typing a question and pressing Enter answered it, the page now shows its own "Press Enter to submit form" hint, and one question produced one answer. No unit test, because this is Streamlit widget behaviour and a test of it would be a test of Streamlit.
+
 
 ### RAG-014: API and minimal UI
 - **Type:** feat
