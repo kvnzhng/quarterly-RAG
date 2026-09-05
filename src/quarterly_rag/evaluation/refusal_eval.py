@@ -18,9 +18,10 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from quarterly_rag.config import Settings
-from quarterly_rag.evaluation.questions import load_questions, questions_path
+from quarterly_rag.evaluation.questions import EvalQuestion, load_questions, questions_path
 from quarterly_rag.evaluation.retrieval_eval import REPORTS_DIRNAME, RunRecord, build_run_record
-from quarterly_rag.generation.refusal import GateSettings
+from quarterly_rag.generation.refusal import GateOutcome, GateSettings
+from quarterly_rag.observability.tracing import BOOLEAN
 from quarterly_rag.pipeline import Pipeline
 
 
@@ -196,6 +197,7 @@ def run_refusal_eval(
     for question in questions:
         outcome = pipeline.ask(question.question, k=k)
         best = max((r.score for r in outcome.results), default=None)
+        _score_trace(pipeline, outcome, question)
         report.results.append(
             RefusalResult(
                 question_id=question.id,
@@ -209,7 +211,34 @@ def run_refusal_eval(
             )
         )
     report.sweep = sweep_threshold(report.results, thresholds)
+    pipeline.tracer.flush()
     return report
+
+
+def _score_trace(pipeline: Pipeline, outcome: GateOutcome, question: EvalQuestion) -> None:
+    """Hang the label's verdict on the trace this question produced (RAG-013).
+
+    A trace shows what the system did; a score says whether it should have. Both on the same
+    object is what makes a Langfuse trace list worth opening after a bad eval.
+    """
+    if not outcome.trace_id:
+        return
+    should_refuse = question.type == "unanswerable"
+    pipeline.tracer.score(
+        outcome.trace_id,
+        "refused_correctly",
+        outcome.refused == should_refuse,
+        data_type=BOOLEAN,
+        comment=f"{question.id}: {'must refuse' if should_refuse else 'must answer'}",
+    )
+    if should_refuse and outcome.refused and question.refusal_reason:
+        pipeline.tracer.score(
+            outcome.trace_id,
+            "reason_matches_label",
+            outcome.reason == question.refusal_reason,
+            data_type=BOOLEAN,
+            comment=f"expected {question.refusal_reason}, got {outcome.reason}",
+        )
 
 
 def gate_settings(settings: Settings, min_score: float | None = None) -> GateSettings:

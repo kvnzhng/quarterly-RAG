@@ -1,4 +1,4 @@
-.PHONY: setup lint fmt test test-all doctor models langfuse-up langfuse-down eval eval-accept
+.PHONY: setup lint fmt test test-all doctor models langfuse-up langfuse-down langfuse-logs langfuse-reset eval eval-accept
 
 # Ollama helpers talk to the server's HTTP API, so no local `ollama` CLI is needed.
 # OLLAMA_HOST wins if set; otherwise it is derived from LLM_BASE_URL in .env (minus /v1).
@@ -36,11 +36,23 @@ models:         ## Pull the configured chat + embedding models onto the Ollama a
 	  curl -sS --fail -X POST "$(OLLAMA_HOST)/api/pull" -d "{\"name\":\"$$m\",\"stream\":false}" || exit 1; echo; \
 	done
 
-langfuse-up:    ## Start self-hosted Langfuse (RAG-013)
-	docker compose -f infra/docker-compose.langfuse.yml up -d
+LANGFUSE_COMPOSE = docker compose --env-file .env -f infra/docker-compose.langfuse.yml
 
-langfuse-down:
-	docker compose -f infra/docker-compose.langfuse.yml down
+langfuse-up:    ## Start self-hosted Langfuse and wait for it to answer (RAG-013)
+	$(LANGFUSE_COMPOSE) up -d
+	@echo "waiting for Langfuse; first boot runs database migrations and takes a few minutes"
+	@until curl -sS --fail http://localhost:3000/api/public/health >/dev/null 2>&1; do \
+	  printf .; sleep 5; \
+	done; echo " ready at http://localhost:3000"
+
+langfuse-down:  ## Stop Langfuse, keeping its data
+	$(LANGFUSE_COMPOSE) down
+
+langfuse-logs:  ## Follow the Langfuse web and worker logs
+	$(LANGFUSE_COMPOSE) logs -f langfuse-web langfuse-worker
+
+langfuse-reset: ## Stop Langfuse and delete its volumes, losing every trace
+	$(LANGFUSE_COMPOSE) down -v
 
 eval:           ## Retrieval + generation + refusal evals against the committed baseline (~5 min, calls a model)
 	uv run rag eval baseline

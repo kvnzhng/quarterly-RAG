@@ -179,6 +179,9 @@ class GateOutcome:
     refusal: Refusal | None = None
     answer: Answer | None = None
     results: list[RetrievedChunk] = field(default_factory=list)
+    trace_id: str = ""
+    """The Langfuse trace this question produced, empty when tracing is off (RAG-013).
+    Carried so an eval can hang its score on the trace the answer came from."""
 
     @property
     def refused(self) -> bool:

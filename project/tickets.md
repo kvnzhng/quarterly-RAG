@@ -13,6 +13,13 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
+### RAG-013: Langfuse tracing (self-hosted)
+- **Type:** chore
+- **Created:** 2026-09-03
+- **Competency:** production readiness
+- **Description:** Run Langfuse locally via docker compose (`infra/`). Trace every `rag ask` as ingestion -> retrieval -> rerank -> generation -> verification spans with token counts and latency. Push eval scores to Langfuse as scores on traces.
+- **Done when:** a trace for a refused question and an answered question are visible in the local Langfuse UI. `docs/tradeoffs/observability.md` compares Langfuse vs Phoenix vs MLflow.
+
 ## Backlog
 
 
@@ -31,12 +38,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ### Phase 3: production readiness and writeup
 
-### RAG-013: Langfuse tracing (self-hosted)
-- **Type:** chore
-- **Created:** 2026-09-03
-- **Competency:** production readiness
-- **Description:** Run Langfuse locally via docker compose (`infra/`). Trace every `rag ask` as ingestion -> retrieval -> rerank -> generation -> verification spans with token counts and latency. Push eval scores to Langfuse as scores on traces.
-- **Done when:** a trace for a refused question and an answered question are visible in the local Langfuse UI. `docs/tradeoffs/observability.md` compares Langfuse vs Phoenix vs MLflow.
 
 ### RAG-014: API and minimal UI
 - **Type:** feat

@@ -115,6 +115,60 @@ def check_embed(embedder: Embedder) -> CheckResult:
     )
 
 
+def check_langfuse(settings: Settings) -> CheckResult:
+    """Is tracing configured, and does the server accept the keys? (RAG-013)
+
+    A tracer that cannot reach its server is silent by design, because tracing must never
+    break an answer. This is where that silence gets broken.
+    """
+    from quarterly_rag.observability.tracing import configured
+
+    if not configured(settings):
+        return CheckResult(
+            "langfuse tracing",
+            "warn",
+            "not configured; set LANGFUSE_HOST and both keys to trace, or leave it off",
+        )
+    import httpx
+
+    host = settings.langfuse_host.rstrip("/")
+    try:
+        health, elapsed = _timed(
+            lambda: httpx.get(f"{host}/api/public/health", timeout=settings.request_timeout_s)
+        )
+    except httpx.HTTPError as exc:
+        return CheckResult("langfuse tracing", "fail", f"{host} unreachable: {exc}")
+    if health.status_code != 200:
+        return CheckResult("langfuse tracing", "fail", f"{host} answered HTTP {health.status_code}")
+    try:
+        projects = httpx.get(
+            f"{host}/api/public/projects",
+            auth=(settings.langfuse_public_key, settings.langfuse_secret_key),
+            timeout=settings.request_timeout_s,
+        )
+    except httpx.HTTPError as exc:
+        return CheckResult("langfuse tracing", "fail", f"{host} refused the keys: {exc}")
+    if projects.status_code == 401:
+        return CheckResult(
+            "langfuse tracing",
+            "fail",
+            "the keys were rejected; they must match the LANGFUSE_INIT_* values the stack "
+            "was first started with, or `make langfuse-reset` and start again",
+        )
+    if projects.status_code != 200:
+        return CheckResult(
+            "langfuse tracing", "fail", f"projects endpoint answered HTTP {projects.status_code}"
+        )
+    names = [p.get("name", "?") for p in (projects.json().get("data") or [])]
+    version = health.json().get("version", "?")
+    return CheckResult(
+        "langfuse tracing",
+        "ok",
+        f"v{version} at {host}, project {', '.join(names) or 'none'}",
+        latency_ms=elapsed,
+    )
+
+
 def _with_path_hint(result: CheckResult, provider: str, base_url: str, env_var: str) -> CheckResult:
     """A 404 from an OpenAI-compatible URL without `/v1` is almost always the missing suffix."""
     if (
@@ -146,7 +200,7 @@ def run_doctor(
     # Resolved at call time so tests can monkeypatch the module-level factories.
     llm_factory = llm_factory or build_llm
     embedder_factory = embedder_factory or build_embedder
-    results = [check_data_dirs(settings)]
+    results = [check_data_dirs(settings), check_langfuse(settings)]
 
     try:
         llm = llm_factory(settings)

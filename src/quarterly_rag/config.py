@@ -122,6 +122,13 @@ class Settings(BaseSettings):
     langfuse_host: str = "http://localhost:3000"
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
+    langfuse_environment: str = Field(
+        default="local",
+        description=(
+            "Environment label on every trace. Lets one Langfuse project hold traces from a "
+            "laptop and from a deployment without mixing them (RAG-013)."
+        ),
+    )
 
     # --- Paths ------------------------------------------------------------------
     data_dir: Path = Path("data")

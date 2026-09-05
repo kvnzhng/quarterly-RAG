@@ -28,7 +28,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from quarterly_rag.chunking.base import Chunk
-from quarterly_rag.generation.base import LLM, ChatMessage
+from quarterly_rag.generation.base import LLM, ChatMessage, ChatResponse
 from quarterly_rag.generation.calculations import (
     Calculation,
     matching_calculation,
@@ -48,10 +48,13 @@ __all__ = [
     "DerivedNumber",
     "answer_question",
     "load_prompt",
+    "no_passages",
     "parse_tags",
+    "respond",
     "split_sentences",
     "tag_for",
     "verify",
+    "verify_response",
 ]
 
 DEFAULT_PROMPT_VERSION = "1"
@@ -120,6 +123,10 @@ class Answer(BaseModel):
     stop_reason: str | None = None
     """As the provider reported it. `length` means the budget cut the answer off, so an
     unparsed calculation is the budget's doing and not the model's."""
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    """What the provider charged for this answer, when it says. Carried so the trace can
+    record it without the generation layer knowing that tracing exists (RAG-013)."""
 
     @property
     def truncated(self) -> bool:
@@ -183,6 +190,7 @@ def verify(
     model: str = "",
     prompt_version: str = DEFAULT_PROMPT_VERSION,
     stop_reason: str | None = None,
+    usage: tuple[int | None, int | None] = (None, None),
 ) -> Answer:
     """Turn raw model output into a labelled `Answer`. Nothing here calls a model."""
     stripped = raw_text.strip()
@@ -197,6 +205,8 @@ def verify(
             model=model,
             prompt_version=prompt_version,
             stop_reason=stop_reason,
+            input_tokens=usage[0],
+            output_tokens=usage[1],
         )
 
     prose, calc_lines = split_calculations(stripped)
@@ -260,6 +270,8 @@ def verify(
         model=model,
         prompt_version=prompt_version,
         stop_reason=stop_reason,
+        input_tokens=usage[0],
+        output_tokens=usage[1],
     )
 
 
@@ -313,6 +325,60 @@ def _citation(tag: str, chunk: Chunk) -> Citation:
     )
 
 
+def no_passages(llm: LLM, prompt_version: str = DEFAULT_PROMPT_VERSION) -> Answer:
+    """Nothing was retrieved, so there is nothing to ask about and no model call to make."""
+    return Answer(
+        text=INSUFFICIENT,
+        raw_text="",
+        prose=INSUFFICIENT,
+        insufficient_evidence=True,
+        model=getattr(llm, "label", ""),
+        prompt_version=prompt_version,
+    )
+
+
+def respond(
+    llm: LLM,
+    question: str,
+    chunks: Sequence[Chunk],
+    *,
+    max_tokens: int = DEFAULT_MAX_TOKENS,
+    prompt_version: str = DEFAULT_PROMPT_VERSION,
+) -> ChatResponse:
+    """The model call on its own, with nothing checked yet.
+
+    Separate from `verify` so a caller that times its stages can tell how long the model
+    took from how long checking it took (RAG-013). `answer_question` is still the one call
+    for everyone who does not care.
+    """
+    messages = [
+        ChatMessage(role="system", content=load_prompt(prompt_version)),
+        ChatMessage(
+            role="user",
+            content=f"Passages:\n\n{render_passages(chunks)}\n\nQuestion: {question}",
+        ),
+    ]
+    return llm.chat(messages, max_tokens=max_tokens)
+
+
+def verify_response(
+    response: ChatResponse,
+    chunks: Sequence[Chunk],
+    *,
+    model: str = "",
+    prompt_version: str = DEFAULT_PROMPT_VERSION,
+) -> Answer:
+    """`verify`, given the whole response, so usage and stop reason are not dropped."""
+    return verify(
+        response.text,
+        chunks,
+        model=model,
+        prompt_version=prompt_version,
+        stop_reason=response.stop_reason,
+        usage=(response.input_tokens, response.output_tokens),
+    )
+
+
 def answer_question(
     llm: LLM,
     question: str,
@@ -323,25 +389,6 @@ def answer_question(
 ) -> Answer:
     """Ask the model, then verify what it said against the passages it was given."""
     if not chunks:
-        return Answer(
-            text=INSUFFICIENT,
-            raw_text="",
-            insufficient_evidence=True,
-            model=getattr(llm, "label", ""),
-            prompt_version=prompt_version,
-        )
-    messages = [
-        ChatMessage(role="system", content=load_prompt(prompt_version)),
-        ChatMessage(
-            role="user",
-            content=f"Passages:\n\n{render_passages(chunks)}\n\nQuestion: {question}",
-        ),
-    ]
-    response = llm.chat(messages, max_tokens=max_tokens)
-    return verify(
-        response.text,
-        chunks,
-        model=llm.label,
-        prompt_version=prompt_version,
-        stop_reason=response.stop_reason,
-    )
+        return no_passages(llm, prompt_version)
+    response = respond(llm, question, chunks, max_tokens=max_tokens, prompt_version=prompt_version)
+    return verify_response(response, chunks, model=llm.label, prompt_version=prompt_version)

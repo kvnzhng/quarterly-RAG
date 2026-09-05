@@ -31,6 +31,14 @@ from quarterly_rag.generation.answer import (
     tag_for,
 )
 from quarterly_rag.generation.base import LLM
+from quarterly_rag.observability.tracing import (
+    BOOLEAN,
+    CATEGORICAL,
+    NUMERIC,
+    Tracer,
+    build_tracer,
+    trace_metadata,
+)
 from quarterly_rag.retrieval.base import Retriever
 
 GOLD = "gold"
@@ -183,6 +191,7 @@ def run_generation_eval(
     question_types: Sequence[str] = ("lookup",),
     judge: Judge | None = None,
     prompt_version: str | None = None,
+    tracer: Tracer | None = None,
 ) -> GenerationReport:
     if context not in CONTEXTS:
         raise ValueError(f"unknown context {context!r}; expected one of {CONTEXTS}")
@@ -206,28 +215,39 @@ def run_generation_eval(
     )
     prompt_version = prompt_version or settings.answer_prompt_version or DEFAULT_PROMPT_VERSION
     run.prompt_version = prompt_version
+    tracer = tracer if tracer is not None else build_tracer(settings)
+    metadata = trace_metadata(settings, {"context": context, "prompt_version": prompt_version})
     report = GenerationReport(run=run, context=context)
 
     for question in questions:
-        if context == GOLD:
-            chunks = [c for c in corpus if is_relevant(c, question, rule)][:k]
-        else:
-            chunks = [r.chunk for r in retriever.retrieve(question.question, k=k)]
-        answer = answer_question(
-            llm,
-            question.question,
-            chunks,
-            max_tokens=settings.answer_max_tokens,
-            prompt_version=prompt_version,
-        )
-        faithfulness = correctness = None
-        if judge is not None and not answer.insufficient_evidence:
-            passages = {tag_for(i): c.text for i, c in enumerate(chunks, start=1)}
-            judged = judge.faithfulness(answer, passages)
-            faithfulness = judged.score if judged.claims else None
-            correctness = judge.correctness(question.question, question.gold_answer, answer.text)
-            report.claims.extend(judged.claims)
-            report.verified_sentences.update(_verified_sentences(answer))
+        with tracer.span(
+            f"eval {question.id}",
+            input={"question": question.question, "type": question.type},
+            metadata=metadata,
+        ) as trace:
+            if context == GOLD:
+                chunks = [c for c in corpus if is_relevant(c, question, rule)][:k]
+            else:
+                chunks = [r.chunk for r in retriever.retrieve(question.question, k=k)]
+            answer = answer_question(
+                llm,
+                question.question,
+                chunks,
+                max_tokens=settings.answer_max_tokens,
+                prompt_version=prompt_version,
+            )
+            faithfulness = correctness = None
+            if judge is not None and not answer.insufficient_evidence:
+                passages = {tag_for(i): c.text for i, c in enumerate(chunks, start=1)}
+                judged = judge.faithfulness(answer, passages)
+                faithfulness = judged.score if judged.claims else None
+                correctness = judge.correctness(
+                    question.question, question.gold_answer, answer.text
+                )
+                report.claims.extend(judged.claims)
+                report.verified_sentences.update(_verified_sentences(answer))
+            trace.update(output={"answer": answer.text, "refused": answer.insufficient_evidence})
+            _score_answer(tracer, trace.trace_id, answer, faithfulness, correctness)
         report.results.append(
             AnswerResult(
                 question_id=question.id,
@@ -251,7 +271,25 @@ def run_generation_eval(
                 answer=answer.text,
             )
         )
+    tracer.flush()
     return report
+
+
+def _score_answer(
+    tracer: Tracer,
+    trace_id: str,
+    answer: Answer,
+    faithfulness: float | None,
+    correctness: str | None,
+) -> None:
+    """Put the eval's verdicts on the trace that produced them (RAG-013)."""
+    if not trace_id:
+        return
+    tracer.score(trace_id, "fully_grounded", answer.fully_grounded, data_type=BOOLEAN)
+    if faithfulness is not None:
+        tracer.score(trace_id, "faithfulness", faithfulness, data_type=NUMERIC)
+    if correctness is not None:
+        tracer.score(trace_id, "correct", correctness, data_type=CATEGORICAL)
 
 
 def _calculation_rates(answered: Sequence[AnswerResult]) -> dict[str, float]:

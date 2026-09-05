@@ -9,7 +9,7 @@ from typer.testing import CliRunner
 from quarterly_rag import doctor as doctor_module
 from quarterly_rag.cli import app
 from quarterly_rag.config import Settings
-from quarterly_rag.doctor import CheckResult, run_doctor
+from quarterly_rag.doctor import CheckResult, check_langfuse, run_doctor
 from quarterly_rag.errors import ModelServerError
 from quarterly_rag.generation.base import ChatMessage, ChatResponse
 
@@ -73,12 +73,22 @@ def test_all_checks_pass(settings: Settings) -> None:
     results = by_name(run(settings))
     assert list(results) == [
         "data dirs writable",
+        "langfuse tracing",
         "chat model listed",
         "chat round-trip",
         "embedding model listed",
         "embedding round-trip",
     ]
-    assert {r.status for r in results.values()} == {"ok"}
+    # Tracing is optional and the fixture configures none of it, so it warns rather than
+    # passing. Nothing fails, which is what "the setup can run the pipeline" means.
+    assert results["langfuse tracing"].status == "warn"
+    assert {name: r.status for name, r in results.items() if name != "langfuse tracing"} == {
+        "data dirs writable": "ok",
+        "chat model listed": "ok",
+        "chat round-trip": "ok",
+        "embedding model listed": "ok",
+        "embedding round-trip": "ok",
+    }
     assert "8-dim" in results["embedding round-trip"].detail
     assert results["chat round-trip"].latency_ms is not None
     assert (settings.data_dir / "indexes").is_dir()
@@ -172,3 +182,25 @@ def test_cli_doctor_exit_codes(monkeypatch, settings: Settings) -> None:
     result = CliRunner().invoke(app, ["doctor"])
     assert result.exit_code == 1
     assert "1 check(s) failed" in result.stdout
+
+
+def test_langfuse_unconfigured_is_a_warning_not_a_failure(settings: Settings) -> None:
+    """Tracing is optional, so an empty configuration must not make `rag doctor` fail."""
+    result = check_langfuse(settings.model_copy(update={"langfuse_public_key": ""}))
+    assert result.status == "warn"
+    assert "not configured" in result.detail
+
+
+def test_langfuse_unreachable_is_a_failure(settings: Settings) -> None:
+    """A configured tracer that cannot reach its server is silent everywhere but here."""
+    configured = settings.model_copy(
+        update={
+            "langfuse_host": "http://127.0.0.1:9",
+            "langfuse_public_key": "pk",
+            "langfuse_secret_key": "sk",
+            "request_timeout_s": 0.5,
+        }
+    )
+    result = check_langfuse(configured)
+    assert result.status == "fail"
+    assert "unreachable" in result.detail

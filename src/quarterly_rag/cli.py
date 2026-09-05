@@ -911,6 +911,20 @@ def eval_check() -> None:
     console.print("[green]every span resolves and every lookup answer is in its evidence[/green]")
 
 
+def _finish_trace(pipeline: Pipeline, outcome) -> None:
+    """Send the trace and say where to read it.
+
+    A CLI process exits in well under the SDK's five-second batch interval, so without an
+    explicit flush the trace is built and then thrown away with the process (RAG-013).
+    """
+    if not pipeline.tracer.enabled:
+        return
+    pipeline.tracer.flush()
+    if outcome.trace_id:
+        host = get_settings().langfuse_host.rstrip("/")
+        console.print(f"[dim]trace {outcome.trace_id} at {host}[/dim]")
+
+
 @app.command()
 def ask(
     question: Annotated[str, typer.Argument(help="A question about the filings.")],
@@ -963,6 +977,7 @@ def ask(
                 )
             console.print(table)
         console.print(f"[dim]{llm.label} | prompt v{settings.answer_prompt_version}[/dim]")
+        _finish_trace(pipeline, outcome)
         return
 
     answer = outcome.answer
@@ -1005,6 +1020,7 @@ def ask(
     if answer.truncated:
         console.print("[yellow]the answer hit the token budget; raise ANSWER_MAX_TOKENS[/yellow]")
     console.print(f"[dim]{llm.label} | prompt v{answer.prompt_version}[/dim]")
+    _finish_trace(pipeline, outcome)
 
 
 # Planned subcommands (see project/tickets.md):
