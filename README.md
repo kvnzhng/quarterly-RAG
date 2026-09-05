@@ -291,7 +291,17 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 - [x] RAG-030 Enter submits a question in the page
 - [x] RAG-031 a question naming two companies asks each of them
 - [x] RAG-015 writeup
+- [ ] RAG-039 which nine questions sit below rank 20, and why
+- [ ] RAG-040 `gpt-5.6-sol` on the same eval set, with dollars and seconds per question
+- [ ] RAG-041 eval set v1, the second labelling round
 - [ ] RAG-032 retrieval is unstable to phrasing, per company
+- [ ] RAG-042 the gate writes per-question results and takes a tolerance per metric
+- [ ] RAG-043 the gate covers `derived` and `cross_period`
+- [ ] RAG-044 `q052` leaks past every model's refusal
+- [ ] RAG-045 embedding model comparison
+- [ ] RAG-046 a prompt v2 wording that keeps the arithmetic without the refusals
+- [ ] RAG-047 Langfuse scores and spans disagree on environment
+- [ ] RAG-048 a third company with a different fiscal calendar
 
 ## Reading and courses
 
