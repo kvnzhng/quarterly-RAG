@@ -27,7 +27,8 @@ ADR-003 also stands: the defaults run on a laptop with no paid API and no requir
 ## Consequences
 
 - A trace shows where the time goes. On one answered question: generation 8,423 ms, retrieval 1,147 ms, verification 4 ms. The deterministic checking is free next to the model call, and that is now visible rather than argued.
-- Tracing costs about 150 ms per question, plus one-off SDK import on the first call in a process. Measured, in the tradeoff page.
+- Tracing costs about 150 ms per question, plus a one-off SDK import on the first call in a process. Measured, in the tradeoff page.
+- A configured server that is not answering is detected once, with a two-second health probe, rather than discovered inside `flush()`. Without the probe a dead Langfuse cost 13.9 s per question against a 3.0 s baseline, because the OpenTelemetry exporter retries with backoff. The answer was always correct; it was the exit that hung.
 - Running Langfuse costs 6 containers, 2.6 GB of memory and 5.6 GB of images. Anyone who cannot spare that gets the same pipeline with tracing off, or writes a Phoenix tracer.
 - Langfuse v4 defaults to `events_only` mode, where the legacy `/api/public/traces` endpoint is gone. Reads go through `/api/public/v2/observations` and the metrics API. The integration test uses the v2 endpoint, and anything written against the old API will need updating.
 - The compose file is upstream's, pinned, with a healthcheck and telemetry off, so re-pinning to a later Langfuse is a small diff.

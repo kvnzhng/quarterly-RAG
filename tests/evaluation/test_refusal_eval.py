@@ -91,3 +91,70 @@ def test_reason_matching_accepts_any_stage_two_reason() -> None:
     assert lenient.reason_matches  # both mean "the evidence did not hold up"
     wrong_way = result("c", should=False, refused=True)
     assert not wrong_way.reason_matches
+
+
+def test_the_refusal_eval_scores_the_trace_against_the_label(make_chunk) -> None:
+    """Both score names, and the boolean that says the system did the right thing."""
+    from quarterly_rag.evaluation.questions import EvalQuestion
+    from quarterly_rag.evaluation.refusal_eval import _score_trace
+    from quarterly_rag.generation.refusal import GateOutcome, Refusal
+
+    class Recorder:
+        def __init__(self) -> None:
+            self.scores: list[tuple] = []
+
+        def score(self, trace_id, name, value, *, data_type="NUMERIC", comment=None):
+            self.scores.append((name, value, data_type))
+
+    class FakePipeline:
+        def __init__(self) -> None:
+            self.tracer = Recorder()
+
+    question = EvalQuestion(
+        id="q050",
+        question="What were Microsoft's net sales?",
+        ticker="AAPL",
+        type="unanswerable",
+        gold_answer="",
+        refusal_reason="out_of_scope",
+        evidence=[],
+    )
+    pipeline = FakePipeline()
+    outcome = GateOutcome(
+        refusal=Refusal(reason="out_of_scope", detail="not in the corpus"), trace_id="trace-1"
+    )
+    _score_trace(pipeline, outcome, question)
+    assert pipeline.tracer.scores == [
+        ("refused_correctly", True, "BOOLEAN"),
+        ("reason_matches_label", True, "BOOLEAN"),
+    ]
+
+
+def test_answering_a_question_that_had_to_be_refused_scores_false(make_chunk) -> None:
+    from quarterly_rag.evaluation.questions import EvalQuestion
+    from quarterly_rag.evaluation.refusal_eval import _score_trace
+    from quarterly_rag.generation.refusal import GateOutcome
+
+    class Recorder:
+        def __init__(self) -> None:
+            self.scores: list[tuple] = []
+
+        def score(self, trace_id, name, value, *, data_type="NUMERIC", comment=None):
+            self.scores.append((name, value))
+
+    class FakePipeline:
+        def __init__(self) -> None:
+            self.tracer = Recorder()
+
+    question = EvalQuestion(
+        id="q052",
+        question="Which customers account for Nvidia's largest sales?",
+        ticker="NVDA",
+        type="unanswerable",
+        gold_answer="",
+        refusal_reason="insufficient_evidence",
+        evidence=[],
+    )
+    pipeline = FakePipeline()
+    _score_trace(pipeline, GateOutcome(trace_id="trace-1"), question)
+    assert pipeline.tracer.scores == [("refused_correctly", False)]

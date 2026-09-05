@@ -4,7 +4,7 @@ A local, open-source Retrieval-Augmented Generation system that answers question
 
 **Stack:** Python 3.12, uv, plain Python orchestration (no LangChain), any OpenAI-compatible model server (Ollama by default, local or on the network) or the Anthropic API, embeddings configured separately, ChromaDB (default) and FAISS (measured, kept), rank_bm25, a custom LLM judge (RAGAS was measured and rejected), pytest, ruff. Planned: Langfuse (self-hosted), FastAPI, Streamlit.
 
-## Current state (2026-09-04)
+## Current state (2026-09-05)
 
 Phases one and two are done. The pipeline answers questions from the filings or refuses with a reason, and every layer is measured against a 63-question human-verified eval set. Ten ADRs record the decisions.
 

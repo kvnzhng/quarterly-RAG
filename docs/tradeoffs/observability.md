@@ -47,18 +47,32 @@ Langfuse memory is the sum of `docker stats` at idle: ClickHouse 937 MB, web 817
 672 MB, MinIO 82 MB, Postgres 54 MB, Redis 17 MB. ClickHouse and the two Node services are
 the whole cost; the datastores around them are rounding.
 
-**Tracing costs about 150 ms per question**, `gpt-oss`-sized model excluded. Five runs of the
-same question each way, `qwen3.8-27b-64k`, medians:
+**Tracing costs about 150 ms per question.** Five runs of the same question each way,
+`qwen3.8-27b-64k` answering, medians of the wall clock:
 
 | | Median | Runs |
 |---|---|---|
 | tracing on | 3.18 s | 4.49, 3.13, 3.18, 3.08, 3.34 |
-| tracing off | 3.03 s | 3.02, 3.02, 2.92, 3.15, 3.03 |
+| tracing off | 3.02 s | 3.02, 3.02, 2.92, 3.15, 3.03 |
 
 The first traced run cost 4.49 s. That is the SDK import and the first connection, paid once
 per process, and it is why the SDK is imported inside `build_tracer` rather than at module
 scope. A short-lived CLI also has to call `flush()` explicitly, because the SDK batches on a
 five-second timer that a process exiting in three seconds never reaches.
+
+**A tracer pointed at nothing used to cost eleven seconds.** With `LANGFUSE_HOST` on a closed
+port, `rag ask` still answered, but took 13.9 s against the 3.0 s baseline: the OpenTelemetry
+exporter retries with backoff inside that explicit `flush()`. `build_tracer` now probes
+`/api/public/health` once with a two-second timeout and falls back to the tracer that does
+nothing, which brings the same command back to 3.14 s. Wrong keys were never expensive, 3.89
+s, because authentication fails immediately rather than retrying.
+
+| Langfuse state | `rag ask` wall clock | Answer |
+|---|---|---|
+| healthy | 3.10 s | traced |
+| host unreachable, before the probe | 13.91 s | answered, untraced |
+| host unreachable, after the probe | 3.14 s | answered, untraced |
+| wrong secret key | 3.89 s | answered, untraced |
 
 **What a trace actually shows.** One answered question, `qwen3.8-27b-64k`, seven spans:
 
@@ -82,7 +96,7 @@ a decision.
 
 | Criterion | Langfuse | Phoenix | MLflow |
 |---|---|---|---|
-| Scores on traces | measured here: `create_score(trace_id=...)`, five score names in use | annotations and evaluation runs, not measured | evaluation tables, trace-level scoring weaker, not measured |
+| Scores on traces | measured here: `faithfulness`, `correct`, `fully_grounded` and `refused` written by a real eval run and read back filtered by trace id | annotations and evaluation runs, not measured | evaluation tables, trace-level scoring weaker, not measured |
 | Idle memory | 2,579 MB | 453 MB | 77 MB |
 | Cold start | ~2 min first boot | 6.2 s | 5.2 s |
 | Runtime cost per question | 150 ms | not measured | not measured |

@@ -282,8 +282,17 @@ def _score_answer(
     faithfulness: float | None,
     correctness: str | None,
 ) -> None:
-    """Put the eval's verdicts on the trace that produced them (RAG-013)."""
+    """Put the eval's verdicts on the trace that produced them (RAG-013).
+
+    A refusal is scored as a refusal and nothing else. `fully_grounded` is trivially true of
+    an answer that made no claims, and the report already computes its rate over answered
+    questions only; scoring it here anyway would make the average in Langfuse disagree with
+    the number in the report.
+    """
     if not trace_id:
+        return
+    if answer.insufficient_evidence:
+        tracer.score(trace_id, "refused", True, data_type=BOOLEAN)
         return
     tracer.score(trace_id, "fully_grounded", answer.fully_grounded, data_type=BOOLEAN)
     if faithfulness is not None:

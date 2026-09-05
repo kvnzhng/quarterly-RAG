@@ -131,3 +131,85 @@ def test_the_judge_is_calibrated_against_prose_only(make_chunk) -> None:
         passages,
     )
     assert _verified_sentences(answer) == {"Net sales rose $15,381 million [c1]."}
+
+
+def test_the_eval_scores_the_trace_it_produced(make_chunk) -> None:
+    """`scores on traces` is the ticket's point, and nothing was asserting the names."""
+    from quarterly_rag.evaluation.generation_eval import _score_answer
+    from quarterly_rag.generation.answer import verify
+
+    class Recorder:
+        def __init__(self) -> None:
+            self.scores: list[tuple] = []
+
+        def score(self, trace_id, name, value, *, data_type="NUMERIC", comment=None):
+            self.scores.append((trace_id, name, value, data_type))
+
+    passages = [make_chunk("a:1-2", "(In millions)\nTotal net sales | 109,417 | 94,036")]
+    answer = verify("Total net sales were $109,417 million [c1].", passages)
+    recorder = Recorder()
+    _score_answer(recorder, "trace-1", answer, 0.75, "correct")
+
+    assert recorder.scores == [
+        ("trace-1", "fully_grounded", True, "BOOLEAN"),
+        ("trace-1", "faithfulness", 0.75, "NUMERIC"),
+        ("trace-1", "correct", "correct", "CATEGORICAL"),
+    ]
+
+
+def test_no_trace_means_no_scores(make_chunk) -> None:
+    """With tracing off there is nothing to hang a score on, and that is not an error."""
+    from quarterly_rag.evaluation.generation_eval import _score_answer
+    from quarterly_rag.generation.answer import verify
+
+    class Recorder:
+        def __init__(self) -> None:
+            self.scores: list[tuple] = []
+
+        def score(self, *args, **kwargs):
+            self.scores.append(args)
+
+    answer = verify("Anything [c1].", [make_chunk("a:1-2", "a passage")])
+    recorder = Recorder()
+    _score_answer(recorder, "", answer, 1.0, "correct")
+    assert recorder.scores == []
+
+
+def test_an_unjudged_answer_scores_only_what_was_measured(make_chunk) -> None:
+    from quarterly_rag.evaluation.generation_eval import _score_answer
+    from quarterly_rag.generation.answer import verify
+
+    class Recorder:
+        def __init__(self) -> None:
+            self.names: list[str] = []
+
+        def score(self, trace_id, name, value, *, data_type="NUMERIC", comment=None):
+            self.names.append(name)
+
+    answer = verify("Anything [c1].", [make_chunk("a:1-2", "a passage")])
+    recorder = Recorder()
+    _score_answer(recorder, "trace-1", answer, None, None)
+    assert recorder.names == ["fully_grounded"]
+
+
+def test_a_refusal_is_scored_as_a_refusal_and_nothing_else(make_chunk) -> None:
+    """`fully_grounded` is trivially true of an answer that made no claims.
+
+    Scoring it anyway would make the average in Langfuse disagree with the rate in the
+    report, which counts only answered questions.
+    """
+    from quarterly_rag.evaluation.generation_eval import _score_answer
+    from quarterly_rag.generation.answer import verify
+
+    class Recorder:
+        def __init__(self) -> None:
+            self.scores: list[tuple] = []
+
+        def score(self, trace_id, name, value, *, data_type="NUMERIC", comment=None):
+            self.scores.append((name, value, data_type))
+
+    refusal = verify("INSUFFICIENT_EVIDENCE", [make_chunk("a:1-2", "a passage")])
+    assert refusal.insufficient_evidence
+    recorder = Recorder()
+    _score_answer(recorder, "trace-1", refusal, None, None)
+    assert recorder.scores == [("refused", True, "BOOLEAN")]

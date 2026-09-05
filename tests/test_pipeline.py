@@ -8,7 +8,8 @@ same code, so both are checked here.
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -176,3 +177,33 @@ def test_no_retrieved_passages_means_no_model_call(make_chunk) -> None:
     outcome = pipeline.ask("What were Apple's net sales?", k=5)
     assert outcome.refused
     assert "generation" not in tracer.names()
+
+
+def test_a_model_failure_reaches_the_caller_even_when_traced(hit) -> None:
+    """The bug this guards: a traced `ask` used to swallow the model's error and return None.
+
+    `RecordingTracer` cannot catch it, because it has no try around its yield. Only the real
+    `LangfuseTracer` shape does, so this test uses that against a fake client.
+    """
+    from quarterly_rag.errors import ModelServerError
+    from quarterly_rag.observability.tracing import LangfuseTracer
+
+    class MinimalClient:
+        """Enough of the SDK for the tracer to think it is recording."""
+
+        def start_as_current_observation(self, **kwargs):
+            return nullcontext(SimpleNamespace(trace_id="t", update=lambda **_: None))
+
+        def create_score(self, **kwargs) -> None:
+            return None
+
+        def flush(self) -> None:
+            return None
+
+    class BrokenLLM(FakeLLM):
+        def chat(self, messages, *, temperature=0.0, max_tokens=1024):
+            raise ModelServerError("the model server is down")
+
+    pipeline = build(FakeRetriever([hit]), BrokenLLM("unused"), LangfuseTracer(MinimalClient()))
+    with pytest.raises(ModelServerError, match="the model server is down"):
+        pipeline.ask("What were Apple's net sales?", k=5)

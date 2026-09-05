@@ -45,4 +45,4 @@ The next ticket is **RAG-014, FastAPI and Streamlit**, then RAG-015 the results 
 - Prompt wording moved the RAG-021 numbers more than the rule did; `docs/notes.md` has the comparison.
 - The regression gate is a local command; CI never calls a model, and the `workflow_dispatch` job exists for anyone with a self-hosted runner.
 
-Start by reading `CLAUDE.md`, running `make test` to confirm the tree is healthy, and claiming RAG-013.
+Start by reading `CLAUDE.md`, running `make test` to confirm the tree is healthy, and claiming RAG-014.

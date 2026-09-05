@@ -33,6 +33,13 @@ RETRIEVER = "retriever"
 """Observation kinds this project uses. Langfuse accepts more; these three are the ones the
 pipeline has, and naming them here keeps the string literals out of the pipeline."""
 
+HEALTH_TIMEOUT_S = 2.0
+"""How long to wait for the server before deciding it is not there.
+
+Measured: with `LANGFUSE_HOST` pointing at a closed port, `rag ask` still answered but took
+13.9 s against a 3.0 s baseline, because the exporter retries with backoff inside `flush()`.
+One cheap probe up front turns eleven seconds of retrying into a tracer that does nothing."""
+
 NUMERIC = "NUMERIC"
 BOOLEAN = "BOOLEAN"
 CATEGORICAL = "CATEGORICAL"
@@ -126,6 +133,18 @@ class _LangfuseSpan:
             log.debug("langfuse: span update failed", exc_info=True)
 
 
+def _close(manager: Any, name: str, exc: BaseException | None) -> None:
+    """End a span, whether the body succeeded or not. Failing to close is the tracer's
+    problem and nobody else's, so it is the one thing swallowed here."""
+    try:
+        if exc is None:
+            manager.__exit__(None, None, None)
+        else:
+            manager.__exit__(type(exc), exc, exc.__traceback__)
+    except Exception:
+        log.debug("langfuse: span %s failed to close", name, exc_info=True)
+
+
 class LangfuseTracer:
     """Records to a Langfuse server. Never raises at the call site."""
 
@@ -146,10 +165,21 @@ class LangfuseTracer:
             yield NullSpan()
             return
         try:
-            with manager as observation:
-                yield _LangfuseSpan(observation)
+            observation = manager.__enter__()
         except Exception:
-            log.debug("langfuse: span %s failed to close", name, exc_info=True)
+            log.debug("langfuse: could not enter span %s", name, exc_info=True)
+            yield NullSpan()
+            return
+        # The body's exception must not be caught here. A `@contextmanager` that catches what
+        # is thrown into its `yield` and does not re-raise swallows it for the caller, which
+        # turned a model-server error into a silent `None` from `Pipeline.ask`. Only closing
+        # the span is guarded, because only that is the tracer's own failure to have.
+        try:
+            yield _LangfuseSpan(observation)
+        except BaseException as exc:
+            _close(manager, name, exc)
+            raise
+        _close(manager, name, None)
 
     def score(
         self,
@@ -187,6 +217,19 @@ def configured(settings: Settings) -> bool:
     )
 
 
+def reachable(settings: Settings, timeout: float = HEALTH_TIMEOUT_S) -> bool:
+    """Whether the configured server answers, cheaply and once."""
+    import httpx
+
+    try:
+        response = httpx.get(
+            f"{settings.langfuse_host.rstrip('/')}/api/public/health", timeout=timeout
+        )
+    except httpx.HTTPError:
+        return False
+    return response.status_code == 200
+
+
 def build_tracer(settings: Settings, *, tags: list[str] | None = None) -> Tracer:
     """The configured tracer, or one that does nothing. Never raises.
 
@@ -194,6 +237,9 @@ def build_tracer(settings: Settings, *, tags: list[str] | None = None) -> Tracer
     `rag --help` that never traces anything should not pay for it.
     """
     if not configured(settings):
+        return NullTracer()
+    if not reachable(settings):
+        log.debug("langfuse: %s did not answer; tracing is off", settings.langfuse_host)
         return NullTracer()
     try:
         from langfuse import Langfuse

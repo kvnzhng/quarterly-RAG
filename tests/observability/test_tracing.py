@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
 from quarterly_rag.config import Settings
 from quarterly_rag.observability.tracing import (
     BOOLEAN,
@@ -19,6 +21,7 @@ from quarterly_rag.observability.tracing import (
     Tracer,
     build_tracer,
     configured,
+    reachable,
     trace_metadata,
 )
 
@@ -143,3 +146,36 @@ def test_trace_metadata_names_the_model_and_never_the_endpoint(settings: Setting
     assert metadata["context"] == "gold"
     assert "ai-server.local" not in str(metadata)
     assert not any("url" in key for key in metadata)
+
+
+def test_a_failure_inside_a_span_still_reaches_the_caller() -> None:
+    """Tracing must not eat the error it was watching.
+
+    A `@contextmanager` that catches the exception thrown into its `yield` and does not
+    re-raise suppresses it for the caller. That turned a model-server error into a silent
+    `None` from `Pipeline.ask`, with the server's message gone.
+    """
+    tracer = LangfuseTracer(FakeClient())
+    with pytest.raises(ValueError, match="model server down"), tracer.span("generation"):
+        raise ValueError("model server down")
+
+
+def test_the_span_is_closed_even_when_the_body_raises() -> None:
+    client = FakeClient()
+    with pytest.raises(ValueError), LangfuseTracer(client).span("generation"):
+        raise ValueError("boom")
+    assert client.calls[-1][0] == "end"
+
+
+def test_a_server_that_does_not_answer_gives_a_tracer_that_does_nothing(settings: Settings) -> None:
+    """Otherwise the exporter retries inside flush and an answer takes eleven seconds longer."""
+    dead = settings.model_copy(
+        update={
+            "langfuse_host": "http://127.0.0.1:9",
+            "langfuse_public_key": "pk",
+            "langfuse_secret_key": "sk",
+        }
+    )
+    assert configured(dead)
+    assert not reachable(dead, timeout=0.5)
+    assert isinstance(build_tracer(dead), NullTracer)

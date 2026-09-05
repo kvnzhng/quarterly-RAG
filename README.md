@@ -6,7 +6,7 @@
 
 Everything runs on a laptop with no paid API: Ollama for the LLM and embeddings, ChromaDB for vectors, a local model as the judge. The model provider is your choice: point it at a model server on your network or at a hosted API by editing `.env`.
 
-**Current state:** the pipeline answers questions from the filings or refuses with a reason, and every layer is measured against a 63-question human-verified eval set. Ten decisions are recorded as ADRs, each backed by a tradeoff page with numbers. See [Results so far](#results-so-far) and [Status](#status).
+**Current state:** the pipeline answers questions from the filings or refuses with a reason, and every layer is measured against a 63-question human-verified eval set. Eleven decisions are recorded as ADRs, each backed by a tradeoff page with numbers. See [Results so far](#results-so-far) and [Status](#status).
 
 ## Why filings?
 
