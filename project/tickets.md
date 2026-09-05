@@ -13,19 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-015: Results writeup and interview talking points
-- **Type:** docs
-- **Created:** 2026-09-03
-- **Competency:** all
-- **Description:** Fill the README with the architecture diagram, final eval tables, and one paragraph per competency (grounding, chunking, retrieval quality, hallucination control, refusal) explaining what was tried, what was measured, and what was chosen.
-- **Done when:** a reader can understand the tradeoffs from the README alone.
-
-
-
-
-
-
-
 ## Backlog
 
 
@@ -51,6 +38,16 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Done when:** the eval set has a handful of paraphrase pairs and multi-company questions, human-verified, and the chosen approach is measured against them with a before and after. The labels come first, as they did in RAG-019.
 
 ## Done
+
+### RAG-015: Results writeup and interview talking points
+- **Type:** docs
+- **Created:** 2026-09-03 | **Completed:** 2026-09-05
+- **Competency:** all
+- **Description:** Fill the README with the architecture diagram, final eval tables, and one paragraph per competency (grounding, chunking, retrieval quality, hallucination control, refusal) explaining what was tried, what was measured, and what was chosen.
+- **Done when:** a reader can understand the tradeoffs from the README alone.
+- **Verified:** `make test` 432 passed before and after. `LLM_MODEL=gpt-oss:20b uv run rag eval baseline --judge qwen3.8-27b-64k:latest` run twice on 2026-09-05 at `3daa950`: identical to each other; recall@5, MRR, nDCG@5, citation resolution, fully grounded and correct identical to the baseline; answerable coverage 0.667 to 0.636, abstention F1 0.812 to 0.800, faithfulness 0.750 to 0.625, the last beyond the tolerance. Attributed with `rag eval generation --context retrieved --types lookup` (report `generation-retrieved-20260905T084138`) against the baseline-day `generation-retrieved-20260904T193319`: 13 of 23 answers byte-identical, two judge flips on spacing-only changes, judge looser 0. Model digests and the server version unchanged since August. The four chunkers re-measured at `3daa950` with `rag eval retrieval -k 20 --context --strategy <s>` (reports `retrieval-context-20260905T0835*`), reproducing the chunking page exactly and explaining 0.449 against 0.440 as depth 20 against depth 10. Every number in the README's new sections was matched against a docs page, a ticket, a report or the baseline by script; the only tokens it could not find were `2025.`, `63,` and `93.8%`, which is 15 of 16. `scripts/edit_docs.py` reported every README, CLAUDE.md, notes and handoff edit applied.
+- **The finding:** the gate is deterministic within a day and not across days, and its five-point tolerance sits below faithfulness's 6.25-point granularity. The baseline was not re-accepted: no code change caused the drop, and accepting it would bury the finding. Recorded in the README, `docs/notes.md`, `CLAUDE.md` and chapter 10 of the course.
+- **Not run:** the gate with `qwen3.8-27b-64k` answering; any gold-passage generation eval; `make eval-accept`.
 
 ### RAG-034: Course in Notion with a marimo notebook
 - **Type:** docs

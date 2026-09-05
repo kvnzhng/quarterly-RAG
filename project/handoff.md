@@ -10,23 +10,21 @@ You are continuing **quarterly-RAG**, a local RAG system over SEC 10-Q/10-K fili
 
 All three phases are built. Everything is merged to `main` and CI is green on it. The pipeline answers from the filings or refuses with a reason, every layer is measured against a 63-question human-verified eval set, and there are eleven ADRs each with a tradeoff page of numbers. `make test` runs 432 unit tests with no model and no Docker.
 
-Since the last handoff: derived numbers carry their arithmetic and it is recomputed (RAG-021); every question can be traced to a self-hosted Langfuse (RAG-013); there is a FastAPI `POST /ask` and a Streamlit page over it (RAG-014); the operand check was widened three times (RAG-029); and a question naming two companies now asks each of them separately (RAG-031).
+Since the last handoff: derived numbers carry their arithmetic and it is recomputed (RAG-021); every question can be traced to a self-hosted Langfuse (RAG-013); there is a FastAPI `POST /ask` and a Streamlit page over it (RAG-014); the operand check was widened three times (RAG-029); a question naming two companies now asks each of them separately (RAG-031); the README carries the results writeup (RAG-015); and a Notion course with a marimo notebook teaches the whole thing (RAG-034).
 
-**The remaining ticket is RAG-015, the results writeup.** RAG-032 is also open and is a real piece of retrieval work, but the writeup is the last one in the original plan and is what the repo exists to produce.
+**The remaining ticket is RAG-032**: retrieval is unstable to phrasing, and only for Nvidia. It needs labelled paraphrase pairs and multi-company questions first, reviewed by Kevin, then a measured before-and-after, and an ADR if a model goes into the retrieval path. It is the first candidate explanation for the recall@20 ceiling.
 
-## What RAG-015 has to do
+## What RAG-015 found
 
-Fill the README so a reader understands the tradeoffs from it alone: the architecture, the final eval tables, and one paragraph per competency saying what was tried, what was measured, and what was chosen.
-
-**Check the numbers before quoting them.** RAG-029 changed what the verifier accepts, so start by running the gate:
+The README now carries the argument: the architecture with the request path, the gate table with a denominator on every row, the retrieval progression, the chunking, model and arithmetic tables, one paragraph per competency, the negative results, and what is still open. Running the gate before quoting a number found something new: **the gate is deterministic within a day and not across days.** Two runs on 2026-09-05 agreed with each other and disagreed with the 2026-09-04 baseline on the three model-dependent metrics, by one refused question and two judged sentences, with identical code and model digests. The baseline was left as recorded, because no code change caused it and accepting the lower numbers would bury the finding. `docs/notes.md` and chapter 10 of the course carry the details. Before quoting any gate number, run it on the day:
 
 ```
 LLM_MODEL=gpt-oss:20b uv run rag eval baseline --judge qwen3.8-27b-64k:latest
 ```
 
-It should reproduce `data/eval/baseline.json` exactly, because RAG-029 is scoped to calculation operands and the gate scores `lookup` questions under prompt v1, where no calculation is written. If it does not reproduce, that is the first thing to understand and the writeup waits.
+Expect the deterministic metrics to reproduce exactly and the three that pass through a model to sit within about one question of the baseline.
 
-**The material is unusually good, and most of it is a negative result.** These are in `docs/learning/` and `docs/notes.md` with the numbers, and they are what makes the writeup worth reading:
+**The findings the writeup rests on**, all in `docs/learning/` and `docs/notes.md` with their numbers:
 
 - Prompt *wording* moved the results more than the rule did. Two v2 wordings differing only in where the worked example sits: with it last, `llama3.1:8b` verified 9 of 13 calculations and `gpt-oss:20b` lost 11 points of lookup faithfulness; with it in the body, faithfulness came back and the 8B model verified 6 of 10.
 - The gate decided a default. Calculation provenance is off by default because `make eval` measured that it costs two of the 33 answerable questions, and a drop this change caused is not a new baseline.
@@ -42,6 +40,7 @@ The README already has "Results so far" and three screenshots of the page. What 
 - Models run on Kevin's **network Ollama server**. Its address is in `.env` and must never appear in the repo, a commit message, a ticket, or your replies. Call it "the network Ollama server". There is no Ollama on the laptop; `make models` pulls over the server's HTTP API.
 - **Use `qwen3.8-27b-64k:latest` for generation and as the judge, and `gpt-oss:20b` when latency matters.** `llama3.1:8b` is the code default only because ADR-003 requires laptop-sized defaults, and it invents citations in half its answers. Set `LLM_MODEL` in `.env` or per command.
 - Corpus, chunks and indexes are on disk under `data/` and gitignored; the eval set and baseline under `data/eval/` are committed. If `data/` is missing, rebuild with the commands in `CLAUDE.md`, in order: download, parse, chunk build, index build with `--context`.
+- **The course**: twelve Notion chapters as a private draft in Kevin's workspace, parent URL in the README, and `notebooks/course.py`, opened from the repo root with `uv run marimo edit notebooks/course.py`. Every chapter names its notebook section and every section links back. Kevin decides whether the pages are shared.
 - `make api` and `make ui` run the endpoint and the page. `make langfuse-up` starts tracing, which is off unless `LANGFUSE_HOST` and both keys are set. `ANSWER_PROMPT_VERSION=2` turns calculation provenance on.
 - **Pushing over HTTPS fails with a 403**: the fine-grained token has metadata read only. Push with `git push git@github.com:kvnzhng/quarterly-RAG.git <branch>`, then `git fetch origin` and set the upstream. CI runs only on `main` and on pull requests.
 
@@ -68,7 +67,8 @@ The README already has "Results so far" and three screenshots of the page. What 
 - The eval set concentrates its evidence in 6 of 16 filings, is 70% tables, and contains no comparison or paraphrase questions. A second labelling round would sharpen every retrieval number.
 - recall@20 is 72.7% and nobody has explained the missing quarter. RAG-032 is the first real candidate.
 - `q052` (Nvidia's largest customers) leaks past every model's refusal.
-- `rag eval refusal` and the refusal eval inside `rag eval baseline` disagree on the same measurement, in opposite directions. In `docs/notes.md`, unchased.
+- `rag eval refusal` and the refusal eval inside `rag eval baseline` once disagreed on the same measurement, in opposite directions. After the cross-day drift measured at RAG-015 the likelier explanation is that the disagreement was one question of drift and not a harness difference. Not proven; in `docs/notes.md`.
+- The gate's model-dependent metrics drift across days, and its tolerance sits below faithfulness's 6.25-point granularity, so that metric can fail with nothing changed. A per-metric tolerance and per-question output from the gate are the fix, unbuilt.
 - Langfuse scores land in `environment: default` while spans land in `local`, and the UI filters on that field.
 
-Start by reading `CLAUDE.md`, running `make test` to confirm the tree is healthy, then the gate command above, and claiming RAG-015.
+Start by reading `CLAUDE.md`, running `make test` to confirm the tree is healthy, then the gate command above, and claiming RAG-032.

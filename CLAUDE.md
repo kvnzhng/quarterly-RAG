@@ -2,11 +2,11 @@
 
 A local, open-source Retrieval-Augmented Generation system that answers questions about SEC quarterly and annual filings (10-Q, 10-K) of NASDAQ/NYSE companies (starting with Apple and Nvidia). Built to learn and demonstrate five production RAG competencies: grounding, chunking, retrieval quality, hallucination control, and when to refuse to answer.
 
-**Stack:** Python 3.12, uv, plain Python orchestration (no LangChain), any OpenAI-compatible model server (Ollama by default, local or on the network) or the Anthropic API, embeddings configured separately, ChromaDB (default) and FAISS (measured, kept), rank_bm25, a custom LLM judge (RAGAS was measured and rejected), pytest, ruff. Planned: Langfuse (self-hosted), FastAPI, Streamlit.
+**Stack:** Python 3.12, uv, plain Python orchestration (no LangChain), any OpenAI-compatible model server (Ollama by default, local or on the network) or the Anthropic API, embeddings configured separately, ChromaDB (default) and FAISS (measured, kept), rank_bm25, a custom LLM judge (RAGAS was measured and rejected), pytest, ruff, Langfuse (self-hosted, optional), FastAPI, Streamlit, and marimo for the course notebook.
 
 ## Current state (2026-09-05)
 
-Phases one and two are done. The pipeline answers questions from the filings or refuses with a reason, and every layer is measured against a 63-question human-verified eval set. Ten ADRs record the decisions.
+All three phases are built. The pipeline answers questions from the filings or refuses with a reason, and every layer is measured against a 63-question human-verified eval set. Eleven ADRs record the decisions, the README carries the results writeup (RAG-015), and a Notion course with a marimo notebook, `notebooks/course.py`, teaches it (RAG-034).
 
 | Layer | Decision | Measured |
 |---|---|---|
@@ -20,13 +20,13 @@ Phases one and two are done. The pipeline answers questions from the filings or 
 | Model | llama3.1:8b default for laptops; qwen3.8-27b recommended (ADR-006) | 8B invents citations in half its answers |
 | Judge | custom, cross-model, calibrated against the figure check | 86% agreement, 25% miss rate on unverified figures |
 | Calculations | derived numbers written as `CALC:` lines and recomputed from cited operands; opt-in via `ANSWER_PROMPT_VERSION=2` (RAG-021) | qwen answers 10/10 derived questions where the default prompt refused 4; 8B model's arithmetic fails 4 of 10; costs 2 of the 33 answerable questions on the gate with `gpt-oss:20b` |
-| Gate | `make eval` against `data/eval/baseline.json`, 5-point tolerance | nine metrics, committed; covers `lookup` only |
+| Gate | `make eval` against `data/eval/baseline.json`, 5-point tolerance | nine metrics, committed; covers `lookup` only; deterministic within a day, the three model-dependent metrics drift by about one question across days (RAG-015) |
 | Tracing | self-hosted Langfuse 4.30.0, off unless configured (ADR-011) | 150 ms a question; generation 8,423 ms against verification 4 ms |
 | Interface | FastAPI `POST /ask` and a Streamlit page over it (RAG-014) | refusing is a 200; the page highlights the operands the verifier matched |
 
 The binding constraint moved twice: retrieval was the ceiling until hybrid fusion (RAG-009), then chunking was (RAG-020). It is now roughly a quarter of questions whose evidence neither ranking nor chunking reaches (recall@20 72.7%).
 
-**Next:** RAG-015, the writeup. RAG-029 holds three named limits of the calculation verifier. RAG-029 holds three named limits of the calculation verifier. See `project/handoff.md` to resume.
+**Next:** RAG-032, retrieval is unstable to phrasing and only for Nvidia; the labels come first. See `project/handoff.md` to resume.
 
 ## File Structure
 
@@ -226,6 +226,7 @@ See [project/conventions.md](project/conventions.md) for detailed conventions, i
 - **Fair comparisons need fair budgets.** A thinking-mode model scored 43% until `ANSWER_MAX_TOKENS` rose from 400 to 1024; a truncated answer scores as ungrounded.
 - **The eval set exists before the index does**, and that ordering found every real bug so far: the missing embedding prefixes, the citation parser mistakes, the presence-check limit, the RAGAS failure.
 - **The server address never enters the repo, a commit, or a recap.** Refer to "the network Ollama server".
+- **The gate is deterministic within a day and not across days.** Two runs an hour apart agreed, two runs the next day agreed with each other and not with the baseline, by one refused question and two judged sentences, with identical code and model digests. Re-run the gate on the day a number is quoted, compare per question before calling a move a change, and read faithfulness against its 6.25-point granularity.
 
 ## Architecture Decisions
 
