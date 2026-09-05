@@ -112,7 +112,7 @@ Ordered on 2026-09-05 (RAG-038). The diagnosis of the nine unreachable questions
 - **Verified:** `scripts/edit_docs.py` reported every edit applied: tickets 4/4, handoff 4/4, `CLAUDE.md` 1/1, README 4/4. The three places that name the next ticket (`CLAUDE.md`, `project/handoff.md`, this file) all say RAG-039, every open thread in the handoff and in the README's open list carries a ticket id apart from the hosted-model measurement (below), and the README's status list holds the ten open tickets in backlog order. A grep of the diff for the configured server host found nothing. `make lint` clean. No code changed, so the tests were not re-run.
 - **Not run:** nothing against a model. The tickets are plans and hold no new measurement.
 - **Removed the same day:** a hosted frontier-model comparison, briefly RAG-040, at Kevin's request. The id stays unused rather than renumbering the eight tickets after it.
-- **Commits:** `d13605a`, `4c74064`
+- **Commits:** `d13605a`, `4c74064`, `5366e23`
 
 ### RAG-037: The course sits near the top of the README
 - **Type:** docs
