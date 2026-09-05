@@ -62,7 +62,7 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Dependencies added:** `langfuse` 4.15.1, which brings `backoff`, `wrapt` and one OpenTelemetry exporter. Four packages only, because `chromadb` already brings most of OpenTelemetry. Imported lazily so `rag --help` and the tests never pay for it.
 - **Surprise worth keeping:** Langfuse v4 defaults to `events_only` mode, where the legacy trace API is gone and the SDK's own `trace.get` returns 404. Observations read from `/api/public/v2/observations`, scores from `/api/public/v3/scores`. Recorded in `docs/notes.md`.
 - **A test that passed while the feature did not.** The first integration test asserted the spans and called `tracer.score`, but never read the score back, so it was green while nothing proved scores landed at all. They do, on the right trace: filtering `v3/scores` by the trace id returns the score and a bogus id returns none. The test now asserts that, which is the half of "scores on traces" it was letting through.
-- **Commits:** `f832879`, `b14ec8f`
+- **Commits:** `f832879`, `b14ec8f`, `3fbda5c`
 
 
 ### RAG-021: Calculation provenance for derived numbers
