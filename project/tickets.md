@@ -1,6 +1,6 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-036
+> Next ID: RAG-037
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
@@ -38,6 +38,15 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Done when:** the eval set has a handful of paraphrase pairs and multi-company questions, human-verified, and the chosen approach is measured against them with a before and after. The labels come first, as they did in RAG-019.
 
 ## Done
+
+### RAG-036: `make course` opens the notebook as an app, not the editor
+- **Type:** docs
+- **Created:** 2026-09-05 | **Completed:** 2026-09-05
+- **Competency:** all
+- **Description:** `make course` landed in marimo's edit mode. Kevin does not want readers dropped into the editor. Point it at `marimo run`, which serves the controls and the outputs without the code, keep the editor behind `make course-edit`, and say so in the README, `CLAUDE.md`, the notebook's docstring and the Notion setup step.
+- **Done when:** `make course` runs `marimo run notebooks/course.py`, and every place that documents opening the notebook says which mode it lands in.
+- **Verified:** `make -n course` resolves to `uv run marimo run notebooks/course.py` and `make -n course-edit` to the editor. App mode started headless on a spare port answered HTTP 200 within two seconds and stopped cleanly with nothing in its log. `ruff`, `marimo check`, `make lint` clean; `make test` 432 passed. `scripts/edit_docs.py` reported every Makefile, README, CLAUDE.md and notebook edit applied; the Notion setup step and the code callout say which mode `make course` lands in.
+- **Not run:** the app in a browser.
 
 ### RAG-035: Publish the course link and document how to run the notebook
 - **Type:** docs

@@ -287,11 +287,11 @@ move. The chapters point at notebook sections and the notebook points back at th
 
 - **Course:** https://flashy-fur-afc.notion.site/quarterly-RAG-a-course-on-production-RAG-3d21f11d4bc881a6b753c2c819817428
 - **Notebook:** `notebooks/course.py`. Once the corpus, chunks and indexes exist, `make course`
-  (or `uv run marimo edit notebooks/course.py` from the repository root) opens the editor in
-  your browser. Sections 0 to 6 run on open and cost one embedding call per retrieval; every
-  cell that calls a chat model waits for a run button. `uv run marimo run notebooks/course.py`
-  shows the same notebook as an app without the code, and `uv run python notebooks/course.py`
-  runs the ungated cells as a script and exits.
+  opens it in your browser as an app: the controls and the outputs, without the code.
+  Sections 0 to 6 run on open and cost one embedding call per retrieval; every cell that
+  calls a chat model waits for a run button. `make course-edit` opens the same notebook in
+  marimo's editor for changing the code, and `uv run python notebooks/course.py` runs the
+  ungated cells as a script and exits.
 
 ## Reading and courses
 

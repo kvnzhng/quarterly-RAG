@@ -2,7 +2,8 @@
 
 Run from the repository root, after the corpus, chunks and indexes exist:
 
-    uv run marimo edit notebooks/course.py
+    make course         # as an app: controls and outputs, no code (marimo run)
+    make course-edit    # in marimo's editor, for changing the code
 
 Every section pairs with a chapter of the Notion course, and every chapter points back
 here. Sections that call a model sit behind a run button, so opening the notebook costs

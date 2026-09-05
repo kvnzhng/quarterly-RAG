@@ -1,4 +1,4 @@
-.PHONY: setup lint fmt test test-all doctor models api ui course langfuse-up langfuse-down langfuse-logs langfuse-reset eval eval-accept
+.PHONY: setup lint fmt test test-all doctor models api ui course course-edit langfuse-up langfuse-down langfuse-logs langfuse-reset eval eval-accept
 
 # Ollama helpers talk to the server's HTTP API, so no local `ollama` CLI is needed.
 # OLLAMA_HOST wins if set; otherwise it is derived from LLM_BASE_URL in .env (minus /v1).
@@ -61,7 +61,10 @@ ui:             ## Streamlit page against the API; run `make api` first (RAG-014
 	STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \
 	  uv run streamlit run src/quarterly_rag/ui/app.py --server.address 127.0.0.1
 
-course:         ## The course notebook: marimo editor over the real pipeline (RAG-034)
+course:         ## The course notebook as an app: controls and outputs, no code (RAG-036)
+	uv run marimo run notebooks/course.py
+
+course-edit:    ## The same notebook in marimo's editor, for changing the code
 	uv run marimo edit notebooks/course.py
 
 eval:           ## Retrieval + generation + refusal evals against the committed baseline (~5 min, calls a model)
