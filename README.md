@@ -179,6 +179,19 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 - [x] RAG-014 API and Streamlit page
 - [ ] RAG-015 writeup
 
+## The course
+
+What this repository learned is written up as a course: twelve chapters in Notion, one per
+layer, each explaining the tooling, the alternatives that were tried and what the numbers
+said, and a marimo notebook that drives the real pipeline so a reader can change the chunker,
+the retrieval strategy, k, the filters, the prompt version and the model and watch the numbers
+move. The chapters point at notebook sections and the notebook points back at the chapters.
+
+- Course: https://app.notion.com/p/3d21f11d4bc881a6b753c2c819817428
+- Notebook: `notebooks/course.py`, opened from the repository root with
+  `uv run marimo edit notebooks/course.py` once the corpus, chunks and indexes exist. Every
+  section that calls a model waits for a run button, so opening it costs nothing.
+
 ## Reading and courses
 
 Grouped by the competency they support, in roughly the order the tickets need them. Every link was checked when added; papers link to arXiv abstracts.

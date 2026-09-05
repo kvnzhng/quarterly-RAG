@@ -1,6 +1,6 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-034
+> Next ID: RAG-035
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
@@ -12,6 +12,13 @@ against that baseline. Phase 3 is production readiness and the writeup.
 Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
+
+### RAG-015: Results writeup and interview talking points
+- **Type:** docs
+- **Created:** 2026-09-03
+- **Competency:** all
+- **Description:** Fill the README with the architecture diagram, final eval tables, and one paragraph per competency (grounding, chunking, retrieval quality, hallucination control, refusal) explaining what was tried, what was measured, and what was chosen.
+- **Done when:** a reader can understand the tradeoffs from the README alone.
 
 
 
@@ -43,14 +50,18 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Suggested approaches, none chosen yet:** query decomposition or rewriting with a model, which would put an LLM in the retrieval path for the first time and needs an ADR against the project's deterministic-retrieval preference; or a per-company term weighting in the BM25 half, which is deterministic and cheaper but only addresses the lexical side; or accepting it and documenting it. Four deterministic rewrites were already tried and rejected in RAG-031.
 - **Done when:** the eval set has a handful of paraphrase pairs and multi-company questions, human-verified, and the chosen approach is measured against them with a before and after. The labels come first, as they did in RAG-019.
 
-### RAG-015: Results writeup and interview talking points
-- **Type:** docs
-- **Created:** 2026-09-03
-- **Competency:** all
-- **Description:** Fill the README with the architecture diagram, final eval tables, and one paragraph per competency (grounding, chunking, retrieval quality, hallucination control, refusal) explaining what was tried, what was measured, and what was chosen.
-- **Done when:** a reader can understand the tradeoffs from the README alone.
-
 ## Done
+
+### RAG-034: Course in Notion with a marimo notebook
+- **Type:** docs
+- **Created:** 2026-09-05 | **Completed:** 2026-09-05
+- **Competency:** all
+- **Description:** Turn what the repo learned into a course a reader with basic coding and a little RAG can follow: Notion chapters that explain the tooling and the tradeoffs with this project's own numbers, a marimo notebook (`notebooks/course.py`) that lets the reader change chunker, retrieval strategy, k, filters, prompt version and model and see what happens, and a closing chapter on what comes next: further optimisation, weird questions, attacks on the chat, and what building this for a company adds. The pages link to notebook sections and the notebook links back to the pages. Requested by Kevin on 2026-09-05, ahead of finishing RAG-015.
+- **Done when:** the course pages exist in Notion with a map on the parent page, the notebook runs against the local corpus and the configured endpoint, `make lint` and `make test` are clean, and the README points at both.
+- **Dependencies added:** `marimo` (dev group): the notebook format the course is built on; reactive cells are what make the parameter sweeps one-click.
+- **Verified:** twelve chapter pages plus the parent page with the course map exist in Notion, as a private draft in Kevin's workspace; the parent URL is in the README and in the notebook. `notebooks/course.py`: `ruff check` and `ruff format --check` clean, with `E501`, `B018`, `N803` and `N806` ignored for `notebooks/*.py` only, because a marimo cell ends in a bare expression and holds prose; `marimo check` clean; `uv run python notebooks/course.py` runs every ungated cell against the corpus and the configured endpoint and exits 0. Every model-gated cell was then run once through marimo's cell runner with its button pressed, against the live pipeline: the endpoint check, the raw-against-context similarity, the retrieval eval, an answer with `llama3.1:8b` on q001, the judge with `qwen3.8-27b-64k`, a refusal (Tesla, `out_of_scope`), the injected-question preset (refused as `insufficient_evidence`), the passage injection (the model did not follow it) and the phrasing experiment. `make lint` clean, `make test` 432 passed.
+- **Not run:** the 63-question refusal sweep cell, which is the only cell that calls the model more than a handful of times; and the notebook was not opened in a browser, so the editor's rendering of the widgets is unverified. Chapter 10 of the course carries the gate drift measured today; the README's version of it lands with RAG-015.
+
 
 ### RAG-033: Refresh the handoff for the writeup
 - **Type:** docs

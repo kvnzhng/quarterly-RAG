@@ -33,6 +33,7 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.5",
     "pre-commit>=3.7",
+    "marimo>=0.24.0",
 ]
 
 [build-system]
@@ -50,6 +51,11 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "SIM", "RUF"]
 ignore = ["RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+# marimo cells end in a bare expression (their output), name UI state in caps, and hold
+# prose in f-strings that ruff must not decide where to wrap.
+"notebooks/*.py" = ["E501", "B018", "N803", "N806"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["quarterly_rag"]
