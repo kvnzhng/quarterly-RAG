@@ -62,4 +62,7 @@ Every row is a tradeoff page under `docs/tradeoffs/`. A row is **decided** once 
 6. **Verify deterministically.** Each sentence must cite a passage that was actually provided; each figure must appear in the cited passage after unit scaling. A figure that does not is not rejected: if the answer showed its arithmetic on a `CALC:` line, each operand is checked against the passage it cites and the result is recomputed, and the figure becomes `derived, verified`; otherwise it stays `derived, unverified` (RAG-021).
 7. **Answer gate.** The sentinel -> `Refusal(insufficient_evidence)`; no resolvable citation anywhere -> `Refusal(verification_failed)`.
 8. **Return** the `Answer` with citations and inline markers, or the `Refusal` with its reason and the closest passages.
+The same path serves `POST /ask` (RAG-014). The Streamlit page calls that endpoint over HTTP
+and never the pipeline, so what it shows is what any client of the API sees.
+
 9. **Trace it**, when Langfuse is configured: the whole ask is one trace, every step above is a span with its own timing, and the eval scores land on the trace that produced them. Off by default, and it cannot change an answer (ADR-011).

@@ -19,6 +19,9 @@ dependencies = [
     "rank-bm25>=0.2.2",
     "faiss-cpu>=1.15.0",
     "langfuse>=4.15.1",
+    "fastapi>=0.141.1",
+    "uvicorn[standard]>=0.52.4",
+    "streamlit>=1.63.0",
 ]
 
 [project.scripts]

@@ -22,10 +22,11 @@ Phases one and two are done. The pipeline answers questions from the filings or 
 | Calculations | derived numbers written as `CALC:` lines and recomputed from cited operands; opt-in via `ANSWER_PROMPT_VERSION=2` (RAG-021) | qwen answers 10/10 derived questions where the default prompt refused 4; 8B model's arithmetic fails 4 of 10; costs 2 of the 33 answerable questions on the gate with `gpt-oss:20b` |
 | Gate | `make eval` against `data/eval/baseline.json`, 5-point tolerance | nine metrics, committed; covers `lookup` only |
 | Tracing | self-hosted Langfuse 4.30.0, off unless configured (ADR-011) | 150 ms a question; generation 8,423 ms against verification 4 ms |
+| Interface | FastAPI `POST /ask` and a Streamlit page over it (RAG-014) | refusing is a 200; the page highlights the operands the verifier matched |
 
 The binding constraint moved twice: retrieval was the ceiling until hybrid fusion (RAG-009), then chunking was (RAG-020). It is now roughly a quarter of questions whose evidence neither ranking nor chunking reaches (recall@20 72.7%).
 
-**Next:** phase three: RAG-014 API and UI, RAG-015 writeup. RAG-029 holds three named limits of the calculation verifier. See `project/handoff.md` to resume.
+**Next:** RAG-015, the writeup. RAG-029 holds three named limits of the calculation verifier. RAG-029 holds three named limits of the calculation verifier. See `project/handoff.md` to resume.
 
 ## File Structure
 
@@ -203,6 +204,7 @@ The binding constraint moved twice: retrieval was the ceiling until hybrid fusio
 - **Doctor:** `make doctor` or `uv run rag doctor` (configured endpoints, models, data dirs)
 - **Chunks:** `uv run rag chunk build --ticker AAPL --ticker NVDA` (sections into `data/chunks/<strategy>/`)
 - **Index:** `uv run rag index build --ticker AAPL --ticker NVDA [--context]` then `rag index query "..."`
+- **API and page:** `make api` (FastAPI `POST /ask` on 127.0.0.1:8000, schema at `/docs`) and `make ui` (Streamlit on 127.0.0.1:8501, talks to the API over HTTP and nothing else)
 - **Ask:** `uv run rag ask "..."` (retrieve, answer, verify every sentence against its source). `ANSWER_PROMPT_VERSION=2` lets the model compute a derived number and shows the arithmetic it is checked against.
 - **Generation eval:** `uv run rag eval generation --context gold|retrieved`
 - **Refusal eval:** `uv run rag eval refusal` (abstention precision/recall, threshold sweep)

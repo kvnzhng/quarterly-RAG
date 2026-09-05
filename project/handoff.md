@@ -10,7 +10,7 @@ You are continuing **quarterly-RAG**, a local RAG system over SEC 10-Q/10-K fili
 
 Phases one and two are complete. The pipeline answers from the filings or refuses with a reason, and every layer is measured against a 63-question human-verified eval set (33 answerable, 30 that must be refused). A derived number can carry the arithmetic that produced it, recomputed from the passages its operands cite, behind `ANSWER_PROMPT_VERSION=2` (RAG-021). It is off by default because the gate measured that it costs two of the 33 answerable questions with `gpt-oss:20b`. Eleven ADRs under `docs/adr/` record the decisions; each has a tradeoff page with numbers under `docs/tradeoffs/`. Every question can also be traced: `make langfuse-up` starts a self-hosted Langfuse and `rag ask` records a span per pipeline stage, off unless `LANGFUSE_HOST` and both keys are set (ADR-011). The headline numbers are in the README under "Results so far" and in `data/eval/baseline.json`, which `make eval` gates against.
 
-The next ticket is **RAG-014, FastAPI and Streamlit**, then RAG-015 the results writeup. RAG-029 holds three named limits of the calculation verifier, each with an example, and is worth taking before the writeup if the numbers matter to it. The backlog in `project/tickets.md` has the full text of each.
+The next ticket is **RAG-015, the results writeup**. RAG-029 holds three named limits of the calculation verifier, each with an example, and is worth taking before the writeup if the numbers matter to it. The backlog in `project/tickets.md` has the full text of each.
 
 ## Setup facts you need
 
@@ -45,4 +45,4 @@ The next ticket is **RAG-014, FastAPI and Streamlit**, then RAG-015 the results 
 - Prompt wording moved the RAG-021 numbers more than the rule did; `docs/notes.md` has the comparison.
 - The regression gate is a local command; CI never calls a model, and the `workflow_dispatch` job exists for anyone with a self-hosted runner.
 
-Start by reading `CLAUDE.md`, running `make test` to confirm the tree is healthy, and claiming RAG-014.
+Start by reading `CLAUDE.md`, running `make test` to confirm the tree is healthy, and claiming RAG-015.

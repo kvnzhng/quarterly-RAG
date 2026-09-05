@@ -14,6 +14,7 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 ## In Progress
 
 
+
 ## Backlog
 
 
@@ -33,12 +34,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 ### Phase 3: production readiness and writeup
 
 
-### RAG-014: API and minimal UI
-- **Type:** feat
-- **Created:** 2026-09-03
-- **Competency:** production readiness
-- **Description:** FastAPI `POST /ask` returning the structured answer or refusal. Streamlit page that shows the answer, each citation with the highlighted source passage and filing link, and the refusal reason when refused.
-- **Done when:** `make api` and `make ui` work locally and the README has a screenshot.
 
 ### RAG-015: Results writeup and interview talking points
 - **Type:** docs
@@ -48,6 +43,19 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Done when:** a reader can understand the tradeoffs from the README alone.
 
 ## Done
+
+### RAG-014: API and minimal UI
+- **Type:** feat
+- **Created:** 2026-09-03 | **Completed:** 2026-09-05
+- **Competency:** production readiness
+- **Description:** FastAPI `POST /ask` returning the structured answer or refusal. Streamlit page that shows the answer, each citation with the highlighted source passage and filing link, and the refusal reason when refused.
+- **Done when:** `make api` and `make ui` work locally and the README has a screenshot.
+- **Verified:** `make api` serves `POST /ask` and `GET /health` on 127.0.0.1:8000; asked live against `qwen3.8-27b-64k`, the Services-share question returned the answer, one verified `CALC:` line and a citation carrying the whole passage, and the Microsoft question returned a 200 with `out_of_scope`. `make ui` renders both, and the README has three screenshots taken from the running page. `make test` 413 passed, 15 deselected, up from 390; `make lint` clean.
+- **Design:** the wire contract is its own module rather than the internal `Answer` and `Refusal`, because `Refusal.best_chunks` holds whole chunks and would have shipped kilobytes of filing text per refusal by accident. The pipeline is built once in the lifespan, the endpoint is a plain `def` so Starlette runs the blocking model call in a threadpool, and refusing is a 200 because a refusal answers the question rather than failing the request. The page talks HTTP and nothing else, so what it shows is what any client sees.
+- **Two bugs the screenshots found, both fixed:** Streamlit reads `$...$` as LaTeX, so an answer with two dollar amounts rendered everything between them as an equation; and the highlighter marked the footnote markers in Apple's product table, because `[c1]` parses as the figure 1 and every filing contains a 1. The verifier strips citation tags before checking figures for the same reason, and now so does the page.
+- **Dependencies added:** `fastapi` 0.141.1, `uvicorn`, `streamlit` 1.63.0. Fifteen packages, nearly all of them Streamlit's data stack: pandas, pyarrow, altair, pydeck, pillow. That is the heaviest addition in the project and it buys one page.
+- **Not done:** no authentication, and both servers bind to the loopback address only. This is a laptop tool; putting it on a network needs a decision that is not this ticket's.
+
 
 ### RAG-013: Langfuse tracing (self-hosted)
 - **Type:** chore

@@ -119,6 +119,15 @@ class Settings(BaseSettings):
     )
 
     # --- Observability ----------------------------------------------------------
+    # --- API and UI (RAG-014) ---------------------------------------------------
+    api_url: str = Field(
+        default="http://127.0.0.1:8000",
+        description=(
+            "Where the Streamlit page looks for the API. Bound to the loopback address "
+            "because this is a laptop tool with no authentication in front of it."
+        ),
+    )
+
     langfuse_host: str = "http://localhost:3000"
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""

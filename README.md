@@ -68,6 +68,10 @@ uv run rag index build --ticker AAPL --ticker NVDA --context   # -> embeddings i
 uv run rag index query "What were Apple's total net sales in Q3 FY2026?" --context
 uv run rag eval retrieval -k 5 --context   # -> recall@k, MRR, nDCG with a run record
 uv run rag ask "How many employees did Apple have at the end of fiscal 2025?"
+
+# 6. The same thing over HTTP, and a page for it
+make api   # POST /ask on 127.0.0.1:8000, and /docs for the schema
+make ui    # Streamlit on 127.0.0.1:8501, in another terminal
 uv run rag eval refusal                    # -> abstention precision/recall and the threshold sweep
 make eval                                  # -> every metric against data/eval/baseline.json
 ```
@@ -108,6 +112,26 @@ notebooks/           exploration only
 ## Workflow
 
 Work is ticket-driven. Each change references a ticket (`feat(retrieval): add BM25 (RAG-009)`). `make setup` installs a `commit-msg` hook that rejects messages without one, CI runs the same check over every push and pull request, and a Claude Code edit hook blocks edits with no active ticket. `AGENTS.md` is a symlink to `CLAUDE.md` so Codex follows the same rules. See `CLAUDE.md`.
+
+## The page
+
+`make api` serves `POST /ask`; `make ui` is a Streamlit page against it. The page shows what
+a client of the API sees and never touches the pipeline itself, so what it displays is
+exactly what the endpoint returned.
+
+![An answered question, with the figure it worked out recomputed from the passages it cites](docs/images/ui-answer.jpg)
+
+A figure no filing prints is only shown as verified when its operands are in the passages
+they cite and the arithmetic comes out the same (RAG-021). Opening the citation shows the
+passage with those operands marked, using the same check the verifier ran, so a highlight is
+the evidence rather than decoration.
+
+![The cited passage, with the two operands highlighted in Apple's product table](docs/images/ui-citation.jpg)
+
+A question the corpus cannot answer is refused with a reason, and the closest passages are
+offered so a reader can look for themselves.
+
+![A question about Microsoft, refused because it is not in the corpus](docs/images/ui-refusal.jpg)
 
 ## Results so far
 
@@ -152,7 +176,7 @@ Ordered as in `project/tickets.md`: one thin, measured end-to-end path first, th
 - [x] RAG-012 faithfulness judge and the regression gate
 - [x] RAG-021 calculation provenance for derived numbers
 - [x] RAG-013 Langfuse tracing, optional and off by default
-- [ ] RAG-014 API + UI
+- [x] RAG-014 API and Streamlit page
 - [ ] RAG-015 writeup
 
 ## Reading and courses
