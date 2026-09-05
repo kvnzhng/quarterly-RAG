@@ -51,6 +51,7 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Not chosen: tightening the prompt.** All three were the model doing something reasonable that the checker read too strictly, and the prompt already asks for what it does. Making the prompt longer to work around a checker is how the RAG-021 wording trap happened.
 - **Verified:** gold passages, the 5 `derived` and 5 `cross_period` questions, commit `fdbb7ef` before and this ticket's code after. `qwen3.8-27b-64k` calculations verified 7 of 8 to 8 of 8, with no calculation failures left at all. `llama3.1:8b` 6 of 10 to 7 of 10, and every figure accounted for 6/10 to 7/10. Judged correct unchanged for both, at 10/10 and 8/10, so nothing started passing for the wrong reason. The three failures that remain are all one thing, an operand cited to a passage that does not contain it, which is the check working. Reports `generation-gold-20260905T074351` and `T074808`. `make test` 422 passed, 15 deselected, up from 413; `make lint` clean.
 - **Not run:** the regression gate. It scores `lookup` questions, where prompt v1 is the default and no calculation is written, so none of this can reach it.
+- **Commits:** `aadb2ba`
 
 
 ### RAG-030: Enter does not submit a question in the page
