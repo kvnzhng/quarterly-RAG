@@ -47,6 +47,7 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Done when:** `make course` runs `marimo run notebooks/course.py`, and every place that documents opening the notebook says which mode it lands in.
 - **Verified:** `make -n course` resolves to `uv run marimo run notebooks/course.py` and `make -n course-edit` to the editor. App mode started headless on a spare port answered HTTP 200 within two seconds and stopped cleanly with nothing in its log. `ruff`, `marimo check`, `make lint` clean; `make test` 432 passed. `scripts/edit_docs.py` reported every Makefile, README, CLAUDE.md and notebook edit applied; the Notion setup step and the code callout say which mode `make course` lands in.
 - **Not run:** the app in a browser.
+- **Commits:** `41c43e0`
 
 ### RAG-035: Publish the course link and document how to run the notebook
 - **Type:** docs
