@@ -1,6 +1,6 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-038
+> Next ID: RAG-049
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
@@ -12,6 +12,13 @@ against that baseline. Phase 3 is production readiness and the writeup.
 Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
+
+### RAG-038: Follow-up backlog and handoff refresh
+- **Type:** docs
+- **Created:** 2026-09-05
+- **Competency:** foundation
+- **Description:** After RAG-037 the backlog held one ticket while the handoff, the README and `docs/notes.md` listed nine open threads, and Kevin asked for a comparison against a hosted frontier model. Turn each open thread into a ticket with an artifact and a done-when, order them with a stated reason, and make the handoff, `CLAUDE.md` and the README's "What is still open" name the same next ticket.
+- **Done when:** every open thread in the handoff and the README has a ticket id, and the four places that name the next ticket agree.
 
 ## Backlog
 
@@ -25,9 +32,34 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ### Phase 3: production readiness and writeup
 
+### Phase 4: follow-ups, after the writeup
 
+Ordered on 2026-09-05 (RAG-038). The diagnosis of the nine unreachable questions and the second labelling round sit ahead of RAG-032 because RAG-032's own done-when needs both; the hosted-model comparison sits second because it is a `.env` change and a day of eval runs, and Kevin asked for it.
 
+### RAG-039: Which nine questions sit below rank 20, and why
+- **Type:** docs
+- **Created:** 2026-09-05
+- **Competency:** retrieval quality
+- **Description:** recall@20 has been 72.7% since RAG-020, so 9 of the 33 answerable questions have their evidence below rank 20 after every lever, and nobody has looked at which nine since the chunks changed. RAG-032 names term frequency inside one company's filings as a candidate mechanism for part of the gap; that claim has not been tested against the list. For each of the nine: the rank of the gold chunk under the default hybrid retriever at depth 100, and under dense alone and BM25 alone; whether the gold span is one chunk or straddles two; where the miss sits on the near-miss ladder (right filing, right section, right chunk); and whether the question is a phrasing case in RAG-032's sense. Only the embedder is called, so the analysis is deterministic and free.
+- **Done when:** `docs/learning/retrieval-quality.md` carries a table of the nine with rank and failure class for each, and one sentence saying how many of them RAG-032's mechanism accounts for, so RAG-032 and RAG-041 are sized from evidence rather than from one example.
 
+### RAG-040: A hosted frontier model on the same eval set: GPT-5.6 Sol
+- **Type:** feat
+- **Created:** 2026-09-05
+- **Competency:** hallucination control, production readiness
+- **Description:** Requested by Kevin on 2026-09-05. ADR-005 made "a local model against a hosted frontier model on the same eval set" a first-class row of `docs/tradeoffs/llm-serving.md`, and the README's open list says no hosted model has been measured. The model is OpenAI's `gpt-5.6-sol` through `LLM_PROVIDER=openai_compatible`, token in `.env` only; listed on 2026-09-05 at $4 per million input tokens and $20 per million output, a promotional price through 2026-11-21 against a standard $5 and $30; reasoning effort `none` to `max` with `medium` the default; 1,050,000-token context.
+- **What the comparison has to answer:** (1) how much of the remaining gap is the model. On gold passages the frontier model shows its own ceiling; on retrieved passages the hypothesis is that it barely lifts answerable coverage, because 13 of the 14 over-refusals had no evidence in the top 5 (RAG-011), so retrieval and not the model is the binding constraint. (2) Whether the deterministic verifiers still catch anything: does a frontier model cite an operand its passage does not print, and how often does the judge disagree with the figure check on its answers. (3) The 5 `derived` and 5 `cross_period` questions under prompt v2, where `qwen3.8-27b-64k` answers 10 of 10 and `llama3.1:8b` fails the arithmetic on 4 of 10. (4) Dollars and seconds per question, beside the local models' latency.
+- **How:** the same 63 questions, k=5, `ANSWER_MAX_TOKENS` 1024 for the answer itself. Reasoning effort `none` is the equal-budget run, because reasoning tokens are billed and counted as output and a truncated answer scores as ungrounded; one run at the default `medium` is reported beside it as a second row, not averaged in. The judge stays `qwen3.8-27b-64k`, a different model from the generator; its 86% calibration was measured on local-model answers, and the page says so next to the numbers. The three local models are re-run the same day, because the gate drifts across days.
+- **Harness first:** `rag doctor` against the hosted endpoint before any eval. The provider sends `temperature` 0.0 and `max_tokens` on every call, and hosted reasoning models have wanted `max_completion_tokens` and a fixed temperature; any provider change must leave the Ollama path byte-identical, and the existing provider tests are the check. The eval reports record no token usage and no latency today, although `ChatResponse` already carries both token counts; add tokens and seconds per answer to the report so the cost column is measured, not estimated from a price list.
+- **Not this ticket:** `make eval-accept` against the hosted run. The baseline stays local, as ADR-003 and ADR-005 require. The token never enters the repo, a ticket or a recap.
+- **Done when:** `docs/tradeoffs/llm-serving.md` has a `gpt-5.6-sol` row with the grounding measures, latency, tokens and dollars per question at a stated effort and date; `docs/learning/grounding.md` and `docs/learning/hallucination-control.md` carry the gold and retrieved numbers beside the local ones; ADR-006 says whether the recommendation changes and for whom; and the README's open list no longer says no hosted model has been measured.
+
+### RAG-041: Eval set v1, the second labelling round
+- **Type:** feat
+- **Created:** 2026-09-05
+- **Competency:** retrieval quality, refusal
+- **Description:** The 63-question set concentrates its evidence in 6 of the 16 filings, is 70% tables, and has no paraphrase pairs and no comparison questions (RAG-019's known limits, RAG-031's not-done). A second round adds: questions whose evidence lies in the ten filings that today act only as distractors, spread across quarters so the period filter is tested on more than seven questions; prose evidence from risk factors and the management discussion, toward a balance with tables; the paraphrase pairs and multi-company questions RAG-032 needs, each pair labelled to the same span so a rank difference between them is the phrasing and nothing else; and a few more `derived` and `cross_period` questions if RAG-043 is to gate them. LLM-assisted drafting with `scripts/draft_eval_questions.py`, every record human-verified: Kevin reviews through a published review page, as in RAG-019, and the labels land only after his verdicts. The set's hash changes, so every committed number is re-run against the new set with the old set's number kept beside it; a wider set may lower recall, which is information and not a regression. The baseline is then re-accepted once, deliberately, after a per-question comparison.
+- **Done when:** the set is committed with the new questions verified by Kevin, `rag eval check` passes, the retrieval numbers and the gate are re-measured on the new set with the old numbers beside them, and RAG-032 has its paraphrase pairs.
 
 ### RAG-032: Retrieval is unstable to phrasing, and only for Nvidia
 - **Type:** fix
@@ -36,6 +68,56 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Description:** Found while fixing RAG-031, and larger than it. Asking for one company's annual total, filtered to that company: "What was Nvidia's revenue in 2025?" ranks its income statement 2nd, "in fiscal 2025" 1st, and "What was Nvidia's **total** revenue in 2025?" does not return it in the top 6. The same edits leave Apple at rank 1, including when Apple is asked in Nvidia's vocabulary. The mechanism is term frequency within one company's filings: Nvidia says "revenue" and "total revenue" in every geographic and segment table, so neither word discriminates and the income statement does not stand out; Apple's "net sales" is nearly unique to the line item. This is a plausible part of the standing recall@20 ceiling of 72.7%, which has never been explained.
 - **Suggested approaches, none chosen yet:** query decomposition or rewriting with a model, which would put an LLM in the retrieval path for the first time and needs an ADR against the project's deterministic-retrieval preference; or a per-company term weighting in the BM25 half, which is deterministic and cheaper but only addresses the lexical side; or accepting it and documenting it. Four deterministic rewrites were already tried and rejected in RAG-031.
 - **Done when:** the eval set has a handful of paraphrase pairs and multi-company questions, human-verified, and the chosen approach is measured against them with a before and after. The labels come first, as they did in RAG-019.
+- **Sequencing (2026-09-05, RAG-038):** the labels come from RAG-041, and RAG-039 says how many of the nine unreachable questions this mechanism accounts for before anything is built.
+
+### RAG-042: The gate writes per-question results and takes a tolerance per metric
+- **Type:** feat
+- **Created:** 2026-09-05
+- **Competency:** hallucination control, production readiness
+- **Description:** RAG-015 found the gate deterministic within a day and not across days: the three model-dependent metrics moved by one refused question and two judged sentences with identical code, questions and model digests. Faithfulness moves in 6.25-point steps, one sentence in sixteen, under a 5-point tolerance, so it can fail with nothing changed; and the gate prints nine numbers and no per-question record, so telling drift from a change means re-running the generation eval by hand and diffing reports. Make `rag eval baseline` write each question's outcome (answered or refused with its reason, fully grounded, judged) beside the metrics, print the per-question diff against the baseline when a metric fails, and give each metric its own tolerance sized to its granularity: one question for coverage and F1, one judged sentence for faithfulness, zero for the deterministic retrieval metrics. The tolerances live in `data/eval/baseline.json` with the numbers they guard. With per-question output in hand, settle the standing note that `rag eval refusal` and the gate once disagreed on coverage in opposite directions: run both within the hour and compare question by question.
+- **Done when:** a failing gate names the questions that moved, the tolerances are per metric and explained in `docs/tradeoffs/evaluation.md`, and the refusal-harness disagreement is either explained or reproduced per question in `docs/notes.md`.
+
+### RAG-043: The gate covers `derived` and `cross_period`
+- **Type:** feat
+- **Created:** 2026-09-05
+- **Competency:** hallucination control
+- **Description:** The gate scores the 23 `lookup` questions only, so calculation provenance (RAG-021, RAG-029) is measured but nothing fails if a change breaks it. Add the 5 `derived` and 5 `cross_period` questions under prompt v2 as rows of their own (calculations verified, derived figures recomputed, judged correct), and keep the lookup rows under v1 so the nine committed metrics do not move. About ten more model calls a run. Re-accept the baseline once, deliberately, with the per-question output from RAG-042 read first.
+- **Done when:** `make eval` fails when a change breaks a verified calculation, and `data/eval/baseline.json` carries the new rows with their run record.
+
+### RAG-044: `q052` leaks past every model's refusal
+- **Type:** fix
+- **Created:** 2026-09-05
+- **Competency:** refusal
+- **Description:** `q052`, which customers account for Nvidia's largest sales, is labelled `insufficient_evidence` and every model answers it: the one leak in RAG-011, still open. Nvidia's 10-K likely discusses customer concentration as a share of revenue without naming the customers, so the models may be answering a question the filing half-answers, and the label would be the thing that is wrong. Decide that first: if the filing supports a partial answer, the label changes and Kevin gives the verdict; if it does not, find where the gate lets it through (the retrieval score, the model's own refusal, or the verifier) and whether the prompt's not-in-the-filings rule can be tightened without costing any of the 33 answerable questions on the gate.
+- **Done when:** either the label is corrected with Kevin's verdict, or the leak is closed with answerable coverage unchanged on the gate, and `docs/learning/refusal.md` records which and why.
+
+### RAG-045: Embedding model comparison
+- **Type:** feat
+- **Created:** 2026-09-05
+- **Competency:** retrieval quality
+- **Description:** `nomic-embed-text` is the default because it came first, not because it was measured; `docs/tradeoffs/embeddings.md` is a first pass with one model in it. Compare at least two alternatives from the page's candidate list, confirmed against what the configured endpoint serves at ticket start. Each candidate needs its own index (13 s a variant) and its own prefix convention: RAG-006 found that running nomic without its prefixes cost a third of recall with no error, so every candidate is run with its documented prefixes and once without, and the context header is kept on. Dense-only and hybrid recall@5, recall@20 and MRR at depth 20 on the same labels, plus embedding latency per query, since the question embedding is 31.4 ms of a retrieval and the store is 3%. If RAG-041 has landed, measure on the new set.
+- **Done when:** `docs/tradeoffs/embeddings.md` holds the filled table with run records, and the default is either confirmed or changed in `Settings`, `.env.example` and an amendment to ADR-006.
+
+### RAG-046: A prompt v2 wording that keeps the arithmetic without the refusals
+- **Type:** feat
+- **Created:** 2026-09-05
+- **Competency:** hallucination control
+- **Description:** Calculation provenance is opt-in because the gate measured prompt v2 costing two of the 33 answerable questions with `gpt-oss:20b` (coverage 0.667 to 0.606), and RAG-021 found the worked example's position alone moved lookup faithfulness by 11 points. Whether a wording that separates the answer-only-from-a-passage rule from the write-the-arithmetic rule keeps 10 of 10 derived answers without the two refusals is untested. Try at most two wordings, each measured on the gate and on the ten `derived` and `cross_period` questions with both models, and stop at two: fitting a prompt to a gate is the RAG-021 trap. Depends on RAG-042 so the two lost questions are named.
+- **Done when:** either v2 becomes the default because the gate passes with the arithmetic intact, or `docs/learning/hallucination-control.md` records that two wordings did not, with the per-question outcomes.
+
+### RAG-047: Langfuse scores and spans disagree on environment
+- **Type:** fix
+- **Created:** 2026-09-05
+- **Competency:** production readiness
+- **Description:** Scores land in `environment: default` while spans land in `local`, and the Langfuse UI filters on that field, so a trace and its scores do not show together (RAG-013, `docs/notes.md`). Set the environment once, on the client, so both carry the same value; confirm through the v2 observations and v3 scores endpoints, which is how RAG-013 read them back; keep the two live tests passing and skipping when Langfuse is absent.
+- **Done when:** a trace and its score answer the same environment filter in the API, and the notes entry is marked resolved.
+
+### RAG-048: A third company with a different fiscal calendar
+- **Type:** feat
+- **Created:** 2026-09-05
+- **Competency:** grounding, retrieval quality
+- **Description:** Apple's fiscal year ends in September and Nvidia's in January, and the fiscal labelling, the quarter filter (RAG-026) and the scope check (RAG-011) have only ever been run on those two. A June year end (Microsoft) stresses the calendar mapping and the period filter, and grows the corpus by half, which tests whether hybrid retrieval holds when eight more near-identical filings compete. Download, parse, chunk and index are already idempotent per ticker; the work is the fiscal mapping, the scope word list, and a labelling slice with Kevin's review, so the new company is measured and not merely indexed. Recall on the existing questions before and after says whether a distractor company hurts the two that are labelled.
+- **Done when:** 24 filings parse with no missing critical items, the new company has verified questions in the set, and `docs/learning/retrieval-quality.md` reports recall on the old questions before and after the corpus grew.
 
 ## Done
 
