@@ -8,41 +8,67 @@ You are continuing **quarterly-RAG**, a local RAG system over SEC 10-Q/10-K fili
 
 ## Where things stand
 
-Phases one and two are complete. The pipeline answers from the filings or refuses with a reason, and every layer is measured against a 63-question human-verified eval set (33 answerable, 30 that must be refused). A derived number can carry the arithmetic that produced it, recomputed from the passages its operands cite, behind `ANSWER_PROMPT_VERSION=2` (RAG-021). It is off by default because the gate measured that it costs two of the 33 answerable questions with `gpt-oss:20b`. Eleven ADRs under `docs/adr/` record the decisions; each has a tradeoff page with numbers under `docs/tradeoffs/`. Every question can also be traced: `make langfuse-up` starts a self-hosted Langfuse and `rag ask` records a span per pipeline stage, off unless `LANGFUSE_HOST` and both keys are set (ADR-011). The headline numbers are in the README under "Results so far" and in `data/eval/baseline.json`, which `make eval` gates against.
+All three phases are built. Everything is merged to `main` and CI is green on it. The pipeline answers from the filings or refuses with a reason, every layer is measured against a 63-question human-verified eval set, and there are eleven ADRs each with a tradeoff page of numbers. `make test` runs 432 unit tests with no model and no Docker.
 
-The next ticket is **RAG-015, the results writeup**. RAG-029 holds three named limits of the calculation verifier, each with an example, and is worth taking before the writeup if the numbers matter to it. The backlog in `project/tickets.md` has the full text of each.
+Since the last handoff: derived numbers carry their arithmetic and it is recomputed (RAG-021); every question can be traced to a self-hosted Langfuse (RAG-013); there is a FastAPI `POST /ask` and a Streamlit page over it (RAG-014); the operand check was widened three times (RAG-029); and a question naming two companies now asks each of them separately (RAG-031).
+
+**The remaining ticket is RAG-015, the results writeup.** RAG-032 is also open and is a real piece of retrieval work, but the writeup is the last one in the original plan and is what the repo exists to produce.
+
+## What RAG-015 has to do
+
+Fill the README so a reader understands the tradeoffs from it alone: the architecture, the final eval tables, and one paragraph per competency saying what was tried, what was measured, and what was chosen.
+
+**Check the numbers before quoting them.** RAG-029 changed what the verifier accepts, so start by running the gate:
+
+```
+LLM_MODEL=gpt-oss:20b uv run rag eval baseline --judge qwen3.8-27b-64k:latest
+```
+
+It should reproduce `data/eval/baseline.json` exactly, because RAG-029 is scoped to calculation operands and the gate scores `lookup` questions under prompt v1, where no calculation is written. If it does not reproduce, that is the first thing to understand and the writeup waits.
+
+**The material is unusually good, and most of it is a negative result.** These are in `docs/learning/` and `docs/notes.md` with the numbers, and they are what makes the writeup worth reading:
+
+- Prompt *wording* moved the results more than the rule did. Two v2 wordings differing only in where the worked example sits: with it last, `llama3.1:8b` verified 9 of 13 calculations and `gpt-oss:20b` lost 11 points of lookup faithfulness; with it in the body, faithfulness came back and the 8B model verified 6 of 10.
+- The gate decided a default. Calculation provenance is off by default because `make eval` measured that it costs two of the 33 answerable questions, and a drop this change caused is not a new baseline.
+- Measuring one verifier found a defect in another. A unit word on the next line was read as this number's unit, so every answer quoting Apple's `$29,915` had been scored ungrounded since RAG-010.
+- A test passed while its feature did not: the tracing test called the scoring function and asserted only the spans.
+- Retrieval is unstable to phrasing, and only for Nvidia. One word moves its income statement from rank 2 to outside the top 6, while the same edits leave Apple at rank 1. Term frequency inside one company's filings is the mechanism, and it is a candidate explanation for the recall@20 ceiling of 72.7% that has never been accounted for.
+- An 8B model's arithmetic can be internally consistent over an operand it invented, and the judge scores that answer correct. It is the case the recomputation exists to catch.
+
+The README already has "Results so far" and three screenshots of the page. What it does not have is the argument.
 
 ## Setup facts you need
 
 - Models run on Kevin's **network Ollama server**. Its address is in `.env` and must never appear in the repo, a commit message, a ticket, or your replies. Call it "the network Ollama server". There is no Ollama on the laptop; `make models` pulls over the server's HTTP API.
-- The server holds `llama3.1:8b`, `gpt-oss:20b`, `qwen3.6:27b`, `qwen3.8-27b-64k:latest`, `deepseek-r1:32b`, `gemma4:26b`, `mistral-small`, and `nomic-embed-text`. `llama3.1:8b` is the code default because ADR-003 requires laptop-sized defaults, but it invents citations in half its answers. **Use `qwen3.8-27b-64k:latest` for generation and as the judge, and `gpt-oss:20b` when latency matters.** Set `LLM_MODEL` in `.env` or per command with `LLM_MODEL=... uv run rag ...`.
-- Corpus, chunks and indexes are on disk under `data/` and gitignored; the eval set and baseline under `data/eval/` are committed. If `data/` is missing, rebuild with the commands in `CLAUDE.md` under Build / Test / Run, in order: download, parse, chunk build, index build with `--context`.
-- `make test` runs 380 unit tests with no model, and needs neither a model nor Docker. `make test-all` adds the live tests. The regression gate takes about ten minutes. `make eval` runs it with whatever `.env` names; to reproduce the committed baseline exactly, run `LLM_MODEL=gpt-oss:20b uv run rag eval baseline --judge qwen3.8-27b-64k:latest`, which is how every number in `data/eval/baseline.json` was recorded.
+- **Use `qwen3.8-27b-64k:latest` for generation and as the judge, and `gpt-oss:20b` when latency matters.** `llama3.1:8b` is the code default only because ADR-003 requires laptop-sized defaults, and it invents citations in half its answers. Set `LLM_MODEL` in `.env` or per command.
+- Corpus, chunks and indexes are on disk under `data/` and gitignored; the eval set and baseline under `data/eval/` are committed. If `data/` is missing, rebuild with the commands in `CLAUDE.md`, in order: download, parse, chunk build, index build with `--context`.
+- `make api` and `make ui` run the endpoint and the page. `make langfuse-up` starts tracing, which is off unless `LANGFUSE_HOST` and both keys are set. `ANSWER_PROMPT_VERSION=2` turns calculation provenance on.
+- **Pushing over HTTPS fails with a 403**: the fine-grained token has metadata read only. Push with `git push git@github.com:kvnzhng/quarterly-RAG.git <branch>`, then `git fetch origin` and set the upstream. CI runs only on `main` and on pull requests.
 
 ## How Kevin works
 
-- One ticket at a time, in roadmap order unless a measurement argues for reordering, in which case say so and do it. Claim the ticket in `project/tickets.md`, write its id to `.claude/active-ticket`, commit with the id, close it with a **Verified** line naming what was actually run, and clear the active ticket. The commit-msg hook rejects a commit without a ticket id.
-- Push after each ticket and watch CI with `gh run watch`. Kevin often says "push and continue".
+- One ticket at a time, in roadmap order unless a measurement argues for reordering, in which case say so and do it. Claim it in `project/tickets.md`, write its id to `.claude/active-ticket`, commit with the id, close it with a **Verified** line naming what was actually run *and what was not*, and clear the active ticket. The commit-msg hook rejects a commit without a ticket id.
 - Kevin asks "explain like I'm five" when a recap uses a term he has not met. Answer plainly, with the project's own numbers as the example, before continuing.
-- Kevin reviews eval labels himself. When labels change, publish a review page (the pattern is in the RAG-019 ticket) and wait for verdicts.
-- Report negative results with the same weight as positive ones. Reranking made things worse, the retrieval threshold is useless, RAGAS is anti-correlated: those are in the docs with numbers, and Kevin values them.
+- Kevin reviews eval labels himself. When labels change, publish a review page and wait for verdicts.
+- Report negative results with the same weight as positive ones. He asked for RAG-031 specifically because the learning mattered more than the feature, and the learning turned out to be bigger than the fix.
+- He notices things from using the page. Two tickets in this session started as "I noticed that...". Take those seriously; both were real.
 
 ## Rules that were learned the hard way
 
-- **Measure before writing a number.** Every number in `docs/` carries a run record. An estimate that ships as a fact gets corrected in a later commit, and that has happened.
-- **Verify a documentation edit landed before committing a message that says it did.** Use `scripts/edit_docs.py`: it applies each change independently, writes after each success, and prints which anchors it could not find. Two commits once described changes that had silently failed because an all-or-nothing helper discarded everything on one stale anchor.
-- **After any reset or amend, check every commit hash in `project/tickets.md` resolves** (`git cat-file -e <hash>^{commit}`).
+- **Measure before writing a number.** Every number in `docs/` carries a run record.
+- **Verify a documentation edit landed before committing a message that says it did.** Use `scripts/edit_docs.py` and read its PARTIAL lines.
+- **After any reset or amend, check every commit hash in `project/tickets.md` resolves.**
 - **State exactly what was measured.** "The ticker filter buys nothing" was true; "filtering buys nothing" was not, and it shipped.
-- **Compare models at equal budgets.** `ANSWER_MAX_TOKENS` is 1024 because a thinking model at 400 scored 20 points low.
-- **The eval set comes before the thing it measures.** That order found every real bug so far.
+- **A test that passes is not a feature that works.** Assert the thing the ticket promised, not the thing that is easy to assert.
+- **Compare models at equal budgets**, and re-measure both sides when the verifier changes underneath them.
 
 ## Open threads worth knowing
 
-- The eval set concentrates its evidence in 6 of 16 filings and is 70% tables; a second labelling round would sharpen every retrieval number.
-- recall@20 is 72.7%: about a quarter of questions have evidence neither ranking nor chunking reaches, and nobody has looked at which since the chunker changed.
+- RAG-032: retrieval is unstable to phrasing, per company. Needs labelled paraphrase pairs first, and an ADR if a model goes into the retrieval path.
+- The eval set concentrates its evidence in 6 of 16 filings, is 70% tables, and contains no comparison or paraphrase questions. A second labelling round would sharpen every retrieval number.
+- recall@20 is 72.7% and nobody has explained the missing quarter. RAG-032 is the first real candidate.
 - `q052` (Nvidia's largest customers) leaks past every model's refusal.
-- The gate scores the 23 `lookup` questions only, so calculation provenance is measured but ungated.
-- Prompt wording moved the RAG-021 numbers more than the rule did; `docs/notes.md` has the comparison.
-- The regression gate is a local command; CI never calls a model, and the `workflow_dispatch` job exists for anyone with a self-hosted runner.
+- `rag eval refusal` and the refusal eval inside `rag eval baseline` disagree on the same measurement, in opposite directions. In `docs/notes.md`, unchased.
+- Langfuse scores land in `environment: default` while spans land in `local`, and the UI filters on that field.
 
-Start by reading `CLAUDE.md`, running `make test` to confirm the tree is healthy, and claiming RAG-015.
+Start by reading `CLAUDE.md`, running `make test` to confirm the tree is healthy, then the gate command above, and claiming RAG-015.

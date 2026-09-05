@@ -1,6 +1,6 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-033
+> Next ID: RAG-034
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
@@ -12,6 +12,7 @@ against that baseline. Phase 3 is production readiness and the writeup.
 Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
+
 
 
 
@@ -50,6 +51,15 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Done when:** a reader can understand the tradeoffs from the README alone.
 
 ## Done
+
+### RAG-033: Refresh the handoff for the writeup
+- **Type:** docs
+- **Created:** 2026-09-05 | **Completed:** 2026-09-05
+- **Competency:** foundation
+- **Description:** `project/handoff.md` still described the state before RAG-013, RAG-014, RAG-021, RAG-029, RAG-030 and RAG-031 landed.
+- **Done when:** a fresh session can start RAG-015 from the handoff alone.
+- **Verified:** the handoff names what is on main, the 432-test count, the gate command that has to be run before any number is quoted and why it should reproduce, the six findings worth writing about, the SSH push workaround, and the six open threads. No server address appears in it.
+
 
 ### RAG-031: A question naming two companies retrieves only one of them
 - **Type:** fix
