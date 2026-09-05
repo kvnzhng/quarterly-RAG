@@ -59,6 +59,19 @@ def _observations(settings, trace_id: str, *, expected: int, tries: int = 20) ->
     return rows
 
 
+def _scores(settings, trace_id: str, *, tries: int = 20) -> list[dict]:
+    """Scores are ingested asynchronously too, and they read from a different endpoint."""
+    url = f"{settings.langfuse_host.rstrip('/')}/api/public/v3/scores"
+    auth = (settings.langfuse_public_key, settings.langfuse_secret_key)
+    for _ in range(tries):
+        response = httpx.get(url, params={"traceId": trace_id, "limit": 50}, auth=auth, timeout=10)
+        rows = response.json().get("data", []) if response.status_code == 200 else []
+        if rows:
+            return rows
+        time.sleep(1)
+    return []
+
+
 def test_a_nested_trace_arrives_with_its_shape_intact(live_settings) -> None:
     tracer = build_tracer(live_settings)
     assert isinstance(tracer, LangfuseTracer), "configured settings must give a real tracer"
@@ -81,6 +94,12 @@ def test_a_nested_trace_arrives_with_its_shape_intact(live_settings) -> None:
     assert by_name["generation"]["type"] == "GENERATION"
     assert by_name[marker]["parentObservationId"] is None
     assert by_name["retrieval"]["parentObservationId"] == by_name[marker]["id"]
+
+    # The score has to be on *this* trace, which is the half of "scores on traces" that a
+    # test asserting only spans would let through. It did, until this line existed.
+    scores = _scores(live_settings, trace_id)
+    assert [s["name"] for s in scores] == ["itest_score"]
+    assert scores[0]["dataType"] == "BOOLEAN"
 
 
 def test_the_pipeline_traces_a_refusal_without_calling_a_model(live_settings) -> None:
