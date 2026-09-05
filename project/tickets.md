@@ -13,13 +13,6 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-038: Follow-up backlog and handoff refresh
-- **Type:** docs
-- **Created:** 2026-09-05
-- **Competency:** foundation
-- **Description:** After RAG-037 the backlog held one ticket while the handoff, the README and `docs/notes.md` listed nine open threads, and Kevin asked for a comparison against a hosted frontier model. Turn each open thread into a ticket with an artifact and a done-when, order them with a stated reason, and make the handoff, `CLAUDE.md` and the README's "What is still open" name the same next ticket.
-- **Done when:** every open thread in the handoff and the README has a ticket id, and the four places that name the next ticket agree.
-
 ## Backlog
 
 
@@ -120,6 +113,16 @@ Ordered on 2026-09-05 (RAG-038). The diagnosis of the nine unreachable questions
 - **Done when:** 24 filings parse with no missing critical items, the new company has verified questions in the set, and `docs/learning/retrieval-quality.md` reports recall on the old questions before and after the corpus grew.
 
 ## Done
+
+### RAG-038: Follow-up backlog and handoff refresh
+- **Type:** docs
+- **Created:** 2026-09-05 | **Completed:** 2026-09-05
+- **Competency:** foundation
+- **Description:** After RAG-037 the backlog held one ticket while the handoff, the README and `docs/notes.md` listed nine open threads, and Kevin asked for a comparison against a hosted frontier model. Turn each open thread into a ticket with an artifact and a done-when, order them with a stated reason, and make the handoff, `CLAUDE.md` and the README's "What is still open" name the same next ticket.
+- **Done when:** every open thread in the handoff and the README has a ticket id, and the four places that name the next ticket agree.
+- **Verified:** `scripts/edit_docs.py` reported every edit applied: tickets 4/4, handoff 4/4, `CLAUDE.md` 1/1, README 4/4. The four places that name the next ticket (`CLAUDE.md`, `project/handoff.md`, the README's open list, this file) all say RAG-039, and every open thread in the handoff and the README carries a ticket id. The model id `gpt-5.6-sol`, its price and its reasoning-effort settings were read from OpenAI's model page on 2026-09-05. A grep of the diff for the configured server host found nothing. `make lint` clean. No code changed, so the tests were not re-run.
+- **Not run:** nothing against a model. The tickets are plans and hold no new measurement.
+- **Commits:** `d13605a`
 
 ### RAG-037: The course sits near the top of the README
 - **Type:** docs
