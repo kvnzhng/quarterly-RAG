@@ -90,6 +90,62 @@ recall@1 more than doubled and MRR rose 65% from the baseline, while recall@5 mo
 - The near-miss ladder as a diagnostic: right filing, right section, right chunk. Losing at the first step is a filtering problem; losing at the last is a ranking or chunking problem, and they need different fixes.
 - Why every reported number carries a run record, and what breaks without one.
 
+### One ranked list cannot serve two companies (RAG-031)
+
+"Who made more revenue in 2025, Nvidia or Apple?" was refused, while asking each company on
+its own answered correctly. The ticker filter was not at fault: it already declines to filter
+when a question names two companies. Retrieval returned **six Nvidia passages and no Apple
+ones**, so the generator correctly reported that the passages do not answer a question about
+both, and the gate refused.
+
+The cause is vocabulary. Nvidia's income statement line is `Revenue` and Apple's is
+`Net sales`, so the word in the question decides whose filings match. Measured, k=6:
+
+| Question | Passages returned |
+|---|---|
+| "Who made more **revenue** in 2025, Nvidia or Apple?" | 6 Nvidia, 0 Apple |
+| "Who made more **net sales** in 2025, Nvidia or Apple?" | 4 Nvidia, 2 Apple |
+| "Compare Apple total net sales and Nvidia revenue in fiscal 2025" | 5 Apple, 1 Nvidia |
+
+**The fix is to ask each named company separately and interleave by rank**, so the best Apple
+passage, then the best Nvidia one, then the second of each. Merging by score would reproduce
+the problem, because the scores were what was lopsided. Every wording now returns 3 and 3.
+
+This changes nothing on the eval set: recall@5 is 48.5% and MRR 0.440 before and after,
+identical to the committed baseline, because not one of the 33 answerable questions names two
+companies. A fix whose own eval cannot see it is worth saying out loud.
+
+### The deeper finding: retrieval is unstable to phrasing, per company (RAG-032)
+
+Balancing the companies was not enough, and chasing the rest is what produced the more useful
+result. With three slots each, Apple's total was at rank 1 but Nvidia's was at rank 9, so the
+question was still refused. Trying to reach it by rewriting the query found this instead,
+single company, filtered to that company, asking for its annual total:
+
+| Question | Where the total ranks |
+|---|---|
+| "What was Nvidia's revenue in 2025?" | 2 |
+| "What was Nvidia's revenue in **fiscal** 2025?" | 1 |
+| "What was Nvidia's **total** revenue in 2025?" | not in the top 6 |
+| "What was Apple's net sales in 2025?" | 1 |
+| "What was Apple's **total** net sales in 2025?" | 1 |
+| "What was Apple's **revenue** in 2025?" | 1 |
+
+One word moves Nvidia's income statement from rank 2 to outside the top six. Apple is
+unmoved by the same edits, including by being asked in Nvidia's vocabulary.
+
+The mechanism is term frequency within one company's filings. Nvidia's documents say
+"revenue" and "total revenue" everywhere, in geographic tables, segment tables and footnotes,
+so those words do not discriminate and the income statement does not stand out. Apple's
+"net sales" is close to unique to the line item, so it does.
+
+Two things follow. A comparison question is not a special case, it is just an unusual
+phrasing that happened to expose this. And no deterministic query rewrite fixes it: four were
+tried, including dropping the other company and rebuilding the question from a template, and
+none reached Nvidia's total. Fitting a template to one example would be fitting to noise.
+That decision, and whether it is worth putting a model in the retrieval path to do it
+properly, is RAG-032.
+
 ## Reading
 
 - Karpukhin et al. 2020, [Dense Passage Retrieval](https://arxiv.org/abs/2004.04906)
@@ -100,4 +156,4 @@ recall@1 more than doubled and MRR rose 65% from the baseline, while recall@5 mo
 
 ## Related
 
-RAG-019, RAG-006, RAG-007, RAG-008, RAG-009.
+RAG-019, RAG-006, RAG-007, RAG-008, RAG-009, RAG-031, RAG-032.

@@ -1,6 +1,6 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-032
+> Next ID: RAG-033
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
@@ -12,6 +12,7 @@ against that baseline. Phase 3 is production readiness and the writeup.
 Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
+
 
 
 
@@ -29,25 +30,17 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ### Phase 3: production readiness and writeup
 
-### RAG-031: A question naming two companies retrieves only one of them
+
+
+
+
+### RAG-032: Retrieval is unstable to phrasing, and only for Nvidia
 - **Type:** fix
 - **Created:** 2026-09-05
 - **Competency:** retrieval quality
-- **Description:** "Who made more revenue in 2025, Nvidia or Apple?" is refused, while asking each company separately answers correctly. Reported by Kevin from the page (RAG-014). The cause is not the ticker filter, which already declines to filter when a question names two companies (`as_filter` returns None, verified). It is that one ranked list of k passages is filled by whichever company the question's wording matches: Nvidia's income statement line is "Revenue" and Apple's is "Net sales", so the word in the question decides which filings come back. Measured 2026-09-05, hybrid retrieval, section-aware chunks, context embeddings, k=6:
-
-| Question | Passages returned |
-|---|---|
-| "Who made more **revenue** in 2025, Nvidia or Apple?" | 6 Nvidia, 0 Apple |
-| "Who made more **net sales** in 2025, Nvidia or Apple?" | 4 Nvidia, 2 Apple |
-| "Compare Apple total net sales and Nvidia revenue in fiscal 2025" | 5 Apple, 1 Nvidia |
-
-The generator then behaves correctly: with only Nvidia passages it says the passages do not answer a question about both, and the answer gate refuses with `insufficient_evidence`. Nothing is broken downstream of retrieval.
-- **Suggested fix:** when `parse_facets` finds more than one ticker, retrieve per ticker and merge, so each company gets its share of the k slots, rather than running one query and hoping the ranking is balanced. `as_filter` already knows how many companies were named, so the information is there.
-- **Done when:** the comparison question is answered with a citation from each company, and `docs/learning/retrieval-quality.md` reports recall for multi-company questions before and after. The eval set has no comparison questions, so a few have to be labelled first, which makes this partly a RAG-019 follow-up.
-- **Worth knowing either way:** two companies in one corpus do not share a vocabulary for the same line item, and a single ranked list hides that. This is the clearest example so far of a retrieval failure that looks like a generation failure.
-
-
-
+- **Description:** Found while fixing RAG-031, and larger than it. Asking for one company's annual total, filtered to that company: "What was Nvidia's revenue in 2025?" ranks its income statement 2nd, "in fiscal 2025" 1st, and "What was Nvidia's **total** revenue in 2025?" does not return it in the top 6. The same edits leave Apple at rank 1, including when Apple is asked in Nvidia's vocabulary. The mechanism is term frequency within one company's filings: Nvidia says "revenue" and "total revenue" in every geographic and segment table, so neither word discriminates and the income statement does not stand out; Apple's "net sales" is nearly unique to the line item. This is a plausible part of the standing recall@20 ceiling of 72.7%, which has never been explained.
+- **Suggested approaches, none chosen yet:** query decomposition or rewriting with a model, which would put an LLM in the retrieval path for the first time and needs an ADR against the project's deterministic-retrieval preference; or a per-company term weighting in the BM25 half, which is deterministic and cheaper but only addresses the lexical side; or accepting it and documenting it. Four deterministic rewrites were already tried and rejected in RAG-031.
+- **Done when:** the eval set has a handful of paraphrase pairs and multi-company questions, human-verified, and the chosen approach is measured against them with a before and after. The labels come first, as they did in RAG-019.
 
 ### RAG-015: Results writeup and interview talking points
 - **Type:** docs
@@ -57,6 +50,19 @@ The generator then behaves correctly: with only Nvidia passages it says the pass
 - **Done when:** a reader can understand the tradeoffs from the README alone.
 
 ## Done
+
+### RAG-031: A question naming two companies retrieves only one of them
+- **Type:** fix
+- **Created:** 2026-09-05 | **Completed:** 2026-09-05
+- **Competency:** retrieval quality
+- **Description:** "Who made more revenue in 2025, Nvidia or Apple?" was refused while each company answered on its own. Reported by Kevin from the page (RAG-014).
+- **Done when:** the comparison question is answered with a citation from each company, and `docs/learning/retrieval-quality.md` reports recall for multi-company questions before and after.
+- **Fixed:** the retriever asks each named company separately and interleaves by rank, so both reach the answer. Every wording tested now returns 3 Apple and 3 Nvidia where the worst previously returned 6 Nvidia and 0 Apple. Merging by score was rejected in the design because the scores were what was lopsided. The ticker filter was innocent throughout: it already declines to filter when two companies are named.
+- **Not fixed, and this is the ticket's real result:** the comparison question is *still refused*. With three slots each, Apple's total is at rank 1 and Nvidia's at rank 9. Reaching for a query rewrite found the actual problem: retrieval is unstable to phrasing, and only for Nvidia. "What was Nvidia's revenue in 2025?" puts its income statement at rank 2, "in fiscal 2025" at rank 1, and adding the word "total" puts it outside the top 6. The same three edits leave Apple at rank 1, including asking Apple in Nvidia's vocabulary. The mechanism is term frequency inside one company's filings: Nvidia's documents say "revenue" and "total revenue" in every geographic and segment table, so the words do not discriminate; Apple's "net sales" is nearly unique to the line item. A comparison question is not a special case, it is an unusual phrasing that exposed this. Four deterministic rewrites were tried and none reached the total, so no template was shipped: fitting one to a single example is fitting to noise. RAG-032 carries it.
+- **Verified:** live retrieval against the corpus, k=6, before and after, all wordings in `docs/learning/retrieval-quality.md`. `make test` 432 passed, 15 deselected, up from 422, with 12 new tests for the split and the interleave including the cases it must not change. `make lint` clean.
+- **Measured and unchanged:** `rag eval retrieval -k 5 --context` gives recall@5 48.5% and MRR 0.440, identical to the committed baseline, because not one of the 33 answerable questions names two companies. A fix its own eval cannot see is worth saying out loud.
+- **Not done:** labelling comparison questions for the eval set. They would measure a question the system still refuses, and they need Kevin's review, so they belong with RAG-032 rather than ahead of it.
+
 
 ### RAG-029: Three named limits of the calculation verifier
 - **Type:** fix
