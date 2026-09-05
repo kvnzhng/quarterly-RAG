@@ -1,6 +1,6 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-031
+> Next ID: RAG-032
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
@@ -28,6 +28,24 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 
 ### Phase 3: production readiness and writeup
+
+### RAG-031: A question naming two companies retrieves only one of them
+- **Type:** fix
+- **Created:** 2026-09-05
+- **Competency:** retrieval quality
+- **Description:** "Who made more revenue in 2025, Nvidia or Apple?" is refused, while asking each company separately answers correctly. Reported by Kevin from the page (RAG-014). The cause is not the ticker filter, which already declines to filter when a question names two companies (`as_filter` returns None, verified). It is that one ranked list of k passages is filled by whichever company the question's wording matches: Nvidia's income statement line is "Revenue" and Apple's is "Net sales", so the word in the question decides which filings come back. Measured 2026-09-05, hybrid retrieval, section-aware chunks, context embeddings, k=6:
+
+| Question | Passages returned |
+|---|---|
+| "Who made more **revenue** in 2025, Nvidia or Apple?" | 6 Nvidia, 0 Apple |
+| "Who made more **net sales** in 2025, Nvidia or Apple?" | 4 Nvidia, 2 Apple |
+| "Compare Apple total net sales and Nvidia revenue in fiscal 2025" | 5 Apple, 1 Nvidia |
+
+The generator then behaves correctly: with only Nvidia passages it says the passages do not answer a question about both, and the answer gate refuses with `insufficient_evidence`. Nothing is broken downstream of retrieval.
+- **Suggested fix:** when `parse_facets` finds more than one ticker, retrieve per ticker and merge, so each company gets its share of the k slots, rather than running one query and hoping the ranking is balanced. `as_filter` already knows how many companies were named, so the information is there.
+- **Done when:** the comparison question is answered with a citation from each company, and `docs/learning/retrieval-quality.md` reports recall for multi-company questions before and after. The eval set has no comparison questions, so a few have to be labelled first, which makes this partly a RAG-019 follow-up.
+- **Worth knowing either way:** two companies in one corpus do not share a vocabulary for the same line item, and a single ranked list hides that. This is the clearest example so far of a retrieval failure that looks like a generation failure.
+
 
 
 
