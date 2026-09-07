@@ -2,6 +2,8 @@
 
 RAG-049 · A companion chapter for the quarterly-RAG course.
 
+[Read this chapter in the existing Notion course](https://flashy-fur-afc.notion.site/3d41f11d4bc88136823cedcbf8871a98).
+
 Read this after the course introduction and before the individual pipeline layers.
 You need the idea of RAG—a model answers using retrieved passages—but no architecture
 vocabulary. By the end, you should be able to draw both paths through the project,

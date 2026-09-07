@@ -6,7 +6,7 @@
 
 Everything runs on a laptop with no paid API: Ollama for the LLM and embeddings, ChromaDB for vectors, a local model as the judge. The model provider is your choice: point it at a model server on your network or at a hosted API by editing `.env`.
 
-**Current state:** all three phases are built. The pipeline answers questions from the filings or refuses with a reason, every layer is measured against a 63-question human-verified eval set, and eleven decisions are recorded as ADRs, each backed by a tradeoff page with numbers. [Results](#results) has the tables, [the five competencies](#the-five-competencies-what-was-tried-what-was-measured-what-was-chosen) has the argument, and [what did not work](#what-did-not-work-and-what-it-taught) is the part worth reading first. There is also [a course](#the-course): twelve chapters and a notebook that teach the same material, in order, with the numbers.
+**Current state:** all three phases are built. The pipeline answers questions from the filings or refuses with a reason, every layer is measured against a 63-question human-verified eval set, and eleven decisions are recorded as ADRs, each backed by a tradeoff page with numbers. [Results](#results) has the tables, [the five competencies](#the-five-competencies-what-was-tried-what-was-measured-what-was-chosen) has the argument, and [what did not work](#what-did-not-work-and-what-it-taught) is the part worth reading first. There is also [a course](#the-course): twelve numbered chapters, an architecture companion and a notebook that teach the same material, in order, with the numbers.
 
 ## Why filings?
 
@@ -16,13 +16,15 @@ Starting companies: **Apple (AAPL)** and **Nvidia (NVDA)**. Adding a ticker is a
 
 ## The course
 
-What this repository learned is written up as a public course: twelve chapters, one per
-layer, each explaining the tooling, the alternatives that were tried and what the numbers
-said, and a marimo notebook that drives the real pipeline so a reader can change the chunker,
-the retrieval strategy, k, the filters, the prompt version and the model and watch the numbers
-move. The chapters point at notebook sections and the notebook points back at the chapters.
+What this repository learned is written up as a public course: twelve numbered chapters
+explaining the tooling, the alternatives that were tried and what the numbers said,
+plus an architecture companion that connects the layers and weighs the design choices.
+A marimo notebook drives the real pipeline so a reader can change the chunker, the retrieval
+strategy, k, the filters, the prompt version and the model and watch the numbers move.
+The chapters point at notebook sections and the notebook points back at the chapters.
 
 - **Course:** https://flashy-fur-afc.notion.site/quarterly-RAG-a-course-on-production-RAG-3d21f11d4bc881a6b753c2c819817428
+- **Architecture companion:** [how the pieces fit, and why](https://flashy-fur-afc.notion.site/3d41f11d4bc88136823cedcbf8871a98), read after chapter 1; [repository version](docs/learning/architecture.md).
 - **Notebook:** `notebooks/course.py`. Once the corpus, chunks and indexes exist, `make course`
   opens it in your browser as an app: the controls and the outputs, without the code.
   Sections 0 to 6 run on open and cost one embedding call per retrieval; every cell that
