@@ -13,17 +13,7 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
 
-### RAG-049: Explain the architecture in the docs and course
-- **Type:** docs
-- **Created:** 2026-09-07
-- **Competency:** architecture, all five RAG competencies
-- **Description:** Refresh the architecture reference against the implementation, add an architecture learning chapter with pros, cons, alternatives, exercises and primary-source reading, and replace the README's text diagram with Mermaid. Add the chapter and diagram to the existing Notion course when its editing connection is available. Requested by Kevin ahead of the Phase 4 backlog.
-- **Done when:** the reference and learning chapter agree with the code, the README and Notion course contain Mermaid diagrams, navigation connects the material, and diagrams and links have been checked. No new performance measurements or runtime changes are required.
-- **Repository work:** refreshed `docs/architecture.md`; added `docs/learning/architecture.md` with tradeoffs, walkthrough, exercises and six primary-source readings; filled the orchestration rationale while keeping its comparison explicitly unmeasured; linked the material from the README, learning index and notebook. The README now has a Mermaid diagram and states the actual answer-gate policy.
-- **Notion destination:** extend the existing course at `https://flashy-fur-afc.notion.site/quarterly-RAG-a-course-on-production-RAG-3d21f11d4bc881a6b753c2c819817428`. Add the architecture reading after its introduction without renumbering or replacing existing chapters. Use the learning chapter as source, retain Mermaid code blocks, resolve repository-relative links for the published page, and update course navigation after reading the live page.
-- **Publication pending:** Kevin enabled Notion access during the task. On 2026-09-07, the local configuration and credential-aware CLI check confirm that the official Notion MCP server is enabled and has a saved OAuth login. This session still exposes no Notion tools; a client/MCP restart was requested using the official setup guidance. No Notion page has been read or changed. Keep this ticket In Progress until the existing course is updated and read back.
-- **Verified (repository):** four Mermaid diagrams rendered with the locally installed Mermaid CLI and visually inspected; 63 relative documentation links resolve; the six external readings were opened at their primary sources; `ruff check .`, `ruff format --check .`, `marimo check notebooks/course.py` and `git diff --check` pass. The notebook change is reading text only. No unit suite, live notebook execution, model evaluation, index rebuild or Notion publication was run for this ticket.
-- **Repository commits:** `efc8b8d` (documentation), `fcacda8` (verification record), pushed to `docs/RAG-049-architecture-learning` on GitHub on 2026-09-07 at Kevin's request. Notion publication and ticket closure remain pending.
+None.
 
 ## Backlog
 
@@ -114,6 +104,20 @@ Ordered on 2026-09-05 (RAG-038). The diagnosis of the nine unreachable questions
 - **Done when:** 24 filings parse with no missing critical items, the new company has verified questions in the set, and `docs/learning/retrieval-quality.md` reports recall on the old questions before and after the corpus grew.
 
 ## Done
+
+### RAG-049: Explain the architecture in the docs and course
+- **Type:** docs
+- **Created:** 2026-09-07 | **Completed:** 2026-09-07
+- **Competency:** architecture, all five RAG competencies
+- **Description:** Refresh the architecture reference against the implementation, add an architecture learning chapter with pros, cons, alternatives, exercises and primary-source reading, and replace the README's text diagram with Mermaid. Add the chapter and diagram to the existing Notion course. Requested by Kevin ahead of the Phase 4 backlog.
+- **Done when:** the reference and learning chapter agree with the code, the README and Notion course contain Mermaid diagrams, navigation connects the material, and diagrams and links have been checked. No new performance measurements or runtime changes are required.
+- **Repository work:** refreshed `docs/architecture.md`; added `docs/learning/architecture.md` with tradeoffs, walkthrough, exercises and six primary-source readings; filled the orchestration rationale while keeping its comparison explicitly unmeasured; linked the material from the README, learning index and notebook. The README now has a Mermaid diagram and states the actual answer-gate policy. The README, notebook, learning chapter and handoff link to the published companion.
+- **Notion publication:** [Architecture: how the pieces fit, and why](https://flashy-fur-afc.notion.site/3d41f11d4bc88136823cedcbf8871a98) is a child of the existing course. Both the course map and child-page list place it after chapter 1 without renumbering the twelve original chapters. The course root has the README's Mermaid overview; the companion has the learning diagram, three native tables, readings and exercises. Chapter 1 links forward and clarifies the Protocol boundary, scope heuristics, retrieval gate and flagged-answer policy. Repository links in the companion use the reviewed `efc8b8d` snapshot, so they do not depend on a merge to `main`.
+- **Verified (repository):** four Mermaid diagrams rendered with the locally installed Mermaid CLI and visually inspected; 64 relative documentation links resolve; the six external readings were opened at their primary sources; `ruff check .`, `ruff format --check .`, `marimo check notebooks/course.py` and `git diff --check` pass. All 55 distinct commit hashes in the ticket commit fields resolved before closure. The notebook change is reading text only; commit hooks passed.
+- **Verified (Notion):** fetched the existing course and chapter 1 before editing, then read back all three changed pages. The original twelve child IDs are preserved, the companion is second in a list of thirteen unique children, both Mermaid blocks exactly match their repository sources, and every cell of the companion's three tables matches the prepared content. Course-map navigation and chapter 1 clarifications are present. The companion's public URL returns HTTP 200 without a Notion session.
+- **Not run:** unit suite, live notebook execution, model evaluation or index rebuild for this documentation ticket; Notion rendering was not inspected in a browser. No new performance claims or runtime changes.
+- **Branch:** `docs/RAG-049-architecture-learning`; not merged to `main`.
+- **Commits:** `efc8b8d` (documentation), `fcacda8` (verification record), `d9c97e7` (push and connection status), `664fd42` (published course links and handoff).
 
 ### RAG-038: Follow-up backlog and handoff refresh
 - **Type:** docs
