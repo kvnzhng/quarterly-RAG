@@ -23,6 +23,7 @@ Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 - **Notion destination:** extend the existing course at `https://flashy-fur-afc.notion.site/quarterly-RAG-a-course-on-production-RAG-3d21f11d4bc881a6b753c2c819817428`. Add the architecture reading after its introduction without renumbering or replacing existing chapters. Use the learning chapter as source, retain Mermaid code blocks, resolve repository-relative links for the published page, and update course navigation after reading the live page.
 - **Publication pending:** Kevin enabled Notion access during the task, but this running session still exposes no Notion tools or plugin-discovery tool. No Notion page has been read or changed. Keep this ticket In Progress until the existing course is updated and read back.
 - **Verified (repository):** four Mermaid diagrams rendered with the locally installed Mermaid CLI and visually inspected; 63 relative documentation links resolve; the six external readings were opened at their primary sources; `ruff check .`, `ruff format --check .`, `marimo check notebooks/course.py` and `git diff --check` pass. The notebook change is reading text only. No unit suite, live notebook execution, model evaluation, index rebuild or Notion publication was run for this ticket.
+- **Repository commit:** `efc8b8d` on `docs/RAG-049-architecture-learning`; not pushed. Notion publication and ticket closure remain pending.
 
 ## Backlog
 
