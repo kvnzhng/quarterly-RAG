@@ -74,6 +74,11 @@ def course_links(mo):
     below names the chapter that explains what you are looking at, and each chapter names the
     section here where you can change the parameters and watch the numbers move.
 
+    **Architecture reading:** [how the pieces fit, and why](https://flashy-fur-afc.notion.site/3d41f11d4bc88136823cedcbf8871a98)
+    connects the build and question paths, explains the design's pros and cons, and gives
+    exercises for sections 5, 7 and 9 below. The
+    [architecture reference]({REPO}/blob/efc8b8d/docs/architecture.md) maps those ideas to the code.
+
     **Before you start**, from the repository root: `make setup`, copy `.env.example` to `.env`,
     then build the corpus, chunks and indexes with the commands in the README (download, parse,
     `rag chunk build` for every strategy you want to compare, `rag index build --context`).

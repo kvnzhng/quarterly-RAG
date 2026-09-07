@@ -12,6 +12,6 @@ Use `_template.md` for new pages.
 | `vector-stores.md` | ChromaDB vs FAISS (vs LanceDB / Qdrant / pgvector) | **decided** (ADR-010) | RAG-007 |
 | `retrieval-strategies.md` | dense vs BM25 vs hybrid vs hybrid+rerank | **decided** (ADR-008) | RAG-009 |
 | `llm-serving.md` | which local model; local vs hosted | **decided** for local (ADR-006 amended); hosted not measured | RAG-002, RAG-010, RAG-025 |
-| `orchestration.md` | plain Python vs LangChain vs LlamaIndex vs LangGraph | draft | RAG-010 |
+| [orchestration.md](orchestration.md) | plain Python workflow vs library wiring, stateful workflows and model-directed retrieval | draft comparison; implemented design explained, alternatives not benchmarked | RAG-010, RAG-049 |
 | `evaluation.md` | custom judge vs RAGAS | **decided** | RAG-012 |
-| `observability.md` | Langfuse vs Phoenix vs MLflow | draft | RAG-013 |
+| [observability.md](observability.md) | Langfuse vs Phoenix vs MLflow | **decided** (ADR-011) | RAG-013 |
