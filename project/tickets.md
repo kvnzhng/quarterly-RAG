@@ -1,6 +1,6 @@
 # Tickets -- quarterly-RAG (Prefix: RAG)
 
-> Next ID: RAG-049
+> Next ID: RAG-050
 
 Tickets are grouped by the competency they demonstrate. Each ticket names the
 artifact it must leave behind (code, an eval number, a tradeoff doc, or an ADR)
@@ -12,6 +12,17 @@ against that baseline. Phase 3 is production readiness and the writeup.
 Reordered on 2026-09-04 after an external review (see `docs/notes.md`).
 
 ## In Progress
+
+### RAG-049: Explain the architecture in the docs and course
+- **Type:** docs
+- **Created:** 2026-09-07
+- **Competency:** architecture, all five RAG competencies
+- **Description:** Refresh the architecture reference against the implementation, add an architecture learning chapter with pros, cons, alternatives, exercises and primary-source reading, and replace the README's text diagram with Mermaid. Add the chapter and diagram to the existing Notion course when its editing connection is available. Requested by Kevin ahead of the Phase 4 backlog.
+- **Done when:** the reference and learning chapter agree with the code, the README and Notion course contain Mermaid diagrams, navigation connects the material, and diagrams and links have been checked. No new performance measurements or runtime changes are required.
+- **Repository work:** refreshed `docs/architecture.md`; added `docs/learning/architecture.md` with tradeoffs, walkthrough, exercises and six primary-source readings; filled the orchestration rationale while keeping its comparison explicitly unmeasured; linked the material from the README, learning index and notebook. The README now has a Mermaid diagram and states the actual answer-gate policy.
+- **Notion destination:** extend the existing course at `https://flashy-fur-afc.notion.site/quarterly-RAG-a-course-on-production-RAG-3d21f11d4bc881a6b753c2c819817428`. Add the architecture reading after its introduction without renumbering or replacing existing chapters. Use the learning chapter as source, retain Mermaid code blocks, resolve repository-relative links for the published page, and update course navigation after reading the live page.
+- **Publication pending:** Kevin enabled Notion access during the task, but this running session still exposes no Notion tools or plugin-discovery tool. No Notion page has been read or changed. Keep this ticket In Progress until the existing course is updated and read back.
+- **Verified (repository):** four Mermaid diagrams rendered with the locally installed Mermaid CLI and visually inspected; 63 relative documentation links resolve; the six external readings were opened at their primary sources; `ruff check .`, `ruff format --check .`, `marimo check notebooks/course.py` and `git diff --check` pass. The notebook change is reading text only. No unit suite, live notebook execution, model evaluation, index rebuild or Notion publication was run for this ticket.
 
 ## Backlog
 

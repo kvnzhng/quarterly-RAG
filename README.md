@@ -32,21 +32,46 @@ move. The chapters point at notebook sections and the notebook points back at th
 
 ## Architecture
 
+```mermaid
+flowchart TB
+    subgraph build["Build before answering"]
+        filings["SEC filings"] --> parse["Canonical text and sections"]
+        parse --> chunks["Chunks with provenance"]
+        chunks -->|Embed documents| vectors[("Vector index")]
+    end
+    chunks -->|Load at startup| bm25["BM25 in memory"]
+    subgraph request["Answer each question"]
+        question["Question"] --> scope{"Scope gate"}
+        scope -->|Continue| retrieve["Hybrid retrieval and retrieval gate"]
+        retrieve -->|Passages| generate["Generate with citations"]
+        generate --> verify["Verify figures and citations; answer gate"]
+        verify -->|Return| answer["Answer with check results"]
+        scope -->|Decline| refusal["Refusal with reason"]
+        retrieve -->|Decline| refusal
+        verify -->|Decline| refusal
+    end
+    vectors --> retrieve
+    bm25 --> retrieve
 ```
-EDGAR (10-Q / 10-K) --> ingestion --> chunking --> indexing --> retrieval --> generation --> answer | refusal
-                        parse to      pluggable    embed +     dense + BM25,  grounded prompt,
-                        sections      chunkers     Chroma/FAISS RRF, filters   citation check, refusal gate
-                                                              \_______ evaluation + Langfuse traces _______/
-```
+
+The core runs as a modular Python application. The CLI and FastAPI use the same
+`Pipeline.ask`; Streamlit calls the API. Document embeddings are built ahead of time,
+while questions are embedded during retrieval. Offline evaluation checks the layers
+and the whole pipeline, and optional Langfuse spans record the question path. The model
+judge is used in evaluation, not in the normal answer gate.
+
+Read [the architecture reference](docs/architecture.md) for processes, data contracts
+and rebuild boundaries, or [the architecture learning chapter](docs/learning/architecture.md)
+for the design's pros and cons, alternatives, exercises and guided reading.
 
 A question goes through `pipeline.py` in six steps, and the same path serves `POST /ask`:
 
-1. **Scope gate, before any model call.** A company the corpus does not hold, a year before it, or a question filings never answer (advice, live prices) is refused as `out_of_scope`. In a trace that is two spans and one millisecond.
+1. **Scope gate, before any model call.** Heuristics check known absent companies, some year requests and out-of-scope topics such as advice and live prices. A match refuses as `out_of_scope`; passing does not prove the answer is in the corpus.
 2. **Read the question** for a company and a fiscal period. A named company becomes a ticker filter and a named quarter a period filter; a bare year is never filtered, because filings quote prior years. A question naming two companies asks each separately and interleaves the results by rank.
-3. **Retrieve** the top 50 from dense search and the top 50 from BM25, fuse them by reciprocal rank, keep 5. A filter that empties the result falls back to no filter.
+3. **Retrieve** the top 50 from dense search and the top 50 from BM25, fuse them by reciprocal rank, keep 5. If inferred filters empty the result, retry with the caller's original filters. Empty retrieval refuses as `low_confidence`; the optional score threshold defaults to zero.
 4. **Generate** with the passages tagged `[c1]` to `[c5]`. The prompt requires a citation on every sentence and the sentinel `INSUFFICIENT_EVIDENCE` when the passages do not answer.
 5. **Verify deterministically.** Every citation must name a passage that was provided, and every figure must appear in the passage it cites after unit scaling. A figure no passage prints is labelled `derived`; if the answer wrote a `CALC:` line for it, each operand is checked against the passage it cites and the arithmetic is recomputed.
-6. **Answer gate.** The sentinel refuses as `insufficient_evidence`; an answer with no resolvable citation refuses as `verification_failed`. A refusal carries its reason and the closest passages.
+6. **Answer gate.** The sentinel refuses as `insufficient_evidence`; prose with no resolvable citation refuses as `verification_failed`. Other check failures remain annotated in the returned answer. A refusal carries its reason and nearby passages when available. Numeric presence and valid citations do not prove that a sentence describes the right metric or period.
 
 Every chunk carries ticker, form, fiscal period, section and character offsets into one canonical text per filing, and the eval labels are spans into that same text, so a label survives a change of chunker. `docs/architecture.md` has the data model and the component table; every row of that table is a tradeoff page with numbers and an ADR.
 
